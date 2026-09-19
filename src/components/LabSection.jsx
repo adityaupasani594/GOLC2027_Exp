@@ -1,8 +1,32 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, ChevronRight, BarChart3, FlaskConical, Table } from 'lucide-react';
+import { 
+  Play, 
+  ChevronRight, 
+  BarChart3, 
+  FlaskConical, 
+  Table, 
+  Search, 
+  Sparkles, 
+  Info, 
+  X, 
+  RotateCcw, 
+  AlertTriangle, 
+  CheckCircle2, 
+  Layers,
+  HelpCircle
+} from 'lucide-react';
 import {
-  RETRIEVAL_SYSTEMS, METRICS, computeMetrics, computeMRR, computeCurve, getComparisonTable
+  RETRIEVAL_SYSTEMS, 
+  METRICS, 
+  DOCUMENT_POOL,
+  DEFAULT_QUERY,
+  EXAMPLE_QUERIES,
+  CORPUS_SCOPE,
+  computeMetrics, 
+  computeMRR, 
+  computeCurve, 
+  getComparisonTable
 } from '../data/labData';
 import { MathJaxDiv, MathJaxSpan, useMathJax } from './useMathJax';
 
@@ -56,26 +80,40 @@ function DocCard({ doc, rank, isNew }) {
       transition={{ duration: 0.3, ease: [0.16,1,0.3,1] }}
       className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${
         doc.isRelevant
-          ? 'bg-emerald-50 border-emerald-200 glow-relevant'
-          : 'bg-red-50/40 border-red-200/60'
+          ? 'bg-emerald-50/90 border-emerald-300 shadow-sm'
+          : 'bg-slate-50/70 border-slate-200/80 opacity-80'
       }`}
     >
       <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold font-mono shrink-0 mt-0.5 ${
-        doc.isRelevant ? 'bg-emerald-200 text-emerald-800' : 'bg-red-100 text-red-500'
+        doc.isRelevant ? 'bg-emerald-200 text-emerald-800 ring-2 ring-emerald-300/60' : 'bg-slate-200 text-slate-500'
       }`}>
         {rank}
       </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className="text-xs font-semibold text-slate-800 leading-snug">{doc.title}</p>
-          <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-            doc.isRelevant ? 'bg-emerald-200 text-emerald-800' : 'bg-red-100 text-red-600'
+          <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+            doc.isRelevant ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-200 text-slate-600'
           }`}>
-            {doc.isRelevant ? '✓ Relevant' : '✗ Not Relevant'}
+            {doc.isRelevant ? (
+              <>
+                <CheckCircle2 className="w-3 h-3 text-emerald-700 inline" />
+                Relevant Hit
+              </>
+            ) : (
+              'Non-Relevant'
+            )}
           </span>
         </div>
-        <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed truncate">{doc.snippet}</p>
-        <p className="text-[10px] font-mono text-slate-400 mt-0.5">{doc.id}</p>
+        <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{doc.snippet}</p>
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{doc.id}</span>
+          {doc.topics && doc.topics.slice(0, 3).map((t, idx) => (
+            <span key={idx} className="text-[9px] text-indigo-600 bg-indigo-50/70 border border-indigo-100 px-1.5 py-0.2 rounded-full font-medium">
+              #{t}
+            </span>
+          ))}
+        </div>
       </div>
     </motion.div>
   );
@@ -98,55 +136,57 @@ function CurveViz({ curves, selectedSystem }) {
           );
         })}
       </div>
-      <div className="relative h-40">
-        <svg viewBox={`0 0 ${maxK * 40} 100`} className="w-full h-full" preserveAspectRatio="none">
-          {/* Grid lines */}
-          {[0, 0.25, 0.5, 0.75, 1].map(v => (
-            <line key={v} x1="0" y1={100 - v * 100} x2={maxK * 40} y2={100 - v * 100}
-              stroke="#e2e8f0" strokeWidth="1" />
-          ))}
-          {/* Lines */}
-          {['precision', 'recall', 'f1'].map(m => {
-            const colors = { precision: '#3b82f6', recall: '#10b981', f1: '#8b5cf6' };
-            const vals = points.map(p => p[m]);
-            const pathD = vals.map((v, i) => `${i === 0 ? 'M' : 'L'} ${i * 40 + 20} ${100 - v * 100}`).join(' ');
-            return (
-              <g key={m}>
-                <path d={pathD} fill="none" stroke={colors[m]} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                {vals.map((v, i) => (
-                  <circle key={i} cx={i * 40 + 20} cy={100 - v * 100} r="4" fill={colors[m]} />
-                ))}
-              </g>
-            );
-          })}
-        </svg>
-        {/* X axis labels */}
-        <div className="flex justify-between mt-1 px-2">
-          {Array.from({ length: maxK }, (_, i) => (
-            <span key={i} className="text-[10px] text-slate-400 font-mono">k={i+1}</span>
-          ))}
-        </div>
+      <div className="space-y-2">
+        {points.map((pt, idx) => (
+          <div key={idx} className="flex items-center gap-2 text-xs">
+            <span className="w-8 font-mono text-slate-400 text-[11px]">k={idx + 1}</span>
+            <div className="flex-1 flex gap-1 h-3.5 bg-slate-50 rounded-full overflow-hidden p-0.5">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${pt.precision * 100}%` }}
+                transition={{ duration: 0.4, delay: idx * 0.02 }}
+                className="bg-blue-500 rounded-full h-full"
+                title={`P@${idx+1}: ${pt.precision}`}
+              />
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${pt.recall * 100}%` }}
+                transition={{ duration: 0.4, delay: idx * 0.02 + 0.1 }}
+                className="bg-emerald-500 rounded-full h-full"
+                title={`R@${idx+1}: ${pt.recall}`}
+              />
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${pt.f1 * 100}%` }}
+                transition={{ duration: 0.4, delay: idx * 0.02 + 0.2 }}
+                className="bg-violet-500 rounded-full h-full"
+                title={`F1@${idx+1}: ${pt.f1}`}
+              />
+            </div>
+            <span className="font-mono text-[10px] text-slate-500 w-24 text-right">
+              P:{pt.precision} R:{pt.recall}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-// Comparison bar chart across systems
+// Full comparison bar chart
 function ComparisonChart({ table, activeMetric }) {
   const mc = METRIC_COLORS[activeMetric] || METRIC_COLORS.precision;
-  const maxVal = 1;
   return (
-    <div className="space-y-2">
-      {table.map(row => {
-        const val = activeMetric === 'mrr' ? row.mrr : row[activeMetric];
-        const pct = (val / maxVal) * 100;
-        const sc = SYSTEM_COLORS[row.id];
+    <div className="space-y-3">
+      {table.map(sys => {
+        const sc = SYSTEM_COLORS[sys.id];
+        const val = sys[activeMetric] ?? 0;
+        const pct = Math.min(Math.round(val * 100), 100);
         return (
-          <div key={row.id} className="flex items-center gap-3">
-            <span className="text-sm w-5 text-center">{row.icon}</span>
-            <div className="w-28 shrink-0">
-              <p className="text-xs font-medium text-slate-700 truncate">{row.label}</p>
-              <p className="text-[10px] text-slate-400">{row.latency}ms</p>
+          <div key={sys.id} className="flex items-center gap-3">
+            <div className="w-36 text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+              <span>{sys.icon}</span>
+              <span>{sys.label}</span>
             </div>
             <div className="flex-1 bg-slate-100 rounded-full h-3 relative overflow-hidden">
               <motion.div
@@ -165,29 +205,64 @@ function ComparisonChart({ table, activeMetric }) {
 }
 
 export default function LabSection({ onNext }) {
+  const [queryInput, setQueryInput] = useState(DEFAULT_QUERY);
+  const [showScopeGuide, setShowScopeGuide] = useState(false);
   const [selectedSystem, setSelectedSystem] = useState('keyword');
   const [selectedMetric, setSelectedMetric] = useState('precision');
   const [k, setK] = useState(5);
   const [view, setView] = useState('sim'); // 'sim' | 'curve' | 'compare'
 
-  const metrics = useMemo(() => computeMetrics(selectedSystem, k), [selectedSystem, k]);
-  const mrr = useMemo(() => computeMRR(selectedSystem), [selectedSystem]);
+  // Metric computations dynamic to query and K
+  const metrics = useMemo(() => computeMetrics(selectedSystem, k, queryInput), [selectedSystem, k, queryInput]);
+  const mrr = useMemo(() => computeMRR(selectedSystem, queryInput), [selectedSystem, queryInput]);
   const curves = useMemo(() => {
     const out = {};
-    RETRIEVAL_SYSTEMS.forEach(s => { out[s.id] = computeCurve(s.id); });
+    RETRIEVAL_SYSTEMS.forEach(s => { out[s.id] = computeCurve(s.id, queryInput); });
     return out;
-  }, []);
-  const table = useMemo(() => getComparisonTable(), []);
+  }, [queryInput]);
+  const table = useMemo(() => getComparisonTable(queryInput), [queryInput]);
 
-  useMathJax([selectedSystem, selectedMetric, k, view]);
+  useMathJax([selectedSystem, selectedMetric, k, view, queryInput]);
 
   const activeMetricDef = METRICS.find(m => m.id === selectedMetric);
 
   const metricVals = {
-    precision: { label: 'Precision@k', value: metrics.precision, formula: '$P@k$', color: 'precision', description: `${metrics.relevantRetrieved} relevant in top-${k}` },
-    recall:    { label: 'Recall@k',    value: metrics.recall,    formula: '$R@k$', color: 'recall',    description: `${metrics.relevantRetrieved} of ${metrics.totalRelevant} relevant found` },
-    f1:        { label: 'F₁-Score',    value: metrics.f1,        formula: '$F_1$', color: 'f1',        description: 'Harmonic mean of P and R' },
-    mrr:       { label: 'MRR',         value: mrr,               formula: '$\\text{MRR}$', color: 'mrr', description: 'Avg reciprocal rank of first relevant doc' },
+    precision: { 
+      label: 'Precision@k', 
+      value: metrics.precision, 
+      formula: '$P@k$', 
+      color: 'precision', 
+      description: `${metrics.relevantRetrieved} relevant in top-${k}` 
+    },
+    recall: { 
+      label: 'Recall@k', 
+      value: metrics.recall, 
+      formula: '$R@k$', 
+      color: 'recall', 
+      description: `${metrics.relevantRetrieved} of ${metrics.totalRelevant} relevant found` 
+    },
+    f1: { 
+      label: 'F₁-Score', 
+      value: metrics.f1, 
+      formula: '$F_1$', 
+      color: 'f1', 
+      description: 'Harmonic mean of P and R' 
+    },
+    mrr: { 
+      label: 'Reciprocal Rank', 
+      value: mrr, 
+      formula: queryInput === DEFAULT_QUERY ? '$\\text{MRR}$' : '$\\text{RR}$', 
+      color: 'mrr', 
+      description: queryInput === DEFAULT_QUERY ? 'Avg reciprocal rank over test queries' : 'Reciprocal rank of first relevant doc' 
+    },
+  };
+
+  const handleApplyExampleQuery = (eq) => {
+    setQueryInput(eq.query);
+  };
+
+  const handleResetQuery = () => {
+    setQueryInput(DEFAULT_QUERY);
   };
 
   return (
@@ -232,6 +307,165 @@ export default function LabSection({ onNext }) {
             transition={{ duration: 0.25 }}
             className="space-y-5"
           >
+            {/* Query Formulation & Scope Card */}
+            <div className="glass rounded-2xl p-5 border border-white/80 shadow-sm space-y-3.5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                    <Search className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                      Experimental Search Query
+                      <span className="text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
+                        Live Retrieval
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Enter any query to evaluate how different IR algorithms score and rank the 14-document corpus.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowScopeGuide(!showScopeGuide)}
+                    className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+                  >
+                    <Info className="w-3.5 h-3.5 text-indigo-500" />
+                    {showScopeGuide ? 'Hide Scope Guidelines' : 'Corpus Scope & Guidelines'}
+                  </button>
+                  {queryInput !== DEFAULT_QUERY && (
+                    <button
+                      onClick={handleResetQuery}
+                      className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+                      title="Reset to default benchmark query"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Search Bar Input */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Search className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  value={queryInput}
+                  onChange={(e) => setQueryInput(e.target.value)}
+                  placeholder="Enter a search query (e.g., 'Dense passage retrieval with BERT embeddings and FAISS')..."
+                  className="w-full pl-10 pr-28 py-2.5 text-xs sm:text-sm font-medium bg-white/90 border border-slate-200 rounded-xl shadow-inner focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all text-slate-800 placeholder-slate-400"
+                />
+                <div className="absolute inset-y-0 right-0 pr-2 flex items-center gap-1.5">
+                  {queryInput && (
+                    <button
+                      onClick={() => setQueryInput('')}
+                      className="p-1 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 cursor-pointer"
+                      title="Clear query"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                    metrics.totalRelevant > 0 
+                      ? 'bg-emerald-100 text-emerald-800' 
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {metrics.totalRelevant > 0 ? `${metrics.totalRelevant} Matches` : '0 Matches'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Corpus Scope & Guidance Drawer */}
+              <AnimatePresence>
+                {showScopeGuide && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="rounded-xl p-3.5 bg-gradient-to-r from-indigo-50/80 to-violet-50/80 border border-indigo-100 text-xs space-y-2 overflow-hidden"
+                  >
+                    <div className="flex items-start gap-2">
+                      <Layers className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="font-semibold text-indigo-950">
+                          Corpus Scope & Query Boundaries
+                        </p>
+                        <p className="text-slate-600 leading-relaxed text-[11px]">
+                          This virtual lab operates on a curated academic test collection of <strong>14 Computer Science & Information Retrieval documents</strong>. For meaningful precision and recall calculations, queries should revolve around topics covered in the collection:
+                        </p>
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {CORPUS_SCOPE.categories.map((cat, idx) => (
+                            <span key={idx} className="text-[10px] bg-white text-indigo-700 border border-indigo-200/80 font-medium px-2 py-0.5 rounded-md shadow-2xs">
+                              • {cat}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Example Queries Section */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    Example Benchmark Queries (Click to Test)
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {EXAMPLE_QUERIES.map((eq, idx) => {
+                    const isActive = queryInput === eq.query;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => handleApplyExampleQuery(eq)}
+                        className={`group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer text-left ${
+                          isActive 
+                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs' 
+                            : 'bg-white hover:bg-indigo-50/60 border-slate-200 text-slate-700 hover:border-indigo-300'
+                        }`}
+                        title={eq.hint}
+                      >
+                        <span className="text-xs">{eq.icon}</span>
+                        <span>{eq.label}</span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider ${
+                          isActive 
+                            ? 'bg-indigo-700 text-indigo-100' 
+                            : 'bg-slate-100 text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-700'
+                        }`}>
+                          {eq.badge}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Out-of-Domain Warning Alert */}
+              {metrics.isOutOfDomain && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-xl p-3 bg-amber-50 border border-amber-200 text-amber-800 flex items-start gap-2.5 text-xs"
+                >
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-semibold text-amber-900">Out-of-Scope Query Detected</p>
+                    <p className="text-[11px] text-amber-700 leading-relaxed">
+                      No documents in the 14-paper academic corpus matched your search criteria. Consequently, <strong>Precision@k = 0.000</strong> and <strong>Recall@k = 0.000</strong>. Please try an Information Retrieval topic (e.g. <em>BM25</em>, <em>dense embeddings</em>, <em>vector search</em>, or <em>MRR</em>) or select an example query above.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+
             {/* Controls Row */}
             <div className="glass rounded-2xl p-5 border border-white/80 shadow-sm space-y-4">
               {/* System selector */}
