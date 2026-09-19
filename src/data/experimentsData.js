@@ -2,10 +2,31 @@
 
 export const EXPERIMENT_TRACKS = [
   { id: 'all', label: 'All Experiments', count: 15 },
-  { id: 'foundations', label: 'IR Foundations & Indexing', range: 'Exp 1-5', count: 5 },
-  { id: 'graphs', label: 'Knowledge Graphs', range: 'Exp 6-11', count: 6 },
-  { id: 'semantic', label: 'Semantic & Hybrid Search', range: 'Exp 12-14', count: 3 },
-  { id: 'evaluation', label: 'Evaluation & Metrics', range: 'Exp 15', count: 1 },
+  { id: 'foundations', label: 'IR Foundations & Indexing', range: 'Exp 1-5', count: 5, color: '#6366f1' },
+  { id: 'graphs', label: 'Knowledge Graphs', range: 'Exp 6-11', count: 6, color: '#0d9488' },
+  { id: 'semantic', label: 'Semantic & Hybrid Search', range: 'Exp 12-14', count: 3, color: '#9333ea' },
+  { id: 'evaluation', label: 'Evaluation & Metrics', range: 'Exp 15', count: 1, color: '#e11d48' },
+];
+
+export const GRAPH_EDGES = [
+  { from: 1, to: 2, label: 'Standardized Tokens' },
+  { from: 2, to: 3, label: 'Clean Corpus' },
+  { from: 3, to: 4, label: 'Postings Lists' },
+  { from: 4, to: 5, label: 'Vector Weights' },
+  { from: 2, to: 6, label: 'Entity Tokens' },
+  { from: 6, to: 7, label: 'Identified Entities' },
+  { from: 7, to: 9, label: 'SPO Triples' },
+  { from: 8, to: 9, label: 'Graph DB Schema' },
+  { from: 9, to: 10, label: 'Populated Graph' },
+  { from: 10, to: 11, label: 'Base Queries' },
+  { from: 2, to: 12, label: 'Raw Texts' },
+  { from: 4, to: 12, label: 'Vocabulary Space' },
+  { from: 5, to: 13, label: 'BM25 Scores' },
+  { from: 12, to: 13, label: 'Dense Embeddings' },
+  { from: 10, to: 14, label: 'Entity Relations' },
+  { from: 13, to: 14, label: 'Hybrid Candidates' },
+  { from: 13, to: 15, label: 'Lexical+Dense Runs' },
+  { from: 14, to: 15, label: 'GraphRAG Outputs' },
 ];
 
 export const EXPERIMENTS_LIST = [
@@ -20,6 +41,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'FileCode2',
     explanation: 'Build a complete pipeline to acquire, clean, tokenize and prepare textual documents for retrieval.',
     expectedOutcome: 'Students will understand the end-to-end lifecycle of documents in an IR system.',
+    prerequisites: [],
+    dependents: [2],
+    graphPos: { col: 0, row: 0 },
     keyTopics: ['Document Ingestion', 'Tokenization', 'Text Cleaning', 'Corpus Preparation'],
     techStack: ['Python', 'NLTK / spaCy', 'BeautifulSoup', 'Regex'],
     detailedObjectives: [
@@ -39,6 +63,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'Split',
     explanation: 'Perform tokenization, stop-word removal, stemming, lemmatization and text normalization.',
     expectedOutcome: 'Clean and standardized text corpus ready for indexing and analysis.',
+    prerequisites: [1],
+    dependents: [3, 6, 12],
+    graphPos: { col: 1, row: 0 },
     keyTopics: ['Porter Stemmer', 'WordNet Lemmatizer', 'Stop-word Filtering', 'Case Folding'],
     techStack: ['Python', 'NLTK', 'spaCy', 're'],
     detailedObjectives: [
@@ -58,6 +85,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'Database',
     explanation: 'Create an inverted index mapping terms to documents and their occurrences.',
     expectedOutcome: 'A basic searchable index supporting efficient keyword retrieval.',
+    prerequisites: [2],
+    dependents: [4],
+    graphPos: { col: 2, row: 0 },
     keyTopics: ['Postings Lists', 'Positional Indexing', 'Dictionary Lookup', 'Index Compression'],
     techStack: ['Python', 'Hash Maps', 'Custom Binary Formats', 'Varint / Elias Gamma'],
     detailedObjectives: [
@@ -77,6 +107,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'Binary',
     explanation: 'Represent documents and queries using TF-IDF and rank documents based on similarity.',
     expectedOutcome: 'Students will implement a traditional vector-space retrieval system.',
+    prerequisites: [3],
+    dependents: [5, 12],
+    graphPos: { col: 3, row: 0 },
     keyTopics: ['Term Frequency', 'Inverse Document Frequency', 'Cosine Similarity', 'Vector Space Model'],
     techStack: ['Python', 'NumPy', 'Scikit-learn', 'SciPy Sparse'],
     detailedObjectives: [
@@ -96,6 +129,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'Sliders',
     explanation: 'Implement BM25 and compare its ranking performance with TF-IDF.',
     expectedOutcome: 'Understanding of probabilistic ranking and comparative retrieval performance.',
+    prerequisites: [4],
+    dependents: [13],
+    graphPos: { col: 4, row: 0 },
     keyTopics: ['Okapi BM25', 'Length Normalization (b)', 'Term Saturation (k1)', 'Probabilistic IR'],
     techStack: ['Python', 'rank-bm25', 'NumPy', 'Matplotlib'],
     detailedObjectives: [
@@ -115,6 +151,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'UserCheck',
     explanation: 'Identify entities such as persons, organizations, locations and other domain-specific concepts from text.',
     expectedOutcome: 'Entity extraction and named entity recognition foundation for knowledge graphs.',
+    prerequisites: [2],
+    dependents: [7],
+    graphPos: { col: 2, row: 2 },
     keyTopics: ['Named Entity Recognition (NER)', 'Entity Resolution', 'BIO Tagging', 'Domain Ontology'],
     techStack: ['Python', 'spaCy', 'HuggingFace Transformers', 'dspy'],
     detailedObjectives: [
@@ -134,6 +173,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'GitFork',
     explanation: 'Extract semantic relationships between identified entities.',
     expectedOutcome: 'Entity–relationship triples suitable for graph construction.',
+    prerequisites: [6],
+    dependents: [9],
+    graphPos: { col: 3, row: 2 },
     keyTopics: ['Triple Extraction (SPO)', 'Dependency Parsing', 'Relation Classification', 'OpenIE'],
     techStack: ['Python', 'Stanford OpenIE', 'spaCy Dependency Matcher', 'LLM Prompting'],
     detailedObjectives: [
@@ -153,6 +195,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'Server',
     explanation: 'Create and manage a knowledge graph database, define nodes and relationships, and perform basic graph operations.',
     expectedOutcome: 'A functioning graph database containing connected entities.',
+    prerequisites: [],
+    dependents: [9],
+    graphPos: { col: 3, row: 3 },
     keyTopics: ['Knowledge Graph Databases', 'Node & Edge Creation', 'Graph Modeling', 'Indexes & Constraints'],
     techStack: ['Knowledge Graph Database', 'Cypher', 'Docker', 'Python Graph Driver'],
     detailedObjectives: [
@@ -172,6 +217,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'Network',
     explanation: 'Design node labels, relationship types and properties, then import structured entity–relationship data.',
     expectedOutcome: 'A domain-specific knowledge graph implemented in a graph database.',
+    prerequisites: [7, 8],
+    dependents: [10],
+    graphPos: { col: 4, row: 2.5 },
     keyTopics: ['Schema Design', 'Ontology Mapping', 'LOAD CSV', 'Batch Ingestion'],
     techStack: ['Knowledge Graph DB', 'Cypher LOAD CSV', 'APOC Library', 'Pandas'],
     detailedObjectives: [
@@ -191,6 +239,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'SearchCode',
     explanation: 'Write Cypher queries to retrieve nodes, relationships and multi-hop connections.',
     expectedOutcome: 'Ability to retrieve meaningful information from knowledge graphs.',
+    prerequisites: [9],
+    dependents: [11, 14],
+    graphPos: { col: 5, row: 2.5 },
     keyTopics: ['Cypher MATCH / RETURN', 'WHERE Clauses', 'Multi-Hop Paths', 'Graph Aggregations'],
     techStack: ['Knowledge Graph Browser', 'Cypher Query Language', 'Python'],
     detailedObjectives: [
@@ -210,6 +261,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'Share2',
     explanation: 'Perform multi-hop traversal, filtering, aggregation and complex graph pattern queries.',
     expectedOutcome: 'Efficient retrieval of complex relationships and hidden connections.',
+    prerequisites: [10],
+    dependents: [],
+    graphPos: { col: 6, row: 3 },
     keyTopics: ['Variable Length Paths', 'Shortest Path Algorithms', 'Sub-queries & WITH', 'Graph Data Science (GDS)'],
     techStack: ['Knowledge Graph Data Science', 'Cypher', 'PageRank / Louvain'],
     detailedObjectives: [
@@ -229,6 +283,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'Cpu',
     explanation: 'Generate dense vector representations of documents and queries and perform similarity-based retrieval.',
     expectedOutcome: 'A semantic search system capable of retrieving conceptually similar documents.',
+    prerequisites: [2, 4],
+    dependents: [13],
+    graphPos: { col: 4, row: 1 },
     keyTopics: ['Dense Bi-Encoders', 'Sentence Transformers', 'Cosine / Dot Product', 'Approximate Nearest Neighbor (ANN)'],
     techStack: ['Python', 'sentence-transformers', 'FAISS / ChromaDB', 'PyTorch'],
     detailedObjectives: [
@@ -248,6 +305,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'Combine',
     explanation: 'Combine lexical retrieval (BM25) with embedding-based semantic search.',
     expectedOutcome: 'Improved retrieval performance through complementary retrieval strategies.',
+    prerequisites: [5, 12],
+    dependents: [14, 15],
+    graphPos: { col: 5, row: 0.5 },
     keyTopics: ['Reciprocal Rank Fusion (RRF)', 'Score Normalization', 'Lexical + Dense Ensemble', 'Cross-Encoder Re-ranking'],
     techStack: ['Python', 'rank-bm25', 'sentence-transformers', 'Cross-Encoder'],
     detailedObjectives: [
@@ -267,6 +327,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'Workflow',
     explanation: 'Combine document retrieval results with graph-based entity and relationship exploration.',
     expectedOutcome: 'A graph-enhanced information retrieval system that supports contextual exploration.',
+    prerequisites: [10, 13],
+    dependents: [15],
+    graphPos: { col: 6, row: 1.5 },
     keyTopics: ['GraphRAG', 'Entity Linking in Passage Retrieval', 'Sub-graph Context Expansion', 'Knowledge-Enhanced Search'],
     techStack: ['Python', 'Knowledge Graph DB', 'LangChain / LlamaIndex', 'Dense Embeddings'],
     detailedObjectives: [
@@ -286,6 +349,9 @@ export const EXPERIMENTS_LIST = [
     iconName: 'Award',
     explanation: 'Evaluate different retrieval approaches using Precision, Recall, F1-score, MRR and related metrics.',
     expectedOutcome: 'Quantitative comparison of keyword, semantic, hybrid and graph-based retrieval systems.',
+    prerequisites: [13, 14],
+    dependents: [],
+    graphPos: { col: 7, row: 1 },
     keyTopics: ['Precision@k', 'Recall@k', 'F1-Score', 'Mean Reciprocal Rank (MRR)', 'Confusion Matrix', 'Trade-off Analysis'],
     techStack: ['React', 'Tailwind CSS', 'Framer Motion', 'LaTeX MathJax'],
     detailedObjectives: [

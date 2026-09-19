@@ -8,17 +8,21 @@ import {
   FileText, 
   Cpu, 
   Award,
-  ChevronRight
+  ChevronRight,
+  GitFork,
+  LayoutGrid
 } from 'lucide-react';
 import { EXPERIMENTS_LIST, EXPERIMENT_TRACKS } from '../data/experimentsData';
 import ExperimentModal from './ExperimentModal';
+import CurriculumGraph from './CurriculumGraph';
 
 export default function LandingPage({ onLaunchExp15 }) {
+  const [viewMode, setViewMode] = useState('graph'); // 'graph' | 'cards'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTrack, setSelectedTrack] = useState('all');
   const [selectedExpModal, setSelectedExpModal] = useState(null);
 
-  // Filtered experiments list
+  // Filtered experiments list for card view
   const filteredExperiments = useMemo(() => {
     return EXPERIMENTS_LIST.filter(exp => {
       // Track filter
@@ -77,7 +81,7 @@ export default function LandingPage({ onLaunchExp15 }) {
                 href="#catalog"
                 className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors px-3 py-1.5"
               >
-                15 Experiments
+                Prerequisite Graph
               </a>
               <a
                 href="#tracks"
@@ -126,59 +130,32 @@ export default function LandingPage({ onLaunchExp15 }) {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="mt-6 text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto"
             >
-              An interactive virtual laboratory portal spanning 15 structured experiments — from text preprocessing and inverted indexing, to knowledge graphs, neural semantic search, and quantitative empirical evaluation.
+              An interactive virtual laboratory portal spanning 15 structured experiments arranged in a directed prerequisite learning graph — from text preprocessing and inverted indexing, to knowledge graphs, neural semantic search, and quantitative empirical evaluation.
             </motion.p>
 
-            {/* Quick Hero Search & Filter Bar */}
+            {/* Quick Actions & Jump to Graph */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="mt-8 p-3 sm:p-4 rounded-2xl glass border border-indigo-100/80 shadow-lg shadow-indigo-100/50 max-w-xl mx-auto"
+              className="mt-8 flex flex-wrap items-center justify-center gap-3"
             >
-              <div className="relative w-full">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" />
-                <input
-                  type="text"
-                  placeholder="Search experiments by topic (e.g. BM25, Knowledge Graph, Inverted Index)..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-24 py-2.5 bg-white rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-xs sm:text-sm font-medium transition-all"
-                />
-                {searchQuery ? (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-semibold cursor-pointer"
-                  >
-                    Clear
-                  </button>
-                ) : (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-slate-400 tracking-wider hidden sm:inline">
-                    15 Labs
-                  </span>
-                )}
-              </div>
+              <a
+                href="#catalog"
+                onClick={() => setViewMode('graph')}
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <GitFork className="w-4 h-4 rotate-90" />
+                <span>Explore Prerequisite Graph</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
 
-              {/* Quick Filter chips */}
-              <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap text-xs">
-                <span className="text-[11px] text-slate-400 font-medium mr-1">Quick Filters:</span>
-                {['BM25', 'Knowledge Graph', 'Cypher', 'Embeddings', 'Evaluation'].map((term) => (
-                  <button
-                    key={term}
-                    onClick={() => {
-                      setSearchQuery(term);
-                      document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-                      searchQuery.toLowerCase() === term.toLowerCase()
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
-                    }`}
-                  >
-                    {term}
-                  </button>
-                ))}
-              </div>
+              <a
+                href="#tracks"
+                className="px-5 py-2.5 rounded-xl bg-white/80 hover:bg-white text-slate-700 border border-slate-200 text-xs sm:text-sm font-semibold shadow-xs transition-all cursor-pointer"
+              >
+                View 4 Tracks
+              </a>
             </motion.div>
 
             {/* Metrics Bar */}
@@ -186,7 +163,7 @@ export default function LandingPage({ onLaunchExp15 }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto"
+              className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto"
             >
               <div className="p-4 rounded-xl bg-white/70 backdrop-blur-sm border border-white/80 shadow-sm text-center">
                 <p className="text-2xl sm:text-3xl font-extrabold text-indigo-600">15</p>
@@ -197,8 +174,8 @@ export default function LandingPage({ onLaunchExp15 }) {
                 <p className="text-xs font-medium text-slate-500 mt-0.5">Curriculum Tracks</p>
               </div>
               <div className="p-4 rounded-xl bg-white/70 backdrop-blur-sm border border-white/80 shadow-sm text-center">
-                <p className="text-2xl sm:text-3xl font-extrabold text-cyan-600">100%</p>
-                <p className="text-xs font-medium text-slate-500 mt-0.5">Practical Coverage</p>
+                <p className="text-2xl sm:text-3xl font-extrabold text-cyan-600">18</p>
+                <p className="text-xs font-medium text-slate-500 mt-0.5">Prerequisite Edges</p>
               </div>
               <div className="p-4 rounded-xl bg-white/70 backdrop-blur-sm border border-white/80 shadow-sm text-center">
                 <p className="text-2xl sm:text-3xl font-extrabold text-emerald-600">100%</p>
@@ -227,7 +204,7 @@ export default function LandingPage({ onLaunchExp15 }) {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {/* Track 1 */}
             <div 
-              onClick={() => { setSelectedTrack('foundations'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
+              onClick={() => { setSelectedTrack('foundations'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
               className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group"
             >
               <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
@@ -246,7 +223,7 @@ export default function LandingPage({ onLaunchExp15 }) {
 
             {/* Track 2 */}
             <div 
-              onClick={() => { setSelectedTrack('graphs'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
+              onClick={() => { setSelectedTrack('graphs'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
               className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group"
             >
               <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
@@ -265,7 +242,7 @@ export default function LandingPage({ onLaunchExp15 }) {
 
             {/* Track 3 */}
             <div 
-              onClick={() => { setSelectedTrack('semantic'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
+              onClick={() => { setSelectedTrack('semantic'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
               className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-purple-100 shadow-sm hover:shadow-md hover:border-purple-300 transition-all cursor-pointer group"
             >
               <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
@@ -284,7 +261,7 @@ export default function LandingPage({ onLaunchExp15 }) {
 
             {/* Track 4 */}
             <div 
-              onClick={() => { setSelectedTrack('evaluation'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
+              onClick={() => { setSelectedTrack('evaluation'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
               className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-rose-100 shadow-sm hover:shadow-md hover:border-rose-300 transition-all cursor-pointer group"
             >
               <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
@@ -304,162 +281,220 @@ export default function LandingPage({ onLaunchExp15 }) {
         </div>
       </section>
 
-      {/* ── Experiments Catalog Section ── */}
+      {/* ── Curriculum Structure Section (Graph View / Cards View) ── */}
       <section id="catalog" className="py-12 sm:py-16 scroll-mt-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 mb-8">
+          {/* Section Header with View Switcher */}
+          <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4 mb-6">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
-                Curriculum Catalog
+                Curriculum Structure
               </span>
               <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2 tracking-tight">
-                All 15 Laboratory Experiments
+                {viewMode === 'graph' ? 'Directed Prerequisite Graph' : 'All 15 Laboratory Experiments'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Filter by curriculum track or search by topic, title, or keywords.
+                {viewMode === 'graph'
+                  ? 'Interactive DAG: Directed edges (A → B) indicate that Experiment A must be completed before Experiment B.'
+                  : 'Filter by curriculum track or search by topic, title, or keywords.'}
               </p>
             </div>
 
-            {/* Search Input */}
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search experiments or topics..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-white rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Track Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-3 mb-8 scrollbar-none">
-            {EXPERIMENT_TRACKS.map(track => (
+            {/* View Mode Toggle Switch */}
+            <div className="flex items-center gap-1 bg-white/80 p-1 rounded-xl border border-slate-200 shadow-xs">
               <button
-                key={track.id}
-                onClick={() => setSelectedTrack(track.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  selectedTrack === track.id
-                    ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
-                    : 'bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/80'
+                onClick={() => setViewMode('graph')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  viewMode === 'graph'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
-                {track.label}
-                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${
-                  selectedTrack === track.id ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'
-                }`}>
-                  {track.count}
-                </span>
+                <GitFork className="w-3.5 h-3.5 rotate-90" />
+                <span>Directed Graph</span>
               </button>
-            ))}
-          </div>
 
-          {/* Experiments Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredExperiments.map(exp => {
-              const isExp15 = exp.number === 15;
-
-              return (
-                <div
-                  key={exp.id}
-                  className="flex flex-col justify-between rounded-2xl p-6 transition-all bg-white/80 backdrop-blur-sm border border-slate-200/90 hover:border-indigo-200 hover:shadow-lg"
-                >
-                  {/* Top Badges */}
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-slate-100 text-slate-800">
-                          EXP {exp.number < 10 ? `0${exp.number}` : exp.number}
-                        </span>
-
-                        <span className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                          {exp.trackLabel}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Title */}
-                    <h4 className="text-base sm:text-lg font-bold text-slate-900 leading-snug tracking-tight">
-                      {exp.title}
-                    </h4>
-
-                    {/* Explanation */}
-                    <p className="mt-3 text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed">
-                      {exp.explanation}
-                    </p>
-
-                    {/* Expected Outcome callout */}
-                    <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200/70">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 mb-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Expected Outcome:</span>
-                      </div>
-                      <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
-                        {exp.expectedOutcome}
-                      </p>
-                    </div>
-
-                    {/* Key Topics tags */}
-                    <div className="mt-4 flex flex-wrap gap-1.5">
-                      {exp.keyTopics?.slice(0, 3).map((topic, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200/60"
-                        >
-                          {topic}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Card Action Buttons */}
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
-                    {isExp15 ? (
-                      <button
-                        onClick={onLaunchExp15}
-                        className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                      >
-                        <span>Launch Experiment</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setSelectedExpModal(exp)}
-                        className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-indigo-600 text-xs font-semibold border border-slate-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                      >
-                        <span>View Details & Syllabus</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {filteredExperiments.length === 0 && (
-            <div className="text-center py-16 bg-white/60 rounded-2xl border border-slate-200">
-              <Search className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-              <p className="text-base font-bold text-slate-700">No experiments found</p>
-              <p className="text-xs text-slate-500 mt-1">
-                Try adjusting your search query or reset your filter.
-              </p>
               <button
-                onClick={() => { setSearchQuery(''); setSelectedTrack('all'); }}
-                className="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold cursor-pointer"
+                onClick={() => setViewMode('cards')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  viewMode === 'cards'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
               >
-                Reset Filters
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Cards View</span>
               </button>
+            </div>
+          </div>
+
+          {/* ── View Mode: Directed Graph ── */}
+          {viewMode === 'graph' && (
+            <div className="mt-4">
+              <CurriculumGraph
+                onSelectExperiment={(exp) => setSelectedExpModal(exp)}
+                onLaunchExp15={onLaunchExp15}
+              />
+            </div>
+          )}
+
+          {/* ── View Mode: Grid Cards ── */}
+          {viewMode === 'cards' && (
+            <div>
+              {/* Filter controls in Cards View */}
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+                {/* Track Filter Tabs */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none w-full md:w-auto">
+                  {EXPERIMENT_TRACKS.map(track => (
+                    <button
+                      key={track.id}
+                      onClick={() => setSelectedTrack(track.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                        selectedTrack === track.id
+                          ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+                          : 'bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/80'
+                      }`}
+                    >
+                      {track.label}
+                      <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${
+                        selectedTrack === track.id ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {track.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Search Input */}
+                <div className="relative w-full md:w-72">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search experiments or topics..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-1.5 bg-white rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Experiments Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredExperiments.map(exp => {
+                  const isExp15 = exp.number === 15;
+
+                  return (
+                    <div
+                      key={exp.id}
+                      className="flex flex-col justify-between rounded-2xl p-6 transition-all bg-white/80 backdrop-blur-sm border border-slate-200/90 hover:border-indigo-200 hover:shadow-lg"
+                    >
+                      {/* Top Badges */}
+                      <div>
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-slate-100 text-slate-800">
+                              EXP {exp.number < 10 ? `0${exp.number}` : exp.number}
+                            </span>
+
+                            <span className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                              {exp.trackLabel}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Title */}
+                        <h4 className="text-base sm:text-lg font-bold text-slate-900 leading-snug tracking-tight">
+                          {exp.title}
+                        </h4>
+
+                        {/* Prerequisites indicator */}
+                        <div className="mt-2 text-xs text-slate-500 font-medium">
+                          {exp.prerequisites.length === 0 ? (
+                            <span className="text-slate-400 italic">No prerequisites</span>
+                          ) : (
+                            <span className="text-indigo-600">
+                              Prerequisite: {exp.prerequisites.map(p => `Exp ${p}`).join(', ')}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Explanation */}
+                        <p className="mt-2 text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed">
+                          {exp.explanation}
+                        </p>
+
+                        {/* Expected Outcome callout */}
+                        <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200/70">
+                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 mb-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Expected Outcome:</span>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                            {exp.expectedOutcome}
+                          </p>
+                        </div>
+
+                        {/* Key Topics tags */}
+                        <div className="mt-4 flex flex-wrap gap-1.5">
+                          {exp.keyTopics?.slice(0, 3).map((topic, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200/60"
+                            >
+                              {topic}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Card Action Buttons */}
+                      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                        {isExp15 ? (
+                          <button
+                            onClick={onLaunchExp15}
+                            className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <span>Launch Experiment</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setSelectedExpModal(exp)}
+                            className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-indigo-600 text-xs font-semibold border border-slate-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <span>View Details & Syllabus</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {filteredExperiments.length === 0 && (
+                <div className="text-center py-16 bg-white/60 rounded-2xl border border-slate-200">
+                  <Search className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+                  <p className="text-base font-bold text-slate-700">No experiments found</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Try adjusting your search query or reset your filter.
+                  </p>
+                  <button
+                    onClick={() => { setSearchQuery(''); setSelectedTrack('all'); }}
+                    className="mt-4 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold cursor-pointer"
+                  >
+                    Reset Filters
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

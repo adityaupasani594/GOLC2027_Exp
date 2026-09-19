@@ -9,10 +9,12 @@ import {
   BookOpen, 
   Target,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  GitFork,
+  ArrowLeftRight
 } from 'lucide-react';
 
-export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchExp15 }) {
+export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchExp15, onSelectOtherExp }) {
   if (!isOpen || !experiment) return null;
 
   const isExp15 = experiment.number === 15;
@@ -63,7 +65,7 @@ export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchE
           </div>
 
           {/* Body Content */}
-          <div className="p-6 space-y-6 max-h-[calc(85vh-160px)] overflow-y-auto">
+          <div className="p-6 space-y-5 max-h-[calc(85vh-160px)] overflow-y-auto">
             {/* Meta Info Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
@@ -84,6 +86,45 @@ export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchE
                   <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Laboratory Track</p>
                   <p className="text-sm font-bold text-slate-900">{experiment.trackLabel}</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Graph Dependencies Callout: Prerequisites & Dependents */}
+            <div className="p-3.5 rounded-xl bg-indigo-50/50 border border-indigo-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-900 mb-1">
+                  <GitFork className="w-3.5 h-3.5 text-indigo-600 rotate-180" />
+                  <span>Incoming Prerequisites (A → This):</span>
+                </div>
+                {experiment.prerequisites && experiment.prerequisites.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {experiment.prerequisites.map(p => (
+                      <span key={p} className="px-2 py-0.5 rounded-md text-xs font-semibold bg-white text-indigo-700 border border-indigo-200 shadow-xs">
+                        Experiment {p}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 italic mt-1">None (Foundational Entry Point)</p>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900 mb-1">
+                  <GitFork className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Outgoing Dependents (This → B):</span>
+                </div>
+                {experiment.dependents && experiment.dependents.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {experiment.dependents.map(d => (
+                      <span key={d} className="px-2 py-0.5 rounded-md text-xs font-semibold bg-white text-emerald-700 border border-emerald-200 shadow-xs">
+                        Experiment {d}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500 italic mt-1">None (Terminal Evaluation Module)</p>
+                )}
               </div>
             </div>
 
