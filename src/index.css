@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --color-primary: #6366f1;
+  --color-primary-dark: #4f46e5;
+  --color-surface: #ffffff;
+  --color-bg: #f8f7ff;
+}
+
+/* Base reset */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--color-bg);
+  color: #1e1b4b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #a5b4fc; }
+
+/* MathJax display sizing */
+.MathJax { font-size: 1em !important; }
+mjx-container { overflow-x: auto; max-width: 100%; }
+
+/* Range slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 5px;
+  border-radius: 99px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #6366f1;
+  border: 3px solid white;
+  box-shadow: 0 0 0 1px #6366f1, 0 2px 6px rgba(99,102,241,0.35);
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.15), 0 2px 6px rgba(99,102,241,0.35);
+}
+
+/* Glass card */
+.glass {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.85);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Doc card relevance animation */
+@keyframes glow-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+  50% { box-shadow: 0 0 16px 4px rgba(16,185,129,0.25); }
+}
+@keyframes glow-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+  50% { box-shadow: 0 0 16px 4px rgba(239,68,68,0.15); }
+}
+.glow-relevant { animation: glow-green 2s ease-in-out infinite; }
+.glow-irrelevant { animation: glow-red 2s ease-in-out infinite; }
+
+/* Print styles for Certificate & Lab Report */
+@media print {
+  /* Ensure backgrounds and colors print accurately */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide UI chrome */
+  header, footer, nav, .no-print { display: none !important; }
+
+  /* Clean background */
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  /* Remove container spacing so content fills printable area */
+  main { padding: 0 !important; }
+  main > div { padding: 0 !important; }
+
+  /* Page wrappers — collapse spacing */
+  .max-w-3xl, .max-w-4xl { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+
+  /* AnimatePresence wrapper divs */
+  main > div > div { padding: 0 !important; margin: 0 !important; }
+
+  /* The certificate card */
+  .cert-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 16px !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Report content styling for print */
+  .report-content {
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .report-content .glass {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .report-content > div,
+  .report-content table,
+  .report-content tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  @page {
+    margin: 1.2cm;
+    size: auto;
+  }
+}
+
+
