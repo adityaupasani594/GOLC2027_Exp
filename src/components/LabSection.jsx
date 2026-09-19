@@ -220,7 +220,7 @@ export default function LabSection({ onNext }) {
     RETRIEVAL_SYSTEMS.forEach(s => { out[s.id] = computeCurve(s.id, queryInput); });
     return out;
   }, [queryInput]);
-  const table = useMemo(() => getComparisonTable(queryInput), [queryInput]);
+  const table = useMemo(() => getComparisonTable(queryInput, k), [queryInput, k]);
 
   useMathJax([selectedSystem, selectedMetric, k, view, queryInput]);
 
@@ -642,6 +642,20 @@ export default function LabSection({ onNext }) {
             initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-6 }}
             className="space-y-4"
           >
+            {/* Active query indicator */}
+            <div className="glass rounded-xl px-4 py-2.5 border border-white/80 shadow-sm flex items-center justify-between flex-wrap gap-2 text-xs">
+              <div className="flex items-center gap-2 text-slate-600">
+                <Search className="w-3.5 h-3.5 text-indigo-500" />
+                <span className="font-semibold text-slate-500 uppercase text-[10px] tracking-wider">Evaluating Query:</span>
+                <span className="font-medium text-slate-800 italic">"{queryInput}"</span>
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                metrics.totalRelevant > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+              }`}>
+                {metrics.totalRelevant} Relevant Docs in Corpus
+              </span>
+            </div>
+
             <div className="glass rounded-2xl p-5 border border-white/80 shadow-sm">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Select System to Plot</p>
               <div className="flex flex-wrap gap-2 mb-5">
@@ -681,13 +695,123 @@ export default function LabSection({ onNext }) {
             initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-6 }}
             className="space-y-4"
           >
+            {/* Active Evaluation Query & Cutoff Parameters Card */}
+            <div className="glass rounded-2xl p-5 border border-white/80 shadow-sm space-y-4">
+              <div className="flex items-start justify-between flex-wrap gap-4">
+                <div className="space-y-1.5 flex-1 min-w-[280px]">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                      <Search className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Evaluation Query
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      metrics.totalRelevant > 0 
+                        ? 'bg-emerald-100 text-emerald-800' 
+                        : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {metrics.totalRelevant} Relevant in 14-Doc Corpus
+                    </span>
+                  </div>
+                  
+                  {/* Query input field */}
+                  <div className="relative mt-1">
+                    <input
+                      type="text"
+                      value={queryInput}
+                      onChange={(e) => setQueryInput(e.target.value)}
+                      placeholder="Enter a search query to compare retrieval systems..."
+                      className="w-full pl-3 pr-20 py-2 text-xs sm:text-sm font-medium bg-white/90 border border-slate-200 rounded-xl shadow-inner focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all text-slate-800"
+                    />
+                    {queryInput !== DEFAULT_QUERY && (
+                      <button
+                        onClick={handleResetQuery}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 px-2 py-1 rounded-lg transition cursor-pointer"
+                        title="Reset to default benchmark query"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Cutoff Depth (k) Control */}
+                <div className="w-full sm:w-72 bg-white/80 border border-slate-200/90 rounded-xl p-3.5 space-y-2.5 shadow-2xs">
+                  <div className="flex items-baseline justify-between">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                      Cutoff Depth <MathJaxSpan className="text-indigo-600 font-bold">{"$k$"}</MathJaxSpan>
+                    </label>
+                    <motion.span
+                      key={k}
+                      initial={{ scale: 1.15 }}
+                      animate={{ scale: 1 }}
+                      className="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200"
+                    >
+                      k = {k}
+                    </motion.span>
+                  </div>
+                  <input
+                    type="range" min={1} max={10} step={1} value={k}
+                    onChange={e => setK(Number(e.target.value))}
+                    style={{ background: `linear-gradient(to right,#6366f1 0%,#6366f1 ${(k-1)/9*100}%,#e2e8f0 ${(k-1)/9*100}%,#e2e8f0 100%)` }}
+                    className="w-full h-1.5 accent-indigo-600 rounded-lg cursor-pointer"
+                  />
+                  <div className="flex justify-between items-center text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-slate-400">Presets:</span>
+                    {[1, 2, 3, 5, 8, 10].map(val => (
+                      <button
+                        key={val}
+                        onClick={() => setK(val)}
+                        className={`px-1.5 py-0.5 rounded text-[10px] transition cursor-pointer ${
+                          k === val ? 'bg-indigo-600 text-white font-bold shadow-2xs' : 'hover:bg-slate-100 text-slate-600 bg-slate-50 border border-slate-200/60'
+                        }`}
+                      >
+                        k={val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick query chips */}
+              <div className="pt-1 flex items-center gap-1.5 overflow-x-auto text-xs pb-1">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-500" /> Presets:
+                </span>
+                {EXAMPLE_QUERIES.map((eq, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleApplyExampleQuery(eq)}
+                    className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition cursor-pointer flex items-center gap-1 ${
+                      queryInput === eq.query 
+                        ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs' 
+                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    <span>{eq.icon}</span>
+                    <span>{eq.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Metric Comparison Card */}
             <div className="glass rounded-2xl p-5 border border-white/80 shadow-sm space-y-4">
               <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Metric to Compare</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
+                  Metric to Compare at Cutoff <span className="font-mono text-slate-700 font-bold">k = {k}</span>
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {METRICS.map(m => {
                     const mc = METRIC_COLORS[m.id];
                     const active = selectedMetric === m.id;
+                    const label = m.id === 'precision' 
+                      ? `Precision@${k}` 
+                      : m.id === 'recall' 
+                        ? `Recall@${k}` 
+                        : m.label;
                     return (
                       <button
                         key={m.id}
@@ -696,7 +820,7 @@ export default function LabSection({ onNext }) {
                           active ? `${mc.bg} ${mc.border} ${mc.text}` : 'bg-white border-slate-200 text-slate-500'
                         }`}
                       >
-                        {m.label}
+                        {label}
                       </button>
                     );
                   })}
@@ -705,15 +829,57 @@ export default function LabSection({ onNext }) {
               <ComparisonChart table={table} activeMetric={selectedMetric} />
             </div>
 
+            {/* Convergence Explanatory Note (when all scores are equal) */}
+            {table.length > 0 && table.every(r => Math.abs(r[selectedMetric] - table[0][selectedMetric]) < 0.0001) && (
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl p-3.5 bg-blue-50/90 border border-blue-200 text-blue-900 text-xs flex items-start gap-2.5 shadow-2xs"
+              >
+                <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-semibold text-blue-950">
+                    Why are all systems showing the same score ({table[0][selectedMetric].toFixed(3)}) at k = {k}?
+                  </p>
+                  <p className="text-[11px] text-blue-800 leading-relaxed">
+                    This query has exactly <strong>{metrics.totalRelevant} relevant document{metrics.totalRelevant > 1 ? 's' : ''}</strong> in the 14-document corpus. At cutoff depth <strong>k = {k}</strong>, all 4 retrieval systems successfully placed all {metrics.totalRelevant} relevant document{metrics.totalRelevant > 1 ? 's' : ''} within their top {k} results, achieving 100% recall saturation ({metrics.totalRelevant}/{metrics.totalRelevant} = 1.000). Consequently, Precision@{k} = {metrics.totalRelevant}/{k} = {(metrics.totalRelevant / k).toFixed(3)} across all systems.
+                  </p>
+                  <p className="text-[11px] text-blue-900 font-semibold">
+                    💡 Try setting <span className="underline decoration-indigo-500 font-bold">k = 2</span> or <span className="underline decoration-indigo-500 font-bold">k = 5</span> above to observe how the systems differ in how quickly they surface relevant documents near the very top of the ranking!
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
             {/* Full comparison table */}
             <div className="glass rounded-2xl overflow-hidden border border-white/80 shadow-sm">
+              <div className="px-4 py-3 bg-slate-50/90 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Table className="w-4 h-4 text-indigo-600" />
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Full Comparison Table at Cutoff Depth k = {k}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                  <span className="font-mono bg-white px-2 py-0.5 rounded border border-slate-200">
+                    Query: "{queryInput.length > 35 ? queryInput.slice(0, 35) + '...' : queryInput}"
+                  </span>
+                  <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    |R| = {metrics.totalRelevant}
+                  </span>
+                </div>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/80">
                       <th className="text-left py-3 px-4 font-semibold text-slate-500">System</th>
-                      <th className="text-center py-3 px-3 font-semibold text-blue-600"><MathJaxSpan>{"$P@10$"}</MathJaxSpan></th>
-                      <th className="text-center py-3 px-3 font-semibold text-emerald-600"><MathJaxSpan>{"$R@10$"}</MathJaxSpan></th>
+                      <th className="text-center py-3 px-3 font-semibold text-blue-600">
+                        <MathJaxSpan key={`th-p-${k}`}>{"$P@" + k + "$"}</MathJaxSpan>
+                      </th>
+                      <th className="text-center py-3 px-3 font-semibold text-emerald-600">
+                        <MathJaxSpan key={`th-r-${k}`}>{"$R@" + k + "$"}</MathJaxSpan>
+                      </th>
                       <th className="text-center py-3 px-3 font-semibold text-violet-600"><MathJaxSpan>{"$F_1$"}</MathJaxSpan></th>
                       <th className="text-center py-3 px-3 font-semibold text-rose-600"><MathJaxSpan>{"$\\text{MRR}$"}</MathJaxSpan></th>
                       <th className="text-center py-3 px-3 font-semibold text-slate-500">Latency</th>

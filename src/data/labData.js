@@ -438,7 +438,7 @@ export function evaluateQueryAcrossSystems(queryString = '') {
 /**
  * Given a system id, cutoff K, and active query string, compute all IR metrics.
  */
-export function computeMetrics(systemId, k = 10, queryString = '') {
+export function computeMetrics(systemId, k = 5, queryString = '') {
   const evalResult = evaluateQueryAcrossSystems(queryString);
   const rankedList = evalResult.rankedLists[systemId] || evalResult.rankedLists.keyword;
   const ranked = rankedList.slice(0, k);
@@ -488,10 +488,10 @@ export function computeCurve(systemId, queryString = '') {
 
 // ── MRR across simulated query scenarios ─────────────────────────────────────
 const QUERY_FIRST_RANKS = {
-  keyword:  [1, 3, 2, 5],
+  keyword: [1, 3, 2, 5],
   semantic: [1, 1, 2, 3],
-  hybrid:   [1, 1, 1, 2],
-  graph:    [1, 1, 1, 1],
+  hybrid: [1, 1, 1, 2],
+  graph: [1, 1, 1, 1],
 };
 
 export function computeMRR(systemId, queryString = '') {
@@ -505,12 +505,13 @@ export function computeMRR(systemId, queryString = '') {
   return +mrr.toFixed(3);
 }
 
-// ── Aggregate comparison table (computed at K=10 for query) ─────────────────
-export function getComparisonTable(queryString = '') {
+// ── Aggregate comparison table (computed at cutoff k for query, defaults to k=10) ──
+export function getComparisonTable(queryString = '', k = 10) {
   return RETRIEVAL_SYSTEMS.map(sys => {
-    const m = computeMetrics(sys.id, 10, queryString);
+    const m = computeMetrics(sys.id, k, queryString);
     return {
       ...sys,
+      k,
       precision: m.precision,
       recall: m.recall,
       f1: m.f1,

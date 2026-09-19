@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  BookOpen, 
-  FlaskConical, 
-  HelpCircle, 
-  Award, 
-  FileText, 
-  Search, 
+import {
+  BookOpen,
+  FlaskConical,
+  HelpCircle,
+  Award,
+  FileText,
+  Search,
   ArrowLeft,
   Home,
   ChevronLeft
@@ -20,19 +20,19 @@ import ReportSection from './components/ReportSection';
 import { EXPERIMENT, QUIZ_QUESTIONS } from './data/labData';
 
 const TABS = [
-  { id: 'theory',      label: 'Theory',      short: 'Theory',  icon: BookOpen,    color: 'indigo' },
-  { id: 'lab',         label: 'Visual Lab',  short: 'Lab',     icon: FlaskConical, color: 'violet' },
-  { id: 'quiz',        label: 'Quiz',        short: 'Quiz',    icon: HelpCircle,  color: 'rose'   },
-  { id: 'certificate', label: 'Certificate', short: 'Cert.',   icon: Award,       color: 'amber'  },
-  { id: 'report',      label: 'Report',      short: 'Report',  icon: FileText,    color: 'teal'   },
+  { id: 'theory', label: 'Theory', short: 'Theory', icon: BookOpen, color: 'indigo' },
+  { id: 'lab', label: 'Visual Lab', short: 'Lab', icon: FlaskConical, color: 'violet' },
+  { id: 'quiz', label: 'Quiz', short: 'Quiz', icon: HelpCircle, color: 'rose' },
+  { id: 'certificate', label: 'Certificate', short: 'Cert.', icon: Award, color: 'amber' },
+  { id: 'report', label: 'Report', short: 'Report', icon: FileText, color: 'teal' },
 ];
 
 const TAB_ACTIVE = {
   indigo: 'bg-indigo-600 text-white shadow-indigo-200',
   violet: 'bg-violet-600 text-white shadow-violet-200',
-  rose:   'bg-rose-500   text-white shadow-rose-200',
-  amber:  'bg-amber-500  text-white shadow-amber-200',
-  teal:   'bg-teal-600   text-white shadow-teal-200',
+  rose: 'bg-rose-500   text-white shadow-rose-200',
+  amber: 'bg-amber-500  text-white shadow-amber-200',
+  teal: 'bg-teal-600   text-white shadow-teal-200',
 };
 
 export default function App() {
@@ -156,9 +156,8 @@ export default function App() {
                           key={tab.id}
                           onClick={() => goTo(tab.id)}
                           whileTap={{ scale: 0.94 }}
-                          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                            active ? `${TAB_ACTIVE[tab.color]} shadow-md` : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                          }`}
+                          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${active ? `${TAB_ACTIVE[tab.color]} shadow-md` : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                            }`}
                         >
                           <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                           <span className="hidden xs:inline sm:hidden">{tab.short}</span>

@@ -10,7 +10,6 @@ A generic, modular Python Streamlit virtual lab template partitioned into 4 core
 ---
 
 ## Quick Start
-
 ```bash
 # Activate virtual environment
 source .venv/bin/activate
