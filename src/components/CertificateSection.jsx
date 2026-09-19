@@ -22,7 +22,7 @@ export default function CertificateSection({ quizScore, totalQuestions, studentI
 
   const fields = [
     { key: 'name',        label: 'Full Name',               icon: User,       placeholder: 'e.g. Jane Smith' },
-    { key: 'rollNo',      label: 'Roll / Student ID',        icon: ShieldCheck, placeholder: 'e.g. CS-2027-042' },
+    { key: 'studentId',   label: 'Student ID',               icon: ShieldCheck, placeholder: 'e.g. CS-2027-042' },
     { key: 'institution', label: 'Institution / Department', icon: Building2,  placeholder: 'e.g. Dept. of Computer Science' },
     { key: 'instructor',  label: 'Faculty Instructor',       icon: Star,       placeholder: 'e.g. Prof. A. Kumar' },
   ];
@@ -122,7 +122,7 @@ export default function CertificateSection({ quizScore, totalQuestions, studentI
           {/* Student meta grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-y border-slate-100">
             {[
-              { label: 'Roll No',      value: studentInfo.rollNo      || '—', icon: ShieldCheck },
+              { label: 'Student ID',   value: studentInfo.studentId   || '—', icon: ShieldCheck },
               { label: 'Institution',  value: studentInfo.institution || '—', icon: Building2 },
               { label: 'Instructor',   value: studentInfo.instructor  || '—', icon: Star },
               { label: 'Date Issued',  value: today,                          icon: Calendar },

@@ -62,7 +62,7 @@ export default function ReportSection({ quizScore, totalQuestions, studentInfo }
       date:       today,
       student: {
         name:        studentInfo.name        || 'N/A',
-        rollNo:      studentInfo.rollNo      || 'N/A',
+        studentId:   studentInfo.studentId   || 'N/A',
         institution: studentInfo.institution || 'N/A',
         instructor:  studentInfo.instructor  || 'N/A',
       },
@@ -140,7 +140,7 @@ export default function ReportSection({ quizScore, totalQuestions, studentInfo }
         <div className="px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
           {[
             { label: 'Student',     value: studentInfo.name        || '—' },
-            { label: 'Roll No',     value: studentInfo.rollNo      || '—' },
+            { label: 'Student ID',  value: studentInfo.studentId   || '—' },
             { label: 'Institution', value: studentInfo.institution || '—' },
             { label: 'Date',        value: today },
           ].map(f => (
