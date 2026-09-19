@@ -152,7 +152,7 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
         >
           {/* ── Background Column Phase Guidelines ── */}
           <div className="absolute inset-0 pointer-events-none flex justify-between">
-            {['Input Ingestion', 'Normalization', 'Indexing & Entities', 'TF-IDF & Relations', 'BM25, Graph DB & Vectors', 'Cypher & Hybrid Fusion', 'Graph Pattern & GraphRAG', 'System Evaluation'].map((phase, idx) => (
+            {['1. Ingestion & DB Setup', '2. Normalization', '3. Postings & Entities', '4. TF-IDF & Triples', '5. BM25, Dense & KG Schema', '6. Hybrid & Cypher', '7. Graph Pattern & GraphRAG', '8. System Evaluation'].map((phase, idx) => (
               <div 
                 key={idx} 
                 className="h-full border-r border-slate-200/40 flex flex-col justify-between py-2 px-3"
@@ -387,16 +387,16 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
             <span className="text-[11px] text-slate-500">IR Foundations (1–5)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-teal-600" />
-            <span className="text-[11px] text-slate-500">Knowledge Graphs (6–11)</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-600" />
+            <span className="text-[11px] text-slate-500">Semantic & Hybrid (6–7)</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-purple-600" />
-            <span className="text-[11px] text-slate-500">Semantic & Hybrid (12–14)</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-teal-600" />
+            <span className="text-[11px] text-slate-500">Knowledge Graphs (8–13)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
-            <span className="text-[11px] text-slate-500">Evaluation (15)</span>
+            <span className="text-[11px] text-slate-500">Integration & Evaluation (14–15)</span>
           </div>
         </div>
 

@@ -223,38 +223,38 @@ export default function LandingPage({ onLaunchExp15 }) {
 
             {/* Track 2 */}
             <div 
-              onClick={() => { setSelectedTrack('graphs'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group"
+              onClick={() => { setSelectedTrack('semantic'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
+              className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-purple-100 shadow-sm hover:shadow-md hover:border-purple-300 transition-all cursor-pointer group"
             >
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
                 02
               </div>
-              <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Track II • Exp 6–11</p>
-              <h4 className="text-base font-bold text-slate-900 mt-1">Knowledge Graphs</h4>
+              <p className="text-xs font-bold text-purple-600 uppercase tracking-wider">Track II • Exp 6–7</p>
+              <h4 className="text-base font-bold text-slate-900 mt-1">Semantic & Hybrid Search</h4>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Entity recognition, relation extraction triples, knowledge graph schema design, batch data ingestion, and advanced Cypher traversal.
+                Dense neural embeddings, bi-encoders, FAISS indexing, and Reciprocal Rank Fusion of lexical and semantic vectors.
               </p>
-              <div className="mt-4 flex items-center text-xs font-semibold text-emerald-600 group-hover:gap-1.5 transition-all">
-                <span>View 6 experiments</span>
+              <div className="mt-4 flex items-center text-xs font-semibold text-purple-600 group-hover:gap-1.5 transition-all">
+                <span>View 2 experiments</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </div>
             </div>
 
             {/* Track 3 */}
             <div 
-              onClick={() => { setSelectedTrack('semantic'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
-              className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-purple-100 shadow-sm hover:shadow-md hover:border-purple-300 transition-all cursor-pointer group"
+              onClick={() => { setSelectedTrack('graphs'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
+              className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group"
             >
-              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
                 03
               </div>
-              <p className="text-xs font-bold text-purple-600 uppercase tracking-wider">Track III • Exp 12–14</p>
-              <h4 className="text-base font-bold text-slate-900 mt-1">Semantic & Hybrid Search</h4>
+              <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Track III • Exp 8–13</p>
+              <h4 className="text-base font-bold text-slate-900 mt-1">Knowledge Graphs</h4>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Dense neural embeddings, bi-encoders, FAISS indexing, Reciprocal Rank Fusion, and GraphRAG integration.
+                Entity recognition, relation extraction triples, knowledge graph schema design, data import, and Cypher traversal.
               </p>
-              <div className="mt-4 flex items-center text-xs font-semibold text-purple-600 group-hover:gap-1.5 transition-all">
-                <span>View 3 experiments</span>
+              <div className="mt-4 flex items-center text-xs font-semibold text-emerald-600 group-hover:gap-1.5 transition-all">
+                <span>View 6 experiments</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -267,13 +267,13 @@ export default function LandingPage({ onLaunchExp15 }) {
               <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
                 04
               </div>
-              <p className="text-xs font-bold text-rose-600 uppercase tracking-wider">Track IV • Exp 15</p>
-              <h4 className="text-base font-bold text-slate-900 mt-1">Evaluation & Benchmarks</h4>
+              <p className="text-xs font-bold text-rose-600 uppercase tracking-wider">Track IV • Exp 14–15</p>
+              <h4 className="text-base font-bold text-slate-900 mt-1">Integration & Evaluation</h4>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Empirical quantitative evaluation: Precision, Recall, F1, MRR, trade-off curves, and automated reporting.
+                GraphRAG contextual expansion and empirical benchmarking (Precision, Recall, F1, MRR) across all retrieval models.
               </p>
               <div className="mt-4 flex items-center text-xs font-semibold text-rose-600 group-hover:gap-1.5 transition-all">
-                <span>View 1 experiment</span>
+                <span>View 2 experiments</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </div>
             </div>
