@@ -1,20 +1,26 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Search, 
-  Sparkles, 
-  ArrowRight, 
-  CheckCircle2, 
-  FileText, 
-  Cpu, 
+import {
+  Search,
+  Sparkles,
+  ArrowRight,
+  CheckCircle2,
+  FileText,
+  Cpu,
   Award,
   ChevronRight,
   GitFork,
-  LayoutGrid
+  LayoutGrid,
+  Users,
+  GraduationCap,
+  Code2,
+  BookOpen,
+  School
 } from 'lucide-react';
 import { EXPERIMENTS_LIST, EXPERIMENT_TRACKS } from '../data/experimentsData';
 import ExperimentModal from './ExperimentModal';
 import CurriculumGraph from './CurriculumGraph';
+import collegeLogo from '../image.png';
 
 export default function LandingPage({ onLaunchExp15 }) {
   const [viewMode, setViewMode] = useState('graph'); // 'graph' | 'cards'
@@ -58,36 +64,58 @@ export default function LandingPage({ onLaunchExp15 }) {
 
       {/* ── Top Header / Navbar ── */}
       <header className="sticky top-0 z-40 glass border-b border-white/70 shadow-sm backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-4">
-            {/* Brand Logo & Title */}
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-violet-700 flex items-center justify-center shadow-md shadow-indigo-300/40 text-white font-bold text-base">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="relative flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
+            {/* Left: Brand Logo & Title */}
+            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 z-10">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-violet-700 flex items-center justify-center shadow-md shadow-indigo-300/40 text-white font-bold text-sm sm:text-base">
                 IR
               </div>
-              <div>
-                <h1 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
-                  IR & Knowledge Graphs Virtual Lab
+              <div className="min-w-0">
+                <h1 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 leading-tight truncate max-w-[135px] sm:max-w-[200px] md:max-w-none">
+                  IR & Knowledge Graphs Lab
                 </h1>
-                <p className="text-[11px] text-slate-500 hidden sm:block">
+                <p className="text-[10px] sm:text-[11px] text-slate-500 hidden md:block">
                   GOLC 2027 • Practical Curriculum & Simulation Suite
                 </p>
               </div>
             </div>
 
-            {/* Navigation links */}
-            <div className="flex items-center gap-3">
+            {/* Center: College Logo */}
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none px-2">
+              <a
+                href="#team"
+                title="Vivekanand Education Society's Institute of Technology (VESIT)"
+                className="pointer-events-auto transition-transform hover:scale-105 inline-block"
+              >
+                <img
+                  src={collegeLogo}
+                  alt="VESIT College Logo"
+                  className="h-9 sm:h-12 md:h-14 w-auto max-w-[130px] sm:max-w-[220px] md:max-w-[280px] object-contain drop-shadow-xs"
+                />
+              </a>
+            </div>
+
+            {/* Right: Navigation links */}
+            <div className="flex items-center gap-1 sm:gap-2 z-10 shrink-0">
               <a
                 href="#catalog"
-                className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors px-3 py-1.5"
+                className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors px-2 sm:px-3 py-1.5 rounded-lg hover:bg-slate-100/70 hidden lg:inline-block"
               >
                 Prerequisite Graph
               </a>
               <a
                 href="#tracks"
-                className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors px-3 py-1.5"
+                className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors px-2 sm:px-3 py-1.5 rounded-lg hover:bg-slate-100/70 hidden sm:inline-block"
               >
-                Curriculum Tracks
+                Tracks
+              </a>
+              <a
+                href="#team"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50/80 hover:bg-indigo-100/80 border border-indigo-200/70 transition-colors px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Team</span>
               </a>
             </div>
           </div>
@@ -106,7 +134,7 @@ export default function LandingPage({ onLaunchExp15 }) {
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white/80 border border-indigo-100 shadow-sm text-indigo-700 mb-6"
             >
               <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Academic Year 2026–2027 • Department of Computer Engineering</span>
+              <span>Department of Computer Engineering • VESIT • Academic Year 2026–2027</span>
             </motion.div>
 
             {/* Main Headline */}
@@ -203,7 +231,7 @@ export default function LandingPage({ onLaunchExp15 }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {/* Track 1 */}
-            <div 
+            <div
               onClick={() => { setSelectedTrack('foundations'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
               className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-indigo-100 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group"
             >
@@ -222,7 +250,7 @@ export default function LandingPage({ onLaunchExp15 }) {
             </div>
 
             {/* Track 2 */}
-            <div 
+            <div
               onClick={() => { setSelectedTrack('semantic'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
               className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-purple-100 shadow-sm hover:shadow-md hover:border-purple-300 transition-all cursor-pointer group"
             >
@@ -241,7 +269,7 @@ export default function LandingPage({ onLaunchExp15 }) {
             </div>
 
             {/* Track 3 */}
-            <div 
+            <div
               onClick={() => { setSelectedTrack('graphs'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
               className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group"
             >
@@ -260,7 +288,7 @@ export default function LandingPage({ onLaunchExp15 }) {
             </div>
 
             {/* Track 4 */}
-            <div 
+            <div
               onClick={() => { setSelectedTrack('evaluation'); setViewMode('cards'); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }}
               className="p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-rose-100 shadow-sm hover:shadow-md hover:border-rose-300 transition-all cursor-pointer group"
             >
@@ -304,11 +332,10 @@ export default function LandingPage({ onLaunchExp15 }) {
             <div className="flex items-center gap-1 bg-white/80 p-1 rounded-xl border border-slate-200 shadow-xs">
               <button
                 onClick={() => setViewMode('graph')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  viewMode === 'graph'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${viewMode === 'graph'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
               >
                 <GitFork className="w-3.5 h-3.5 rotate-90" />
                 <span>Directed Graph</span>
@@ -316,11 +343,10 @@ export default function LandingPage({ onLaunchExp15 }) {
 
               <button
                 onClick={() => setViewMode('cards')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  viewMode === 'cards'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${viewMode === 'cards'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
                 <span>Cards View</span>
@@ -349,16 +375,14 @@ export default function LandingPage({ onLaunchExp15 }) {
                     <button
                       key={track.id}
                       onClick={() => setSelectedTrack(track.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                        selectedTrack === track.id
-                          ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
-                          : 'bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/80'
-                      }`}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${selectedTrack === track.id
+                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+                        : 'bg-white/80 text-slate-600 hover:bg-white hover:text-slate-900 border border-slate-200/80'
+                        }`}
                     >
                       {track.label}
-                      <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${
-                        selectedTrack === track.id ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'
-                      }`}>
+                      <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${selectedTrack === track.id ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'
+                        }`}>
                         {track.count}
                       </span>
                     </button>
@@ -549,15 +573,248 @@ export default function LandingPage({ onLaunchExp15 }) {
         </div>
       </section>
 
+      {/* ── Team Section ── */}
+      <section id="team" className="py-16 sm:py-20 bg-white/70 backdrop-blur-md border-t border-slate-200/80 scroll-mt-16 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          {/* Institutional Crest & Section Title */}
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-white shadow-sm border border-slate-200/90 mb-5">
+              <img
+                src={collegeLogo}
+                alt="VESIT College Logo"
+                className="h-12 sm:h-16 w-auto max-w-[240px] sm:max-w-[300px] object-contain"
+              />
+            </div>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-3.5 py-1.5 rounded-full border border-indigo-100/90 inline-flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-indigo-600" />
+                Department of Computer Engineering
+              </span>
+              <h3 className="text-2xl sm:text-4xl font-extrabold text-slate-900 mt-3 tracking-tight">
+                Project Team & Contributors
+              </h3>
+              <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-2xl mx-auto leading-relaxed">
+                Vivekanand Education Society's Institute of Technology (VESIT)
+                <br />
+                <span className="text-xs text-slate-500 font-medium">
+                  Autonomous Institute Affiliated to University of Mumbai • Accredited by NAAC with 'A' Grade
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {/* ── 1. Faculty Mentors (3 Faculties) ── */}
+          <div className="mb-14">
+            <div className="flex items-center gap-2.5 mb-6 justify-center sm:justify-start">
+              <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shadow-xs">
+                <GraduationCap className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-base sm:text-lg font-bold text-slate-900">
+                  Faculty Mentors & Guidance
+                </h4>
+                <p className="text-xs text-slate-500">
+                  Curriculum design, academic oversight, and project mentorship.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Faculty 1: Dr. Sharmila Sengupta */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all flex items-center">
+                <div className="flex items-center gap-4 w-full">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-800 text-white flex items-center justify-center font-bold text-base shadow-md shadow-indigo-200 shrink-0">
+                    SS
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug">
+                      Dr. Sharmila Sengupta
+                    </h5>
+                    <p className="text-xs text-slate-500 mt-1 leading-snug">
+                      Department of Computer Engineering, VESIT
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Faculty 2: Mrs. Abha Tewari */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-purple-300 transition-all flex items-center">
+                <div className="flex items-center gap-4 w-full">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-purple-600 to-violet-800 text-white flex items-center justify-center font-bold text-base shadow-md shadow-purple-200 shrink-0">
+                    AT
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-purple-600 transition-colors leading-snug">
+                      Mrs. Abha Tewari
+                    </h5>
+                    <p className="text-xs text-slate-500 mt-1 leading-snug">
+                      Department of Computer Engineering, VESIT
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Faculty 3: Mrs. Sunita Suralkar */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-teal-300 transition-all flex items-center">
+                <div className="flex items-center gap-4 w-full">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-800 text-white flex items-center justify-center font-bold text-base shadow-md shadow-teal-200 shrink-0">
+                    SS
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-teal-600 transition-colors leading-snug">
+                      Mrs. Sunita Suralkar
+                    </h5>
+                    <p className="text-xs text-slate-500 mt-1 leading-snug">
+                      Department of Computer Engineering, VESIT
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 2. Student UI Integration Team (3 Members) ── */}
+          <div className="mb-14">
+            <div className="flex items-center gap-2.5 mb-6 justify-center sm:justify-start">
+              <div className="w-8 h-8 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center shadow-xs">
+                <Code2 className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-base sm:text-lg font-bold text-slate-900">
+                  Student UI Integration Team
+                </h4>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Member 1: Aditya Upasani */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all flex items-center">
+                <div className="flex items-center gap-4 w-full">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-indigo-500 via-indigo-600 to-blue-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-indigo-200 shrink-0">
+                    AU
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug">
+                      Aditya Upasani
+                    </h5>
+                    <p className="text-xs text-slate-500 mt-1 leading-snug">
+                      Department of Computer Engineering, VESIT
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Member 2: Vedant Mhatre */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-violet-300 transition-all flex items-center">
+                <div className="flex items-center gap-4 w-full">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-violet-500 via-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-purple-200 shrink-0">
+                    VM
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-purple-600 transition-colors leading-snug">
+                      Vedant Mhatre
+                    </h5>
+                    <p className="text-xs text-slate-500 mt-1 leading-snug">
+                      Department of Computer Engineering, VESIT
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Member 3: Yash Mahajan */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-cyan-300 transition-all flex items-center">
+                <div className="flex items-center gap-4 w-full">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-cyan-600 via-teal-600 to-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-cyan-200 shrink-0">
+                    YM
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-cyan-600 transition-colors leading-snug">
+                      Yash Mahajan
+                    </h5>
+                    <p className="text-xs text-slate-500 mt-1 leading-snug">
+                      Department of Computer Engineering, VESIT
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 3. Laboratory Contributors (Students of Dept of Computer Engineering, VESIT, 2027 Batch) ── */}
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 text-white shadow-xl relative overflow-hidden border border-indigo-900/60">
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-1/3 -mb-8 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-indigo-300 border border-white/10 mb-3">
+                  <Award className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Curriculum & Laboratory Contributors</span>
+                </div>
+                <h4 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                  Students of the Department of Computer Engineering, VESIT — 2027 Batch
+                </h4>
+                <p className="text-sm text-slate-300 mt-2.5 leading-relaxed">
+                  The laboratory contributors are the students of the Department of Computer Engineering, Vivekanand Education Society's Institute of Technology (VESIT), 2027 Batch. The experimental algorithms, theoretical formulations, domain datasets, knowledge graph schemas, and retrieval benchmarks across all 15 experiments were authored and contributed by the batch.
+                </p>
+              </div>
+
+              <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
+                <div className="px-5 py-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-center sm:text-right">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-white">15 Labs</p>
+                  <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Curriculum Suite</p>
+                </div>
+                <span className="text-xs text-indigo-300 font-semibold">
+                  VESIT CMPN • 2027 Batch
+                </span>
+              </div>
+            </div>
+
+            {/* Curriculum contribution pills */}
+            <div className="relative z-10 mt-6 pt-5 border-t border-white/10">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                Curriculum Areas Contributed Across 15 Experiments:
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="px-3 py-1 rounded-xl bg-white/10 text-slate-200 border border-white/10">
+                  Exp 1–5: Lexical Pipelines, Preprocessing, Inverted Indexes, TF-IDF & BM25
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-white/10 text-slate-200 border border-white/10">
+                  Exp 6–7: Dense Semantic Bi-Encoders, Vector Databases & Hybrid Fusion
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-white/10 text-slate-200 border border-white/10">
+                  Exp 8–13: Entity Recognition, Graph DB Management, Schema Design & Cypher
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-white/10 text-slate-200 border border-white/10">
+                  Exp 14–15: GraphRAG Context Expansion & Quantitative Empirical Evaluation
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       {/* ── Footer ── */}
-      <footer className="glass border-t border-white/80 py-8 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
+      <footer className="glass border-t border-white/80 py-10 text-center text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
+          <div className="flex items-center justify-center">
+            <img
+              src={collegeLogo}
+              alt="VESIT College Logo"
+              className="h-10 sm:h-12 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity"
+            />
+          </div>
           <div className="flex items-center justify-center gap-2 font-bold text-slate-800 text-sm">
             <span className="w-2 h-2 rounded-full bg-indigo-600" />
             <span>Information Retrieval & Knowledge Graphs Virtual Laboratory</span>
           </div>
-          <p className="text-slate-400">
-            GOLC 2027 Curriculum Standards • 15 Prescribed Experiments
+          <p className="text-slate-600 font-medium">
+            Department of Computer Engineering • Vivekanand Education Society's Institute of Technology (VESIT)
+          </p>
+          <p className="text-slate-400 text-[11px]">
+            GOLC 2027 Curriculum Standards • 15 Prescribed Experiments • Contributed by the 2027 Batch
           </p>
         </div>
       </footer>
