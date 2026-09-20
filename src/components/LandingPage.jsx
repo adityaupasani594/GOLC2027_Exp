@@ -22,11 +22,19 @@ import ExperimentModal from './ExperimentModal';
 import CurriculumGraph from './CurriculumGraph';
 import collegeLogo from '../image.png';
 
-export default function LandingPage({ onLaunchExp15 }) {
+export default function LandingPage({ onLaunchExperiment, onLaunchExp15 }) {
   const [viewMode, setViewMode] = useState('graph'); // 'graph' | 'cards'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTrack, setSelectedTrack] = useState('all');
   const [selectedExpModal, setSelectedExpModal] = useState(null);
+
+  const handleLaunch = (num) => {
+    if (onLaunchExperiment) {
+      onLaunchExperiment(num);
+    } else if (onLaunchExp15) {
+      onLaunchExp15();
+    }
+  };
 
   // Filtered experiments list for card view
   const filteredExperiments = useMemo(() => {
@@ -102,7 +110,7 @@ export default function LandingPage({ onLaunchExp15 }) {
                 href="#catalog"
                 className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors px-2 sm:px-3 py-1.5 rounded-lg hover:bg-slate-100/70 hidden lg:inline-block"
               >
-                Prerequisite Graph
+                Experiments
               </a>
               <a
                 href="#tracks"
@@ -319,7 +327,7 @@ export default function LandingPage({ onLaunchExp15 }) {
                 Curriculum Structure
               </span>
               <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2 tracking-tight">
-                {viewMode === 'graph' ? 'Directed Prerequisite Graph' : 'All 15 Laboratory Experiments'}
+                {viewMode === 'graph' ? 'Experiment Graph' : 'All 15 Laboratory Experiments'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
                 {viewMode === 'graph'
@@ -359,7 +367,8 @@ export default function LandingPage({ onLaunchExp15 }) {
             <div className="mt-4">
               <CurriculumGraph
                 onSelectExperiment={(exp) => setSelectedExpModal(exp)}
-                onLaunchExp15={onLaunchExp15}
+                onLaunchExp15={() => handleLaunch(15)}
+                onLaunchExperiment={handleLaunch}
               />
             </div>
           )}
@@ -480,24 +489,21 @@ export default function LandingPage({ onLaunchExp15 }) {
                       </div>
 
                       {/* Card Action Buttons */}
-                      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
-                        {isExp15 ? (
-                          <button
-                            onClick={onLaunchExp15}
-                            className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                          >
-                            <span>Launch Experiment</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => setSelectedExpModal(exp)}
-                            className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-indigo-600 text-xs font-semibold border border-slate-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                          >
-                            <span>View Details & Syllabus</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => setSelectedExpModal(exp)}
+                          className="flex-1 py-2 px-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-indigo-600 text-xs font-semibold border border-slate-200 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        >
+                          <span>Syllabus</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleLaunch(exp.number)}
+                          className="flex-1 py-2 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1 transition-all cursor-pointer"
+                        >
+                          <span>Launch Lab</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   );
@@ -583,7 +589,7 @@ export default function LandingPage({ onLaunchExp15 }) {
               <img
                 src={collegeLogo}
                 alt="VESIT College Logo"
-                className="h-12 sm:h-16 w-auto max-w-[240px] sm:max-w-[300px] object-contain"
+                className="h-[100px] sm:h-[150px] w-auto max-w-[400px] sm:max-w-[600px] object-contain"
               />
             </div>
             <div>
@@ -691,7 +697,7 @@ export default function LandingPage({ onLaunchExp15 }) {
               {/* Column 1 (Blue) - Member 1: Aditya Upasani */}
               <div className="relative group p-6 rounded-2xl bg-white border border-blue-100 hover:border-blue-400 shadow-sm hover:shadow-md hover:shadow-blue-50 transition-all flex items-center">
                 <div className="flex items-center gap-4 w-full">
-                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-blue-200 shrink-0">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-red-600 to-red-200 text-white flex items-center justify-center font-bold text-base shadow-md shadow-blue-200 shrink-0">
                     AU
                   </div>
                   <div className="min-w-0 flex-1">
@@ -708,7 +714,7 @@ export default function LandingPage({ onLaunchExp15 }) {
               {/* Column 2 (Yellow) - Member 2: Vedant Mhatre */}
               <div className="relative group p-6 rounded-2xl bg-white border border-amber-100 hover:border-amber-400 shadow-sm hover:shadow-md hover:shadow-amber-50 transition-all flex items-center">
                 <div className="flex items-center gap-4 w-full">
-                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-500 text-white flex items-center justify-center font-bold text-base shadow-md shadow-amber-200 shrink-0">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-purple-800 to-purple-500 text-white flex items-center justify-center font-bold text-base shadow-md shadow-amber-200 shrink-0">
                     VM
                   </div>
                   <div className="min-w-0 flex-1">
@@ -725,7 +731,7 @@ export default function LandingPage({ onLaunchExp15 }) {
               {/* Column 3 (Green) - Member 3: Yash Mahajan */}
               <div className="relative group p-6 rounded-2xl bg-white border border-emerald-100 hover:border-emerald-400 shadow-sm hover:shadow-md hover:shadow-emerald-50 transition-all flex items-center">
                 <div className="flex items-center gap-4 w-full">
-                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-emerald-200 shrink-0">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-pink-800 to-pink-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-emerald-200 shrink-0">
                     YM
                   </div>
                   <div className="min-w-0 flex-1">
@@ -753,7 +759,7 @@ export default function LandingPage({ onLaunchExp15 }) {
                   <span>Curriculum & Laboratory Contributors</span>
                 </div>
                 <h4 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                  Students of the Department of Computer Engineering, VESIT — 2027 Batch
+                  Students of the Department of Computer Engineering, VESIT
                 </h4>
                 <p className="text-sm text-slate-300 mt-2.5 leading-relaxed">
                   The laboratory contributors are the students of the Department of Computer Engineering, Vivekanand Education Society's Institute of Technology (VESIT), 2027 Batch. The experimental algorithms, theoretical formulations, domain datasets, knowledge graph schemas, and retrieval benchmarks across all 15 experiments were authored and contributed by the batch.
@@ -770,29 +776,7 @@ export default function LandingPage({ onLaunchExp15 }) {
                 </span>
               </div>
             </div>
-
-            {/* Curriculum contribution pills */}
-            <div className="relative z-10 mt-6 pt-5 border-t border-white/10">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Curriculum Areas Contributed Across 15 Experiments:
-              </p>
-              <div className="flex flex-wrap gap-2 text-xs">
-                <span className="px-3 py-1 rounded-xl bg-white/10 text-slate-200 border border-white/10">
-                  Exp 1–5: Lexical Pipelines, Preprocessing, Inverted Indexes, TF-IDF & BM25
-                </span>
-                <span className="px-3 py-1 rounded-xl bg-white/10 text-slate-200 border border-white/10">
-                  Exp 6–7: Dense Semantic Bi-Encoders, Vector Databases & Hybrid Fusion
-                </span>
-                <span className="px-3 py-1 rounded-xl bg-white/10 text-slate-200 border border-white/10">
-                  Exp 8–13: Entity Recognition, Graph DB Management, Schema Design & Cypher
-                </span>
-                <span className="px-3 py-1 rounded-xl bg-white/10 text-slate-200 border border-white/10">
-                  Exp 14–15: GraphRAG Context Expansion & Quantitative Empirical Evaluation
-                </span>
-              </div>
-            </div>
           </div>
-
         </div>
       </section>
 
@@ -824,9 +808,11 @@ export default function LandingPage({ onLaunchExp15 }) {
         experiment={selectedExpModal}
         isOpen={!!selectedExpModal}
         onClose={() => setSelectedExpModal(null)}
-        onLaunchExp15={() => {
-          setSelectedExpModal(null);
-          onLaunchExp15();
+        onLaunchExperiment={(num) => handleLaunch(num)}
+        onLaunchExp15={() => handleLaunch(15)}
+        onSelectOtherExp={(num) => {
+          const target = EXPERIMENTS_LIST.find(e => e.number === num);
+          if (target) setSelectedExpModal(target);
         }}
       />
     </div>

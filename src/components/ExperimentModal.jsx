@@ -14,7 +14,7 @@ import {
   ArrowLeftRight
 } from 'lucide-react';
 
-export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchExp15, onSelectOtherExp }) {
+export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchExperiment, onLaunchExp15, onSelectOtherExp }) {
   if (!isOpen || !experiment) return null;
 
   const isExp15 = experiment.number === 15;
@@ -201,22 +201,20 @@ export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchE
               Close
             </button>
 
-            {isExp15 ? (
-              <button
-                onClick={() => {
-                  onClose();
+            <button
+              onClick={() => {
+                onClose();
+                if (onLaunchExperiment) {
+                  onLaunchExperiment(experiment.number);
+                } else if (onLaunchExp15) {
                   onLaunchExp15();
-                }}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm flex items-center gap-2 transition-all cursor-pointer"
-              >
-                <span>Launch Experiment 15</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <div className="text-[11px] text-slate-500 italic">
-                Prescribed curriculum experiment
-              </div>
-            )}
+                }
+              }}
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+            >
+              <span>Launch Experiment {experiment.number}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </motion.div>
       </div>

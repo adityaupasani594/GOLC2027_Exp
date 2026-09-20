@@ -1,12 +1,12 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ZoomIn, 
-  ZoomOut, 
-  RotateCcw, 
-  ArrowRight, 
-  Layers, 
-  Info, 
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  ArrowRight,
+  Layers,
+  Info,
   Maximize2,
   ExternalLink,
   ChevronRight,
@@ -63,9 +63,9 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
   // Track colors
   const trackColors = {
     foundations: { border: 'border-indigo-300', bg: 'bg-indigo-50/70', badge: 'bg-indigo-100 text-indigo-700', stroke: '#6366f1' },
-    graphs:      { border: 'border-teal-300',   bg: 'bg-teal-50/70',   badge: 'bg-teal-100 text-teal-700',     stroke: '#0d9488' },
-    semantic:    { border: 'border-purple-300', bg: 'bg-purple-50/70', badge: 'bg-purple-100 text-purple-700', stroke: '#9333ea' },
-    evaluation:  { border: 'border-rose-300',   bg: 'bg-rose-50/70',   badge: 'bg-rose-100 text-rose-700',     stroke: '#e11d48' },
+    graphs: { border: 'border-teal-300', bg: 'bg-teal-50/70', badge: 'bg-teal-100 text-teal-700', stroke: '#0d9488' },
+    semantic: { border: 'border-purple-300', bg: 'bg-purple-50/70', badge: 'bg-purple-100 text-purple-700', stroke: '#9333ea' },
+    evaluation: { border: 'border-rose-300', bg: 'bg-rose-50/70', badge: 'bg-rose-100 text-rose-700', stroke: '#e11d48' },
   };
 
   // Zoom handlers
@@ -135,7 +135,7 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
       </div>
 
       {/* ── Scrollable Canvas Container ── */}
-      <div 
+      <div
         ref={containerRef}
         className="w-full overflow-x-auto overflow-y-auto p-4 sm:p-6 bg-radial from-slate-50/50 via-slate-100/30 to-slate-200/20 scrollbar-thin cursor-grab active:cursor-grabbing select-none"
         style={{ minHeight: '620px' }}
@@ -150,26 +150,6 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
             position: 'relative'
           }}
         >
-          {/* ── Background Column Phase Guidelines ── */}
-          <div className="absolute inset-0 pointer-events-none flex justify-between">
-            {['1. Ingestion & DB Setup', '2. Normalization', '3. Postings & Entities', '4. TF-IDF & Triples', '5. BM25, Dense & KG Schema', '6. Hybrid & Cypher', '7. Graph Pattern & GraphRAG', '8. System Evaluation'].map((phase, idx) => (
-              <div 
-                key={idx} 
-                className="h-full border-r border-slate-200/40 flex flex-col justify-between py-2 px-3"
-                style={{ width: `${COL_WIDTH}px` }}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-slate-200/70 text-slate-500 font-mono text-[9px] font-bold flex items-center justify-center">
-                    {idx + 1}
-                  </span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    {phase}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
           {/* ── SVG Edges Layer ── */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
             <defs>
@@ -313,15 +293,14 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
                 }}
                 onMouseEnter={() => setHoveredNodeId(exp.number)}
                 onMouseLeave={() => setHoveredNodeId(null)}
-                className={`rounded-2xl p-3.5 bg-white border cursor-pointer select-none flex flex-col justify-between shadow-xs ${
-                  isHovered
-                    ? 'border-indigo-500 shadow-xl ring-2 ring-indigo-300'
-                    : isPrereq
+                className={`rounded-2xl p-3.5 bg-white border cursor-pointer select-none flex flex-col justify-between shadow-xs ${isHovered
+                  ? 'border-indigo-500 shadow-xl ring-2 ring-indigo-300'
+                  : isPrereq
                     ? 'border-indigo-400 shadow-md ring-2 ring-indigo-200 bg-indigo-50/40'
                     : isDependent
-                    ? 'border-emerald-400 shadow-md ring-2 ring-emerald-200 bg-emerald-50/40'
-                    : 'border-slate-200/90 hover:border-indigo-300 hover:shadow-md'
-                }`}
+                      ? 'border-emerald-400 shadow-md ring-2 ring-emerald-200 bg-emerald-50/40'
+                      : 'border-slate-200/90 hover:border-indigo-300 hover:shadow-md'
+                  }`}
                 onClick={() => {
                   if (exp.number === 15) {
                     onLaunchExp15();
@@ -376,32 +355,6 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* ── Graph Footer Bar with Interactive Summary ── */}
-      <div className="px-5 py-3 border-t border-slate-200/80 bg-slate-50/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-4 text-slate-600">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-            <span className="text-[11px] text-slate-500">IR Foundations (1–5)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-purple-600" />
-            <span className="text-[11px] text-slate-500">Semantic & Hybrid (6–7)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-teal-600" />
-            <span className="text-[11px] text-slate-500">Knowledge Graphs (8–13)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
-            <span className="text-[11px] text-slate-500">Integration & Evaluation (14–15)</span>
-          </div>
-        </div>
-
-        <div className="text-[11px] text-slate-400">
-          Tip: Hover over any experiment node to highlight its prerequisite inputs and dependent outputs. Click to inspect syllabus.
         </div>
       </div>
     </div>
