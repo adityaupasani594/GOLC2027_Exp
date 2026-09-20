@@ -72,7 +72,6 @@ export default function ExperimentTemplate({ expNumber, onBack, children }) {
       {/* ── Sticky Navbar ── */}
       <ExperimentNavbar
         title={`Exp ${expNumber}: ${experiment.shortTitle || experiment.title}`}
-        subtitle={`${experiment.trackLabel} • Lab Module ${expNumber} of 15`}
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={(tabId) => setActiveTab(tabId)}

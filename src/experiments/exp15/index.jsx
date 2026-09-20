@@ -56,7 +56,6 @@ export default function Experiment15({ onBack }) {
       {/* ── Sticky Navbar for Experiment 15 ── */}
       <ExperimentNavbar
         title="Exp 15: Evaluation of Retrieval Systems"
-        subtitle={`Interactive Simulation • ${EXPERIMENT.code}`}
         tabs={TABS}
         activeTab={activeTab}
         onTabChange={goTo}
