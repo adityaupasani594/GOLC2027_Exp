@@ -621,14 +621,14 @@ export default function LandingPage({ onLaunchExp15 }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Faculty 1: Dr. Sharmila Sengupta */}
-              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all flex items-center">
+              {/* Column 1 (Blue) - Faculty 1: Dr. Sharmila Sengupta */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-blue-100 hover:border-blue-400 shadow-sm hover:shadow-md hover:shadow-blue-50 transition-all flex items-center">
                 <div className="flex items-center gap-4 w-full">
-                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-800 text-white flex items-center justify-center font-bold text-base shadow-md shadow-indigo-200 shrink-0">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-blue-200 shrink-0">
                     SS
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h5 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
                       Dr. Sharmila Sengupta
                     </h5>
                     <p className="text-xs text-slate-500 mt-1 leading-snug">
@@ -638,14 +638,14 @@ export default function LandingPage({ onLaunchExp15 }) {
                 </div>
               </div>
 
-              {/* Faculty 2: Mrs. Abha Tewari */}
-              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-purple-300 transition-all flex items-center">
+              {/* Column 2 (Yellow) - Faculty 2: Mrs. Abha Tewari */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-amber-100 hover:border-amber-400 shadow-sm hover:shadow-md hover:shadow-amber-50 transition-all flex items-center">
                 <div className="flex items-center gap-4 w-full">
-                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-purple-600 to-violet-800 text-white flex items-center justify-center font-bold text-base shadow-md shadow-purple-200 shrink-0">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-500 text-white flex items-center justify-center font-bold text-base shadow-md shadow-amber-200 shrink-0">
                     AT
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h5 className="text-base font-bold text-slate-900 group-hover:text-purple-600 transition-colors leading-snug">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors leading-snug">
                       Mrs. Abha Tewari
                     </h5>
                     <p className="text-xs text-slate-500 mt-1 leading-snug">
@@ -655,14 +655,14 @@ export default function LandingPage({ onLaunchExp15 }) {
                 </div>
               </div>
 
-              {/* Faculty 3: Mrs. Sunita Suralkar */}
-              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-teal-300 transition-all flex items-center">
+              {/* Column 3 (Green) - Faculty 3: Mrs. Sunita Suralkar */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-emerald-100 hover:border-emerald-400 shadow-sm hover:shadow-md hover:shadow-emerald-50 transition-all flex items-center">
                 <div className="flex items-center gap-4 w-full">
-                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-800 text-white flex items-center justify-center font-bold text-base shadow-md shadow-teal-200 shrink-0">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-emerald-200 shrink-0">
                     SS
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h5 className="text-base font-bold text-slate-900 group-hover:text-teal-600 transition-colors leading-snug">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors leading-snug">
                       Mrs. Sunita Suralkar
                     </h5>
                     <p className="text-xs text-slate-500 mt-1 leading-snug">
@@ -688,14 +688,14 @@ export default function LandingPage({ onLaunchExp15 }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Member 1: Aditya Upasani */}
-              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all flex items-center">
+              {/* Column 1 (Blue) - Member 1: Aditya Upasani */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-blue-100 hover:border-blue-400 shadow-sm hover:shadow-md hover:shadow-blue-50 transition-all flex items-center">
                 <div className="flex items-center gap-4 w-full">
-                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-indigo-500 via-indigo-600 to-blue-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-indigo-200 shrink-0">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-blue-200 shrink-0">
                     AU
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h5 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
                       Aditya Upasani
                     </h5>
                     <p className="text-xs text-slate-500 mt-1 leading-snug">
@@ -705,14 +705,14 @@ export default function LandingPage({ onLaunchExp15 }) {
                 </div>
               </div>
 
-              {/* Member 2: Vedant Mhatre */}
-              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-violet-300 transition-all flex items-center">
+              {/* Column 2 (Yellow) - Member 2: Vedant Mhatre */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-amber-100 hover:border-amber-400 shadow-sm hover:shadow-md hover:shadow-amber-50 transition-all flex items-center">
                 <div className="flex items-center gap-4 w-full">
-                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-violet-500 via-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-purple-200 shrink-0">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-amber-500 to-yellow-500 text-white flex items-center justify-center font-bold text-base shadow-md shadow-amber-200 shrink-0">
                     VM
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h5 className="text-base font-bold text-slate-900 group-hover:text-purple-600 transition-colors leading-snug">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-amber-600 transition-colors leading-snug">
                       Vedant Mhatre
                     </h5>
                     <p className="text-xs text-slate-500 mt-1 leading-snug">
@@ -722,14 +722,14 @@ export default function LandingPage({ onLaunchExp15 }) {
                 </div>
               </div>
 
-              {/* Member 3: Yash Mahajan */}
-              <div className="relative group p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-cyan-300 transition-all flex items-center">
+              {/* Column 3 (Green) - Member 3: Yash Mahajan */}
+              <div className="relative group p-6 rounded-2xl bg-white border border-emerald-100 hover:border-emerald-400 shadow-sm hover:shadow-md hover:shadow-emerald-50 transition-all flex items-center">
                 <div className="flex items-center gap-4 w-full">
-                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-cyan-600 via-teal-600 to-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-cyan-200 shrink-0">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-emerald-200 shrink-0">
                     YM
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h5 className="text-base font-bold text-slate-900 group-hover:text-cyan-600 transition-colors leading-snug">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors leading-snug">
                       Yash Mahajan
                     </h5>
                     <p className="text-xs text-slate-500 mt-1 leading-snug">
