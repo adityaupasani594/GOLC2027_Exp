@@ -5,8 +5,6 @@ import {
   FlaskConical,
   HelpCircle,
   FileText,
-  ArrowLeft,
-  Home,
   CheckCircle2,
   Code2,
   Terminal,
@@ -16,6 +14,7 @@ import {
   Play,
   RotateCcw
 } from 'lucide-react';
+import { ExperimentNavbar } from '../components/common';
 import { EXPERIMENTS_LIST } from '../data/experimentsData';
 
 export default function ExperimentTemplate({ expNumber, onBack, children }) {
@@ -71,73 +70,15 @@ export default function ExperimentTemplate({ expNumber, onBack, children }) {
   return (
     <div className="flex-1 flex flex-col min-h-screen">
       {/* ── Sticky Navbar ── */}
-      <header className="sticky top-0 z-50 glass border-b border-white/60 shadow-sm no-print">
-        <div className="max-w-6xl mx-auto px-3 sm:px-6">
-          <div className="flex items-center justify-between h-14 gap-2 sm:gap-4">
-
-            {/* Left: Back to Portal & Experiment Label */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              <button
-                onClick={onBack}
-                className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/80 hover:bg-white text-slate-700 hover:text-indigo-600 border border-slate-200 text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                title="Back to All 15 Experiments Portal"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">All Experiments</span>
-                <span className="sm:hidden">Back</span>
-              </button>
-
-              <div className="h-4 w-px bg-slate-200 hidden xs:block" />
-
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center shadow-xs text-white">
-                  <FlaskConical className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-900 leading-none truncate max-w-[200px] sm:max-w-xs">
-                    Exp {expNumber}: {experiment.shortTitle || experiment.title}
-                  </p>
-                  <p className="text-[10px] text-slate-400 font-mono hidden xs:block">
-                    {experiment.trackLabel} • Lab Module {expNumber} of 15
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Center: Module Tab Nav */}
-            <nav className="flex items-center gap-0.5 bg-white/60 rounded-full p-1 border border-white/80 shadow-inner overflow-x-auto">
-              {tabs.map(tab => {
-                const active = activeTab === tab.id;
-                return (
-                  <motion.button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    whileTap={{ scale: 0.94 }}
-                    className={`flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                      active ? `${tabActiveStyles[tab.color]} shadow-md` : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                    }`}
-                  >
-                    <tab.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
-                    <span className="hidden xs:inline sm:hidden">{tab.short}</span>
-                    <span className="hidden sm:inline">{tab.label}</span>
-                  </motion.button>
-                );
-              })}
-            </nav>
-
-            {/* Right: Portal Link */}
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={onBack}
-                className="p-1.5 rounded-xl hover:bg-white/70 text-slate-500 hover:text-slate-800 transition-colors"
-                title="Portal Home"
-              >
-                <Home className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <ExperimentNavbar
+        title={`Exp ${expNumber}: ${experiment.shortTitle || experiment.title}`}
+        subtitle={`${experiment.trackLabel} • Lab Module ${expNumber} of 15`}
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={(tabId) => setActiveTab(tabId)}
+        onBack={onBack}
+        tabActiveStyles={tabActiveStyles}
+      />
 
       {/* ── Main Content Area ── */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">

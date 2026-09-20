@@ -21,6 +21,7 @@ import { EXPERIMENTS_LIST, EXPERIMENT_TRACKS } from '../data/experimentsData';
 import ExperimentModal from './ExperimentModal';
 import CurriculumGraph from './CurriculumGraph';
 import collegeLogo from '../image.png';
+import { LandingNavbar, Footer, AmbientBackground } from './common';
 
 export default function LandingPage({ onLaunchExperiment, onLaunchExp15 }) {
   const [viewMode, setViewMode] = useState('graph'); // 'graph' | 'cards'
@@ -64,71 +65,10 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15 }) {
   return (
     <div className="min-h-screen text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
       {/* ── Fixed Ambient Lighting Background ── */}
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-indigo-200/30 blur-3xl" />
-        <div className="absolute top-1/3 -right-40 w-[550px] h-[550px] rounded-full bg-violet-200/25 blur-3xl" />
-        <div className="absolute -bottom-40 left-1/4 w-[500px] h-[500px] rounded-full bg-cyan-200/20 blur-3xl" />
-      </div>
+      <AmbientBackground />
 
       {/* ── Top Header / Navbar ── */}
-      <header className="sticky top-0 z-40 glass border-b border-white/70 shadow-sm backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="relative flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
-            {/* Left: Brand Logo & Title */}
-            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 z-10">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-violet-700 flex items-center justify-center shadow-md shadow-indigo-300/40 text-white font-bold text-sm sm:text-base">
-                IR
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 leading-tight truncate max-w-[135px] sm:max-w-[200px] md:max-w-none">
-                  IR & Knowledge Graphs Lab
-                </h1>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 hidden md:block">
-                  GOLC 2027 • Practical Curriculum & Simulation Suite
-                </p>
-              </div>
-            </div>
-
-            {/* Center: College Logo */}
-            <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none px-2">
-              <a
-                href="#team"
-                title="Vivekanand Education Society's Institute of Technology (VESIT)"
-                className="pointer-events-auto transition-transform hover:scale-105 inline-block"
-              >
-                <img
-                  src={collegeLogo}
-                  alt="VESIT College Logo"
-                  className="h-9 sm:h-12 md:h-14 w-auto max-w-[130px] sm:max-w-[220px] md:max-w-[280px] object-contain drop-shadow-xs"
-                />
-              </a>
-            </div>
-
-            {/* Right: Navigation links */}
-            <div className="flex items-center gap-1 sm:gap-2 z-10 shrink-0">
-              <a
-                href="#catalog"
-                className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors px-2 sm:px-3 py-1.5 rounded-lg hover:bg-slate-100/70 hidden lg:inline-block"
-              >
-                Experiments
-              </a>
-              <a
-                href="#tracks"
-                className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors px-2 sm:px-3 py-1.5 rounded-lg hover:bg-slate-100/70 hidden sm:inline-block"
-              >
-                Tracks
-              </a>
-              <a
-                href="#team"
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50/80 hover:bg-indigo-100/80 border border-indigo-200/70 transition-colors px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1"
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Team</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
+      <LandingNavbar />
 
       {/* ── Hero Section ── */}
       <section className="relative pt-12 pb-14 lg:pt-20 lg:pb-20 overflow-hidden">
@@ -781,27 +721,7 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15 }) {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="glass border-t border-white/80 py-10 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
-          <div className="flex items-center justify-center">
-            <img
-              src={collegeLogo}
-              alt="VESIT College Logo"
-              className="h-10 sm:h-12 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity"
-            />
-          </div>
-          <div className="flex items-center justify-center gap-2 font-bold text-slate-800 text-sm">
-            <span className="w-2 h-2 rounded-full bg-indigo-600" />
-            <span>Information Retrieval & Knowledge Graphs Virtual Laboratory</span>
-          </div>
-          <p className="text-slate-600 font-medium">
-            Department of Computer Engineering • Vivekanand Education Society's Institute of Technology (VESIT)
-          </p>
-          <p className="text-slate-400 text-[11px]">
-            GOLC 2027 Curriculum Standards • 15 Prescribed Experiments • Contributed by the 2027 Batch
-          </p>
-        </div>
-      </footer>
+      <Footer />
 
       {/* ── Experiment Detail Modal ── */}
       <ExperimentModal

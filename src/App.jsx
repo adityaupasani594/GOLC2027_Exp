@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LandingPage from './components/LandingPage';
 import { EXPERIMENT_COMPONENTS } from './experiments';
+import { AmbientBackground } from './components/common';
 
 export default function App() {
   const getInitialExperiment = () => {
@@ -52,12 +53,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(135deg,#f0f0ff 0%,#faf5ff 45%,#f0fafa 100%)' }}>
-      {/* Ambient blobs */}
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[550px] h-[550px] rounded-full bg-indigo-200/25 blur-3xl" />
-        <div className="absolute top-1/2 -right-40 w-[450px] h-[450px] rounded-full bg-violet-200/20 blur-3xl" />
-        <div className="absolute -bottom-40 left-1/3 w-[380px] h-[380px] rounded-full bg-cyan-200/18 blur-3xl" />
-      </div>
+      {/* Ambient background blobs */}
+      <AmbientBackground />
 
       <AnimatePresence mode="wait">
         {!activeExpNumber || !ActiveExperiment ? (
