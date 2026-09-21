@@ -1,28 +1,31 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BookOpen, FlaskConical, HelpCircle, FileText, CheckCircle2,
-  Sparkles, Database, Search, ChevronDown, ChevronUp, RotateCcw,
-  Play, ArrowRight, AlertCircle, CheckCircle, XCircle,
-  Download, User, Hash, Clock, BarChart2, Layers, Filter,
-  GitMerge, Tag, Zap, Info, Award
+  BookOpen, FlaskConical, HelpCircle, FileText,
+  Sparkles, Database, Search, ChevronDown, ChevronUp,
+  Play, CheckCircle, CheckCircle2, XCircle,
+  Hash, BarChart2, Layers, Filter,
+  GitMerge, Tag, Zap, Award
 } from 'lucide-react';
 import { ExperimentNavbar } from '../../components/common';
 import {
   buildInvertedIndex, executeKeywordQuery, booleanAndWithTrace,
   booleanOrWithTrace, executePhraseQuery, executeProximityQuery,
-  DEFAULT_STOPWORDS, porterStem
+  DEFAULT_STOPWORDS
 } from './invertedIndexEngine';
+import QuizSection, { QUIZ_QUESTIONS } from './components/QuizSection';
+import CertificateSection from './components/CertificateSection';
+import ReportSection from './components/ReportSection';
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // EXPERIMENT CONFIG (mirrors EXP3.py)
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const EXP_CONFIG = {
   expNo: 3,
   title: 'Construction of an Inverted Index',
   subject: 'Knowledge Graphs & Information Retrieval Systems (KGIRS)',
   courseCode: 'CS-KGIRS-03',
-  targetRolls: 'Roll Numbers 11 – 15 (Division C)',
+  targetRolls: 'Roll Numbers 11 â€“ 15 (Division C)',
   aim: 'To construct and analyze an Inverted Index data structure for a collection of textual documents, explore linguistic preprocessing transformations (tokenization, stopword removal, stemming), and execute Boolean, phrase, and proximity queries with linear-time pointer-merge algorithms.',
   objectives: [
     'Construct an Inverted Index data structure mapping vocabulary terms to documents, term frequencies (tf), and token positions.',
@@ -58,7 +61,7 @@ const BENCHMARK_CORPORA = {
   },
 };
 
-const QUIZ_QUESTIONS = [
+const _UNUSED_QUIZ_QUESTIONS_PLACEHOLDER = [
   {
     id: 1,
     question: 'Why is an Inverted Index preferred over a Term-Document Incidence Matrix for large document collections?',
@@ -69,12 +72,12 @@ const QUIZ_QUESTIONS = [
       'D) Incidence matrices cannot be stored in binary format.',
     ],
     answerIndex: 1,
-    explanation: 'Natural language text exhibits extreme sparsity. A full incidence matrix of |V|×N allocates space for billions of zeroes, whereas an inverted index only allocates space for documents where terms actually occur.',
+    explanation: 'Natural language text exhibits extreme sparsity. A full incidence matrix of |V|Ã—N allocates space for billions of zeroes, whereas an inverted index only allocates space for documents where terms actually occur.',
   },
   {
     id: 2,
     question: 'What is the worst-case time complexity of merging two sorted postings lists of lengths x and y using the two-pointer intersection algorithm?',
-    options: ['A) O(x * y)', 'B) O(x + y)', 'C) O(log(x + y))', 'D) O(x² + y²)'],
+    options: ['A) O(x * y)', 'B) O(x + y)', 'C) O(log(x + y))', 'D) O(xÂ² + yÂ²)'],
     answerIndex: 1,
     explanation: 'Because postings lists are maintained in sorted order of Document ID, a linear two-pointer scan evaluates each element at most once, yielding optimal O(x + y) running time.',
   },
@@ -107,12 +110,12 @@ const QUIZ_QUESTIONS = [
     question: 'What is the theoretically optimal skip pointer interval for a postings list of length L?',
     options: [
       'A) Every 2 postings.',
-      'B) Approximately √L evenly spaced postings.',
+      'B) Approximately âˆšL evenly spaced postings.',
       'C) Exactly L/2 postings.',
       'D) Skip pointers must only be placed at powers of two.',
     ],
     answerIndex: 1,
-    explanation: 'Placing skip pointers at intervals of √L balances the number of skips with the maximum steps between skip pointers, reducing traversal comparisons to O(√L).',
+    explanation: 'Placing skip pointers at intervals of âˆšL balances the number of skips with the maximum steps between skip pointers, reducing traversal comparisons to O(âˆšL).',
   },
   {
     id: 6,
@@ -128,7 +131,7 @@ const QUIZ_QUESTIONS = [
   },
   {
     id: 7,
-    question: "Zipf's Law states f * r ≈ C. What does this imply about natural language corpora?",
+    question: "Zipf's Law states f * r â‰ˆ C. What does this imply about natural language corpora?",
     options: [
       'A) Every word appears with identical frequency.',
       'B) A small set of frequent words accounts for a huge portion of all tokens, while most words appear rarely (long tail).',
@@ -136,7 +139,7 @@ const QUIZ_QUESTIONS = [
       'D) Term frequencies increase exponentially as rank increases.',
     ],
     answerIndex: 1,
-    explanation: "Zipf's law describes a heavy-tailed power-law distribution: the top 50–100 words (stopwords) make up ~50% of any collection, while thousands of rare terms occur only once or twice.",
+    explanation: "Zipf's law describes a heavy-tailed power-law distribution: the top 50â€“100 words (stopwords) make up ~50% of any collection, while thousands of rare terms occur only once or twice.",
   },
   {
     id: 8,
@@ -179,7 +182,7 @@ const QUIZ_QUESTIONS = [
 const REFERENCES = [
   {
     title: 'Introduction to Information Retrieval',
-    authors: 'Christopher D. Manning, Prabhakar Raghavan, and Hinrich Schütze',
+    authors: 'Christopher D. Manning, Prabhakar Raghavan, and Hinrich SchÃ¼tze',
     publisher: 'Cambridge University Press, 2008',
     details: 'Chapters 1 & 2: Boolean Retrieval, The Inverted Index, Positional Postings, and Skip Pointers.',
     url: 'https://nlp.stanford.edu/IR-book/',
@@ -221,11 +224,11 @@ const PROCEDURE_STEPS = [
   'Open Report Generation, enter your Student Roll Number and Name, and download the PDF report.',
 ];
 
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // SUB-COMPONENTS
-// ══════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-// ── Theory Tab ─────────────────────────────────────────────
+// â”€â”€ Theory Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function TheoryTab({ onGoToLab }) {
   const [openSection, setOpenSection] = useState(null);
   const toggle = (id) => setOpenSection(prev => prev === id ? null : id);
@@ -237,11 +240,11 @@ function TheoryTab({ onGoToLab }) {
       icon: Database,
       content: (
         <div className="space-y-3 text-sm text-slate-600 leading-relaxed">
-          <p>A naive approach to search — linear scanning — requires <span className="font-mono bg-indigo-50 px-1 rounded text-indigo-700">O(N·L)</span> time per query, infeasible for web-scale collections. To deliver sub-second retrieval latencies, IR systems build an offline <strong>Index</strong>.</p>
+          <p>A naive approach to search â€” linear scanning â€” requires <span className="font-mono bg-indigo-50 px-1 rounded text-indigo-700">O(N·L)</span> time per query, infeasible for web-scale collections. To deliver sub-second retrieval latencies, IR systems build an offline <strong>Index</strong>.</p>
           <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
             <div className="px-4 py-2.5 bg-slate-800 border-b border-slate-700 flex items-center gap-2">
               <span className="text-[10px] font-bold text-yellow-400 uppercase tracking-widest">Dictionary (Vocabulary)</span>
-              <span className="text-[10px] text-slate-500 font-mono">— Inverted Index Architecture</span>
+              <span className="text-[10px] text-slate-500 font-mono">â€” Inverted Index Architecture</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse font-mono">
@@ -265,11 +268,11 @@ function TheoryTab({ onGoToLab }) {
                       <td className="px-4 py-2.5 text-center text-violet-300 font-bold">{row.cf}</td>
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-1 flex-wrap">
-                          <span className="text-slate-500">→</span>
+                          <span className="text-slate-500">←’</span>
                           {row.postings.map((p, pi) => (
                             <span key={pi} className="flex items-center gap-1">
                               <span className="px-2 py-0.5 rounded bg-slate-700 border border-slate-600 text-teal-300">{p}</span>
-                              {pi < row.postings.length - 1 && <span className="text-slate-500 text-[10px]">→</span>}
+                              {pi < row.postings.length - 1 && <span className="text-slate-500 text-[10px]">←’</span>}
                             </span>
                           ))}
                         </div>
@@ -280,7 +283,7 @@ function TheoryTab({ onGoToLab }) {
               </table>
             </div>
           </div>
-          <p><strong>Two Components:</strong> (1) <em>Dictionary (Lexicon)</em> — stores unique terms with df and cf statistics; (2) <em>Postings Lists</em> — sorted sequences of DocIDs with tf and position arrays.</p>
+          <p><strong>Two Components:</strong> (1) <em>Dictionary (Lexicon)</em> â€” stores unique terms with df and cf statistics; (2) <em>Postings Lists</em> â€” sorted sequences of DocIDs with tf and position arrays.</p>
         </div>
       ),
     },
@@ -316,19 +319,19 @@ function TheoryTab({ onGoToLab }) {
         <div className="space-y-3 text-sm text-slate-600">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-              <p className="font-bold text-emerald-800 text-xs uppercase tracking-wide mb-2">AND (Intersection) — O(L₁ + L₂)</p>
+              <p className="font-bold text-emerald-800 text-xs uppercase tracking-wide mb-2">AND (Intersection) â€” O(Lâ‚ + Lâ‚‚)</p>
               <ul className="text-xs space-y-1 text-emerald-700">
-                <li>• If DocID(p1) == DocID(p2): match → add, advance both</li>
-                <li>• If DocID(p1) &lt; DocID(p2): advance p1</li>
-                <li>• If DocID(p1) &gt; DocID(p2): advance p2</li>
+                <li>â€¢ If DocID(p1) == DocID(p2): match ←’ add, advance both</li>
+                <li>â€¢ If DocID(p1) &lt; DocID(p2): advance p1</li>
+                <li>â€¢ If DocID(p1) &gt; DocID(p2): advance p2</li>
               </ul>
             </div>
             <div className="p-4 rounded-xl bg-blue-50 border border-blue-200">
-              <p className="font-bold text-blue-800 text-xs uppercase tracking-wide mb-2">OR (Union) — O(L₁ + L₂)</p>
+              <p className="font-bold text-blue-800 text-xs uppercase tracking-wide mb-2">OR (Union) â€” O(Lâ‚ + Lâ‚‚)</p>
               <ul className="text-xs space-y-1 text-blue-700">
-                <li>• Append the smaller DocID and advance that pointer</li>
-                <li>• If identical, append once and advance both</li>
-                <li>• Drain remaining elements from whichever list is longer</li>
+                <li>â€¢ Append the smaller DocID and advance that pointer</li>
+                <li>â€¢ If identical, append once and advance both</li>
+                <li>â€¢ Drain remaining elements from whichever list is longer</li>
               </ul>
             </div>
           </div>
@@ -344,9 +347,9 @@ function TheoryTab({ onGoToLab }) {
       icon: Tag,
       content: (
         <div className="space-y-3 text-sm text-slate-600">
-          <p>A positional index stores exact token offsets: <span className="font-mono bg-slate-100 px-1 rounded text-slate-700">⟨DocID, tf, [pos₁, pos₂, …, pos_tf]⟩</span></p>
+          <p>A positional index stores exact token offsets: <span className="font-mono bg-slate-100 px-1 rounded text-slate-700">âŸ¨DocID, tf, [posâ‚, posâ‚‚, â€¦, pos_tf]âŸ©</span></p>
           <p>For phrase query <span className="font-mono text-indigo-600">"term1 term2"</span>: find docs where term1 appears at position p AND term2 appears at p+1.</p>
-          <p>For proximity query <span className="font-mono text-violet-600">term1 NEAR/k term2</span>: find docs where |pos₁ - pos₂| ≤ k.</p>
+          <p>For proximity query <span className="font-mono text-violet-600">term1 NEAR/k term2</span>: find docs where |posâ‚ - posâ‚‚| â‰¤ k.</p>
         </div>
       ),
     },
@@ -359,12 +362,12 @@ function TheoryTab({ onGoToLab }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-purple-50 border border-purple-200">
               <p className="font-bold text-purple-800 mb-1">Zipf's Law</p>
-              <p className="font-mono text-xs bg-white rounded p-2 text-purple-700 mb-2">f(r) ∝ 1/r^s ⟹ log(f) = log(C) − s·log(r)</p>
-              <p className="text-xs text-purple-600">A tiny percentage of terms (stopwords) account for a massive fraction of all tokens. The top 50–100 words make up ~50% of any corpus.</p>
+              <p className="font-mono text-xs bg-white rounded p-2 text-purple-700 mb-2">f(r) âˆ 1/r^s âŸ¹ log(f) = log(C) âˆ’ s·log(r)</p>
+              <p className="text-xs text-purple-600">A tiny percentage of terms (stopwords) account for a massive fraction of all tokens. The top 50â€“100 words make up ~50% of any corpus.</p>
             </div>
             <div className="p-4 rounded-xl bg-teal-50 border border-teal-200">
               <p className="font-bold text-teal-800 mb-1">Heaps' Law</p>
-              <p className="font-mono text-xs bg-white rounded p-2 text-teal-700 mb-2">|V| = k · N^β  (30 ≤ k ≤ 100, β ≈ 0.4–0.6)</p>
+              <p className="font-mono text-xs bg-white rounded p-2 text-teal-700 mb-2">|V| = k · N^Î²  (30 â‰¤ k â‰¤ 100, Î² â‰ˆ 0.4â€“0.6)</p>
               <p className="text-xs text-teal-600">Vocabulary continues growing with corpus size. The growth rate slows (sub-linear) but never truly plateaus for large natural language corpora.</p>
             </div>
           </div>
@@ -387,10 +390,10 @@ function TheoryTab({ onGoToLab }) {
             </thead>
             <tbody>
               {[
-                ['Linear Scan (grep)','O(N·L) — No Index','O(N·L) — Full scan','Supported (regex)'],
-                ['Term-Doc Incidence Matrix','O(|V|·N) — Very Sparse','O(N) — Bitwise AND','Unsupported'],
-                ['Inverted Index (Standard)','O(|Postings|)','O(L₁+L₂) — Merge','Unsupported'],
-                ['Positional Inverted Index','O(Total Tokens)','O(L₁+L₂) — Merge','✓ Supported'],
+                ['Linear Scan (grep)','O(N·L) â€” No Index','O(N·L) â€” Full scan','Supported (regex)'],
+                ['Term-Doc Incidence Matrix','O(|V|·N) â€” Very Sparse','O(N) â€” Bitwise AND','Unsupported'],
+                ['Inverted Index (Standard)','O(|Postings|)','O(Lâ‚+Lâ‚‚) â€” Merge','Unsupported'],
+                ['Positional Inverted Index','O(Total Tokens)','O(Lâ‚+Lâ‚‚) â€” Merge','âœ“ Supported'],
               ].map((row, i) => (
                 <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                   {row.map((cell, j) => (
@@ -411,7 +414,7 @@ function TheoryTab({ onGoToLab }) {
       <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 text-white shadow-xl">
         <div className="flex items-center gap-2 text-xs font-semibold text-indigo-300 mb-2">
           <span className="px-2.5 py-0.5 rounded-full bg-white/10 border border-white/15">Experiment 03</span>
-          <span>•</span><span>IR Foundations</span>
+          <span>â€¢</span><span>IR Foundations</span>
         </div>
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">{EXP_CONFIG.title}</h2>
         <p className="text-sm text-slate-300 mt-2 leading-relaxed max-w-3xl">{EXP_CONFIG.aim}</p>
@@ -446,12 +449,12 @@ function TheoryTab({ onGoToLab }) {
           <ul className="space-y-1.5 text-xs text-slate-600">
             {[
               'Data Structures: Hash Tables, Arrays, Linked Lists, Binary Search Trees.',
-              'Discrete Mathematics: Set operations (Intersection ∩, Union ∪, Difference \\).',
+              'Discrete Mathematics: Set operations (Intersection âˆ©, Union âˆª, Difference \\).',
               'Text Processing: Tokenization, Regular Expressions, String Normalization.',
               'Algorithmic Complexity: Big-O notation, Two-Pointer Merge Algorithms O(n+m).',
             ].map((p, i) => (
               <li key={i} className="flex items-start gap-2">
-                <span className="text-emerald-500 mt-0.5">✓</span><span>{p}</span>
+                <span className="text-emerald-500 mt-0.5">âœ“</span><span>{p}</span>
               </li>
             ))}
           </ul>
@@ -509,7 +512,7 @@ function TheoryTab({ onGoToLab }) {
               <span className="text-xs font-bold text-indigo-600 bg-indigo-50 rounded px-2 py-0.5 shrink-0">[{i + 1}]</span>
               <div className="text-xs">
                 <a href={ref.url} target="_blank" rel="noopener noreferrer" className="font-bold text-indigo-700 hover:text-indigo-900 underline underline-offset-2">{ref.title}</a>
-                <span className="text-slate-500"> — {ref.authors}. {ref.publisher}.</span>
+                <span className="text-slate-500"> â€” {ref.authors}. {ref.publisher}.</span>
               </div>
             </div>
           ))}
@@ -525,7 +528,7 @@ function TheoryTab({ onGoToLab }) {
   );
 }
 
-// ── Simulation Tab ─────────────────────────────────────────
+// â”€â”€ Simulation Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SimulationTab({ onRecordTrial, trials }) {
   const [corpusName, setCorpusName] = useState(Object.keys(BENCHMARK_CORPORA)[0]);
   const [customDocs, setCustomDocs] = useState({ 1: '', 2: '', 3: '' });
@@ -601,7 +604,7 @@ function SimulationTab({ onRecordTrial, trials }) {
       const q1 = executeKeywordQuery(terms[0] || query, idx, useStemming);
       const excludeSet = new Set(q1.docs);
       const resultDocs = allDocs.filter(d => !excludeSet.has(d));
-      result = { mode: 'Boolean NOT', docs: resultDocs, trace: [`NOT '${terms[0] || query}' → excluding docs [${q1.docs.join(', ')}] from all docs [${allDocs.join(', ')}]`, `Result: [${resultDocs.join(', ')}]`], latencyUs: Math.round((performance.now() - t0) * 1000) };
+      result = { mode: 'Boolean NOT', docs: resultDocs, trace: [`NOT '${terms[0] || query}' ←’ excluding docs [${q1.docs.join(', ')}] from all docs [${allDocs.join(', ')}]`, `Result: [${resultDocs.join(', ')}]`], latencyUs: Math.round((performance.now() - t0) * 1000) };
     } else if (queryMode === 'PHRASE') {
       result = executePhraseQuery(query, idx, useStemming);
       result.mode = 'Phrase Query';
@@ -689,7 +692,7 @@ function SimulationTab({ onRecordTrial, trials }) {
         </div>
         <button onClick={handleBuildIndex} disabled={isBuilding}
           className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all cursor-pointer disabled:opacity-60">
-          {isBuilding ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Building Index…</> : <><Play className="w-4 h-4 fill-current" />Construct Inverted Index</>}
+          {isBuilding ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Building Indexâ€¦</> : <><Play className="w-4 h-4 fill-current" />Construct Inverted Index</>}
         </button>
       </div>
 
@@ -736,12 +739,12 @@ function SimulationTab({ onRecordTrial, trials }) {
               <p className="text-xs text-slate-500 font-medium">Token stream per document after preprocessing:</p>
               {Object.entries(indexResult.stage1Tokens).map(([docId, tokens]) => (
                 <div key={docId} className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <p className="text-xs font-bold text-slate-700 mb-2">Doc {docId}: <span className="text-slate-500 font-normal italic">{(useCustom ? customDocs : BENCHMARK_CORPORA[corpusName])[Number(docId)]?.slice(0, 70)}…</span></p>
+                  <p className="text-xs font-bold text-slate-700 mb-2">Doc {docId}: <span className="text-slate-500 font-normal italic">{(useCustom ? customDocs : BENCHMARK_CORPORA[corpusName])[Number(docId)]?.slice(0, 70)}â€¦</span></p>
                   <div className="flex flex-wrap gap-1.5">
                     {tokens.map(({ term, pos, rawTok }, i) => (
                       <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-700 font-mono text-xs">
                         <span className="text-indigo-400 text-[9px]">[{pos}]</span>{term}
-                        {rawTok.toLowerCase() !== term && <span className="text-slate-400 text-[9px]">←{rawTok}</span>}
+                        {rawTok.toLowerCase() !== term && <span className="text-slate-400 text-[9px]">←{rawTok}</span>}
                       </span>
                     ))}
                     {tokens.length === 0 && <span className="text-slate-400 text-xs italic">No tokens after preprocessing</span>}
@@ -769,7 +772,7 @@ function SimulationTab({ onRecordTrial, trials }) {
                     ))}
                   </tbody>
                 </table>
-                {indexResult.stage2Triples.length > 30 && <p className="text-xs text-slate-400 text-center py-2">…{indexResult.stage2Triples.length - 30} more triples</p>}
+                {indexResult.stage2Triples.length > 30 && <p className="text-xs text-slate-400 text-center py-2">â€¦{indexResult.stage2Triples.length - 30} more triples</p>}
               </div>
             </div>
           )}
@@ -780,7 +783,7 @@ function SimulationTab({ onRecordTrial, trials }) {
               <p className="text-xs text-slate-500 font-medium mb-3">First 30 triples after lexicographic sort by (term, docId, pos):</p>
               <div className="overflow-x-auto">
                 <table className="text-xs border-collapse w-full">
-                  <thead><tr className="bg-blue-600 text-white"><th className="px-3 py-2">Rank</th><th className="px-3 py-2">Term ↑</th><th className="px-3 py-2">DocID ↑</th><th className="px-3 py-2">Pos ↑</th></tr></thead>
+                  <thead><tr className="bg-blue-600 text-white"><th className="px-3 py-2">Rank</th><th className="px-3 py-2">Term ←‘</th><th className="px-3 py-2">DocID ←‘</th><th className="px-3 py-2">Pos ←‘</th></tr></thead>
                   <tbody>
                     {indexResult.stage3Sorted.slice(0, 30).map((t, i) => (
                       <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
@@ -799,14 +802,14 @@ function SimulationTab({ onRecordTrial, trials }) {
           {/* Stage 4: Postings */}
           {activeStage === 4 && (
             <div className="p-5 space-y-2 max-h-72 overflow-y-auto">
-              <p className="text-xs text-slate-500 font-medium mb-1">Inverted index — sorted by collection frequency (cf) descending:</p>
+              <p className="text-xs text-slate-500 font-medium mb-1">Inverted index â€” sorted by collection frequency (cf) descending:</p>
               {sortedTerms.slice(0, 20).map(([term, entry]) => (
                 <div key={term} className="flex items-center gap-2 flex-wrap">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-teal-600 text-white font-mono text-xs font-semibold shrink-0">
                     {term}
                     <span className="bg-white/20 px-1.5 rounded text-[10px]">df:{entry.df} cf:{entry.cf}</span>
                   </span>
-                  <span className="text-slate-300 text-xs">→</span>
+                  <span className="text-slate-300 text-xs">←’</span>
                   {Object.entries(entry.postings).map(([docId, p]) => (
                     <span key={docId} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-700 text-xs font-mono">
                       Doc{docId} <span className="text-teal-400">tf:{p.tf}</span>
@@ -815,14 +818,14 @@ function SimulationTab({ onRecordTrial, trials }) {
                   ))}
                 </div>
               ))}
-              {sortedTerms.length > 20 && <p className="text-xs text-slate-400">…{sortedTerms.length - 20} more terms</p>}
+              {sortedTerms.length > 20 && <p className="text-xs text-slate-400">â€¦{sortedTerms.length - 20} more terms</p>}
             </div>
           )}
 
           {/* Zipf distribution */}
           {!activeStage && (
             <div className="p-5">
-              <p className="text-xs text-slate-500 font-medium mb-3 flex items-center gap-2"><BarChart2 className="w-3.5 h-3.5" />Term Frequency Distribution — Top 20 Terms (Zipf's Law)</p>
+              <p className="text-xs text-slate-500 font-medium mb-3 flex items-center gap-2"><BarChart2 className="w-3.5 h-3.5" />Term Frequency Distribution â€” Top 20 Terms (Zipf's Law)</p>
               <div className="space-y-1.5">
                 {sortedTerms.slice(0, 20).map(([term, entry], i) => {
                   const maxCf = sortedTerms[0]?.[1].cf || 1;
@@ -863,12 +866,12 @@ function SimulationTab({ onRecordTrial, trials }) {
             {/* Mode description */}
             <AnimatePresence mode="wait">
               {{
-                AND:       { icon: '∩', color: 'bg-indigo-50 border-indigo-200 text-indigo-800', badge: 'bg-indigo-100 text-indigo-600', label: 'Boolean AND (Conjunction)', desc: 'Returns only documents containing ALL specified terms. Uses a two-pointer merge on sorted postings lists in O(L₁ + L₂) time. Enter space-separated terms (e.g. information retrieval).' },
-                OR:        { icon: '∪', color: 'bg-blue-50 border-blue-200 text-blue-800',     badge: 'bg-blue-100 text-blue-600',   label: 'Boolean OR (Disjunction)',  desc: 'Returns documents containing ANY of the specified terms. Merges all postings lists with a union sweep. Results are sorted by DocID.' },
-                NOT:       { icon: '¬', color: 'bg-amber-50 border-amber-200 text-amber-800',  badge: 'bg-amber-100 text-amber-700', label: 'Boolean NOT (Negation)',     desc: 'Returns all documents that do NOT contain the specified term. Computes the complement of the term\'s postings list against the full document set.' },
-                PHRASE:    { icon: '""', color: 'bg-emerald-50 border-emerald-200 text-emerald-800', badge: 'bg-emerald-100 text-emerald-700', label: 'Exact Phrase Query',  desc: 'Retrieves documents where the terms appear consecutively in exactly the given order. Requires a positional index — checks that pos(term₂) = pos(term₁) + 1 for each candidate doc.' },
-                PROXIMITY: { icon: '↔', color: 'bg-violet-50 border-violet-200 text-violet-800', badge: 'bg-violet-100 text-violet-700', label: `Proximity Query (NEAR/k)`, desc: `Finds documents where two terms appear within k tokens of each other, in any order. Enter two space-separated terms. Adjust k= in the input field (currently k=${proximityK}).` },
-                KEYWORD:   { icon: '🔑', color: 'bg-slate-50 border-slate-200 text-slate-700',  badge: 'bg-slate-100 text-slate-600',  label: 'Single Keyword Lookup',     desc: 'Direct dictionary lookup for a single term. Returns its document frequency (df), collection frequency (cf), and the full postings list with token positions.' },
+                AND:       { icon: 'âˆ©', color: 'bg-indigo-50 border-indigo-200 text-indigo-800', badge: 'bg-indigo-100 text-indigo-600', label: 'Boolean AND (Conjunction)', desc: 'Returns only documents containing ALL specified terms. Uses a two-pointer merge on sorted postings lists in O(Lâ‚ + Lâ‚‚) time. Enter space-separated terms (e.g. information retrieval).' },
+                OR:        { icon: 'âˆª', color: 'bg-blue-50 border-blue-200 text-blue-800',     badge: 'bg-blue-100 text-blue-600',   label: 'Boolean OR (Disjunction)',  desc: 'Returns documents containing ANY of the specified terms. Merges all postings lists with a union sweep. Results are sorted by DocID.' },
+                NOT:       { icon: 'Â¬', color: 'bg-amber-50 border-amber-200 text-amber-800',  badge: 'bg-amber-100 text-amber-700', label: 'Boolean NOT (Negation)',     desc: 'Returns all documents that do NOT contain the specified term. Computes the complement of the term\'s postings list against the full document set.' },
+                PHRASE:    { icon: '""', color: 'bg-emerald-50 border-emerald-200 text-emerald-800', badge: 'bg-emerald-100 text-emerald-700', label: 'Exact Phrase Query',  desc: 'Retrieves documents where the terms appear consecutively in exactly the given order. Requires a positional index â€” checks that pos(termâ‚‚) = pos(termâ‚) + 1 for each candidate doc.' },
+                PROXIMITY: { icon: '←”', color: 'bg-violet-50 border-violet-200 text-violet-800', badge: 'bg-violet-100 text-violet-700', label: `Proximity Query (NEAR/k)`, desc: `Finds documents where two terms appear within k tokens of each other, in any order. Enter two space-separated terms. Adjust k= in the input field (currently k=${proximityK}).` },
+                KEYWORD:   { icon: 'ðŸ”‘', color: 'bg-slate-50 border-slate-200 text-slate-700',  badge: 'bg-slate-100 text-slate-600',  label: 'Single Keyword Lookup',     desc: 'Direct dictionary lookup for a single term. Returns its document frequency (df), collection frequency (cf), and the full postings list with token positions.' },
               }[queryMode] && (
                 <motion.div
                   key={queryMode}
@@ -883,14 +886,14 @@ function SimulationTab({ onRecordTrial, trials }) {
                   <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${
                     { AND: 'bg-indigo-100 text-indigo-600', OR: 'bg-blue-100 text-blue-600', NOT: 'bg-amber-100 text-amber-700', PHRASE: 'bg-emerald-100 text-emerald-700', PROXIMITY: 'bg-violet-100 text-violet-700', KEYWORD: 'bg-slate-100 text-slate-600' }[queryMode]
                   }`}>
-                    {{ AND: '∩', OR: '∪', NOT: '¬', PHRASE: '""', PROXIMITY: '↔', KEYWORD: '🔑' }[queryMode]}
+                    {{ AND: 'âˆ©', OR: 'âˆª', NOT: 'Â¬', PHRASE: '""', PROXIMITY: '←”', KEYWORD: 'ðŸ”‘' }[queryMode]}
                   </span>
                   <div>
                     <p className={`font-bold mb-0.5 ${{ AND: 'text-indigo-800', OR: 'text-blue-800', NOT: 'text-amber-800', PHRASE: 'text-emerald-800', PROXIMITY: 'text-violet-800', KEYWORD: 'text-slate-700' }[queryMode]}`}>
-                      {{ AND: 'Boolean AND — Conjunction', OR: 'Boolean OR — Disjunction', NOT: 'Boolean NOT — Negation', PHRASE: 'Exact Phrase Query', PROXIMITY: `Proximity Query — NEAR/${proximityK}`, KEYWORD: 'Single Keyword Lookup' }[queryMode]}
+                      {{ AND: 'Boolean AND â€” Conjunction', OR: 'Boolean OR â€” Disjunction', NOT: 'Boolean NOT â€” Negation', PHRASE: 'Exact Phrase Query', PROXIMITY: `Proximity Query â€” NEAR/${proximityK}`, KEYWORD: 'Single Keyword Lookup' }[queryMode]}
                     </p>
                     <p className={`leading-relaxed ${{ AND: 'text-indigo-700', OR: 'text-blue-700', NOT: 'text-amber-700', PHRASE: 'text-emerald-700', PROXIMITY: 'text-violet-700', KEYWORD: 'text-slate-600' }[queryMode]}`}>
-                      {{ AND: 'Returns only documents containing ALL specified terms. Uses a two-pointer merge on sorted postings lists in O(L₁ + L₂) time. Enter space-separated terms — e.g. information retrieval.', OR: 'Returns documents containing ANY of the specified terms. Merges postings lists with a union sweep in O(L₁ + L₂). All matched DocIDs are returned sorted.', NOT: "Returns all documents that do NOT contain the specified term. Computes the complement of the term's postings list against the full document set.", PHRASE: 'Retrieves documents where terms appear consecutively in exactly the given order. Requires a positional index — verifies pos(term₂) = pos(term₁) + 1 for each candidate document.', PROXIMITY: `Finds documents where two terms appear within ${proximityK} token(s) of each other in any order. Enter two space-separated terms. Adjust the k= value on the right.`, KEYWORD: 'Direct O(1) dictionary lookup for a single term. Returns document frequency (df), collection frequency (cf), and the full postings list with exact token positions.' }[queryMode]}
+                      {{ AND: 'Returns only documents containing ALL specified terms. Uses a two-pointer merge on sorted postings lists in O(Lâ‚ + Lâ‚‚) time. Enter space-separated terms â€” e.g. information retrieval.', OR: 'Returns documents containing ANY of the specified terms. Merges postings lists with a union sweep in O(Lâ‚ + Lâ‚‚). All matched DocIDs are returned sorted.', NOT: "Returns all documents that do NOT contain the specified term. Computes the complement of the term's postings list against the full document set.", PHRASE: 'Retrieves documents where terms appear consecutively in exactly the given order. Requires a positional index â€” verifies pos(termâ‚‚) = pos(termâ‚) + 1 for each candidate document.', PROXIMITY: `Finds documents where two terms appear within ${proximityK} token(s) of each other in any order. Enter two space-separated terms. Adjust the k= value on the right.`, KEYWORD: 'Direct O(1) dictionary lookup for a single term. Returns document frequency (df), collection frequency (cf), and the full postings list with exact token positions.' }[queryMode]}
                     </p>
                   </div>
                 </motion.div>
@@ -922,7 +925,7 @@ function SimulationTab({ onRecordTrial, trials }) {
                     </span>
                     <span className="text-xs text-slate-400 font-mono">Mode: {queryResult.mode}</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-mono">{queryResult.latencyUs}µs</span>
+                  <span className="text-[10px] text-slate-400 font-mono">{queryResult.latencyUs}Âµs</span>
                 </div>
 
                 {/* Matched doc cards */}
@@ -980,346 +983,42 @@ function SimulationTab({ onRecordTrial, trials }) {
   );
 }
 
-// ── Assessment Tab ──────────────────────────────────────────
-function AssessmentTab() {
-  const [answers, setAnswers] = useState({});
-  const [submitted, setSubmitted] = useState(false);
-  const [score, setScore] = useState(0);
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// MAIN EXPERIMENT 3 COMPONENT
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+export default function Experiment3({ onBack }) {
+  const [activeTab, setActiveTab]   = useState('theory');
+  const [trials, setTrials]         = useState([]);
+  const [quizScore, setQuizScore]   = useState(null);
+  const [studentInfo, setStudentInfo] = useState({
+    name: '', studentId: '', institution: 'VESIT â€“ Dept. of Computer Engineering',
+    instructor: 'Dr. Sharmila Sengupta / Mrs. Abha Tewari / Mrs. Sunita Suralkar',
+  });
 
-  const handleSelect = (qId, idx) => {
-    if (submitted) return;
-    setAnswers(prev => ({ ...prev, [qId]: idx }));
-  };
+  const handleInfoChange = (key, value) =>
+    setStudentInfo(prev => ({ ...prev, [key]: value }));
 
-  const handleSubmit = () => {
-    let s = 0;
-    QUIZ_QUESTIONS.forEach(q => { if (answers[q.id] === q.answerIndex) s++; });
-    setScore(s);
-    setSubmitted(true);
+  const handleScoreUpdate = (score) => setQuizScore(score);
+
+  const goTo = (tab) => {
+    setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleReset = () => { setAnswers({}); setSubmitted(false); setScore(0); };
-
-  const pct = Math.round((score / QUIZ_QUESTIONS.length) * 100);
-
-  return (
-    <motion.div key="assessment" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-5">
-      {/* Header */}
-      <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center"><HelpCircle className="w-5 h-5" /></div>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">Self-Evaluation Quiz</h3>
-            <p className="text-xs text-slate-500">10 MCQ · Conceptual Mastery Assessment</p>
-          </div>
-        </div>
-        {submitted && (
-          <div className={`px-4 py-2 rounded-xl text-sm font-bold border ${pct >= 70 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : pct >= 50 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
-            {score}/{QUIZ_QUESTIONS.length} ({pct}%) — {pct >= 70 ? '🎉 Excellent!' : pct >= 50 ? '👍 Good Attempt' : '📚 Needs Revision'}
-          </div>
-        )}
-        {submitted && (
-          <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-600 cursor-pointer transition-colors">
-            <RotateCcw className="w-3.5 h-3.5" />Retry
-          </button>
-        )}
-      </div>
-
-      {/* Score Bar */}
-      {submitted && (
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
-            <span>Score</span><span>{score}/{QUIZ_QUESTIONS.length}</span>
-          </div>
-          <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all duration-700 ${pct >= 70 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-      )}
-
-      {/* Questions */}
-      <div className="space-y-4">
-        {QUIZ_QUESTIONS.map((q, qi) => {
-          const selected = answers[q.id];
-          const isCorrect = submitted && selected === q.answerIndex;
-          const isWrong = submitted && selected !== undefined && selected !== q.answerIndex;
-
-          return (
-            <div key={q.id} className={`rounded-2xl bg-white border shadow-sm overflow-hidden transition-all ${submitted ? (isCorrect ? 'border-emerald-300' : isWrong ? 'border-rose-300' : 'border-slate-200') : 'border-slate-200'}`}>
-              <div className="px-5 pt-4 pb-3">
-                <div className="flex items-start gap-3">
-                  <span className={`w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5 ${submitted ? (isCorrect ? 'bg-emerald-100 text-emerald-700' : isWrong ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-500') : 'bg-indigo-100 text-indigo-700'}`}>
-                    {qi + 1}
-                  </span>
-                  <p className="text-sm font-semibold text-slate-800 leading-relaxed">{q.question}</p>
-                </div>
-                <div className="mt-3 space-y-2 pl-9">
-                  {q.options.map((opt, oi) => {
-                    const isSelected = selected === oi;
-                    const isAnswer = oi === q.answerIndex;
-                    let cls = 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 cursor-pointer';
-                    if (submitted) {
-                      if (isAnswer) cls = 'border-emerald-400 bg-emerald-50 text-emerald-800 cursor-default';
-                      else if (isSelected && !isAnswer) cls = 'border-rose-400 bg-rose-50 text-rose-800 cursor-default';
-                      else cls = 'border-slate-100 bg-slate-50/50 text-slate-500 cursor-default opacity-70';
-                    } else if (isSelected) {
-                      cls = 'border-indigo-400 bg-indigo-50 text-indigo-800 cursor-pointer';
-                    }
-
-                    return (
-                      <button key={oi} onClick={() => handleSelect(q.id, oi)} className={`w-full text-left px-4 py-2.5 rounded-xl border text-xs font-medium transition-all flex items-center gap-3 ${cls}`}>
-                        <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${submitted && isAnswer ? 'border-emerald-500 bg-emerald-500' : submitted && isSelected && !isAnswer ? 'border-rose-500 bg-rose-500' : isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 bg-white'}`}>
-                          {(submitted && (isAnswer || (isSelected && !isAnswer))) && (
-                            isAnswer ? <CheckCircle className="w-3 h-3 text-white" /> : <XCircle className="w-3 h-3 text-white" />
-                          )}
-                          {!submitted && isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                        </span>
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {submitted && (
-                  <div className={`mt-3 ml-9 p-3 rounded-xl text-xs leading-relaxed flex items-start gap-2 ${isCorrect ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'}`}>
-                    <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                    <span><strong>Explanation:</strong> {q.explanation}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {!submitted && (
-        <button onClick={handleSubmit} disabled={Object.keys(answers).length < QUIZ_QUESTIONS.length}
-          className="w-full py-3 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-md shadow-rose-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-          <Award className="w-4 h-4" />
-          Submit Assessment ({Object.keys(answers).length}/{QUIZ_QUESTIONS.length} answered)
-        </button>
-      )}
-    </motion.div>
-  );
-}
-
-// ── Lab Report Tab ──────────────────────────────────────────
-function ReportTab({ trials }) {
-  const [studentName, setStudentName] = useState('');
-  const [studentId, setStudentId] = useState('');
-  const [division, setDivision] = useState('D17A');
-  const [notes, setNotes] = useState('');
-  const [quizScore, setQuizScore] = useState('');
-  const [generating, setGenerating] = useState(false);
-  const reportRef = useRef(null);
-
-  const handlePrint = () => {
-    if (!studentName || !studentId) { alert('Please enter your student name and roll number.'); return; }
-    setGenerating(true);
-    setTimeout(() => {
-      window.print();
-      setGenerating(false);
-    }, 200);
-  };
-
-  const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
-
-  return (
-    <motion.div key="report" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-5">
-      {/* Form */}
-      <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm no-print">
-        <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2"><FileText className="w-4 h-4 text-teal-600" />Lab Report Generator</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { label: 'Student Full Name', val: studentName, set: setStudentName, ph: 'Enter full name' },
-            { label: 'Roll / Student ID', val: studentId, set: setStudentId, ph: 'e.g. 2023KGIRS11' },
-          ].map(f => (
-            <div key={f.label}>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">{f.label} *</label>
-              <input value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph}
-                className="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-200 text-slate-700" />
-            </div>
-          ))}
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Class / Division</label>
-            <select value={division} onChange={e => setDivision(e.target.value)} className="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-200 text-slate-700">
-              {['D17A','D17B','D17C'].map(d => <option key={d}>{d}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Quiz Score (optional)</label>
-            <input type="number" min={0} max={10} value={quizScore} onChange={e => setQuizScore(e.target.value)} placeholder="e.g. 8"
-              className="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-200 text-slate-700" />
-          </div>
-          <div className="md:col-span-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Student Observations & Discussion</label>
-            <textarea rows={4} value={notes} onChange={e => setNotes(e.target.value)}
-              placeholder="Describe your key observations: effect of stopword removal on vocabulary, behavior of pointer-merge algorithm, Zipf's distribution..."
-              className="w-full text-sm border border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal-200 text-slate-700 resize-none" />
-          </div>
-        </div>
-        <button onClick={handlePrint} disabled={generating}
-          className="mt-4 flex items-center gap-2 px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm shadow-md shadow-teal-200 transition-all cursor-pointer disabled:opacity-60">
-          <Download className="w-4 h-4" />{generating ? 'Generating…' : 'Download PDF Report (Print)'}
-        </button>
-      </div>
-
-      {/* ── Printable Report ── */}
-      <div ref={reportRef} className="report-content">
-        <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-6">
-          {/* Header */}
-          <div className="border-b-2 border-indigo-600 pb-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Virtual Labs CA — Experiment Report</p>
-                <p className="text-xs text-slate-500">{EXP_CONFIG.subject} | {EXP_CONFIG.courseCode}</p>
-              </div>
-              <div className="text-right text-xs text-slate-400">
-                <p>Date: {today}</p>
-                <p>Lab Module: {EXP_CONFIG.expNo}</p>
-              </div>
-            </div>
-            <h2 className="text-lg font-extrabold text-slate-900 mt-3">Experiment 3: {EXP_CONFIG.title}</h2>
-          </div>
-
-          {/* Student Info */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-2 gap-3 text-xs">
-            {[
-              ['Student Name', studentName || '___________________________'],
-              ['Roll / Student ID', studentId || '___________________________'],
-              ['Class / Division', division],
-              ['Submission Date', today],
-              ['Target Roll Numbers', EXP_CONFIG.targetRolls],
-              ['Self-Evaluation Score', quizScore ? `${quizScore}/10 (${Math.round(Number(quizScore) * 10)}%)` : 'Not recorded'],
-            ].map(([label, val]) => (
-              <div key={label}>
-                <span className="font-bold text-slate-500">{label}: </span>
-                <span className="text-slate-800">{val}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Aim */}
-          <div>
-            <h3 className="text-sm font-bold text-indigo-700 mb-2 uppercase tracking-wide">1. Aim & Learning Objectives</h3>
-            <p className="text-xs text-slate-600 leading-relaxed mb-3"><strong>Aim:</strong> {EXP_CONFIG.aim}</p>
-            <ul className="space-y-1">
-              {EXP_CONFIG.objectives.map((obj, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-slate-600">
-                  <span className="text-indigo-500 font-bold shrink-0">{i + 1}.</span><span>{obj}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Theory Summary */}
-          <div>
-            <h3 className="text-sm font-bold text-indigo-700 mb-2 uppercase tracking-wide">2. Theoretical Summary</h3>
-            <div className="text-xs text-slate-600 space-y-2 leading-relaxed">
-              <p>An <strong>Inverted Index</strong> maps each vocabulary term to a sorted postings list of (DocID, tf, positions[]). It consists of a Dictionary (Lexicon) storing df and cf per term, and variable-length postings lists enabling O(L₁+L₂) Boolean retrieval via two-pointer merge algorithms.</p>
-              <p><strong>4-Stage Pipeline:</strong> (1) Token Extraction with linguistic preprocessing; (2) (Term, DocID, Position) triple emission; (3) Lexicographic sorting by (term, docId); (4) Postings list aggregation to produce the inverted index.</p>
-              <p><strong>Empirical Laws:</strong> Zipf's Law (f∝1/r) explains heavy-tailed term distributions. Heaps' Law (|V|=k·N^β) models sub-linear vocabulary growth as corpus size increases.</p>
-            </div>
-          </div>
-
-          {/* Trials Table */}
-          <div>
-            <h3 className="text-sm font-bold text-indigo-700 mb-2 uppercase tracking-wide">3. Recorded Experimental Trials</h3>
-            {trials.length === 0 ? (
-              <p className="text-xs text-slate-400 italic">No trials recorded. Run queries in the Simulation tab and click "Record Trial".</p>
-            ) : (
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="bg-indigo-600 text-white">
-                    {['Trial','Corpus','Stopwords','Stemming','Vocab |V|','Query','Hits','Time (µs)'].map(h => (
-                      <th key={h} className="px-2 py-1.5 text-left font-semibold border border-indigo-500">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {trials.map((t, i) => (
-                    <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                      <td className="px-2 py-1.5 border border-slate-200 text-center font-bold">{i + 1}</td>
-                      <td className="px-2 py-1.5 border border-slate-200">{t.corpus}</td>
-                      <td className="px-2 py-1.5 border border-slate-200 text-center">
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${t.stopwords === 'Yes' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{t.stopwords}</span>
-                      </td>
-                      <td className="px-2 py-1.5 border border-slate-200 text-center">
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${t.stemming === 'Yes' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>{t.stemming}</span>
-                      </td>
-                      <td className="px-2 py-1.5 border border-slate-200 text-center font-mono">{t.vocabSize}</td>
-                      <td className="px-2 py-1.5 border border-slate-200 font-mono text-slate-600 max-w-[120px] truncate">{t.query}</td>
-                      <td className="px-2 py-1.5 border border-slate-200 text-center font-bold">{t.hits}</td>
-                      <td className="px-2 py-1.5 border border-slate-200 text-center font-mono">{t.timeUs}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Observations */}
-          <div>
-            <h3 className="text-sm font-bold text-indigo-700 mb-2 uppercase tracking-wide">4. Student Observations & Discussion</h3>
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap min-h-[100px]">
-              {notes.trim() || [
-                '1. Stopword removal and Porter stemming significantly reduced vocabulary size |V|, validating Heaps\' Law.',
-                '2. Conjunctive Boolean queries executed in sub-millisecond linear time O(L₁ + L₂) via sorted pointer intersection.',
-                '3. Positional postings enabled exact phrase verification with zero false positives by matching consecutive token offsets.',
-                '4. Empirical term frequency distribution conforms to the heavy-tailed power law modeled by Zipf\'s Law.',
-              ].join('\n')}
-            </div>
-          </div>
-
-          {/* Conclusions */}
-          <div>
-            <h3 className="text-sm font-bold text-indigo-700 mb-2 uppercase tracking-wide">5. Conclusions</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              This experiment successfully demonstrated the construction and analysis of a Positional Inverted Index. The 4-stage pipeline (Tokenization → Triple Extraction → Lexicographic Sort → Postings Inversion) produced an efficient data structure supporting O(L₁+L₂) Boolean retrieval, phrase queries, and proximity searches. Linguistic preprocessing (stopword removal, Porter stemming) substantially compressed the vocabulary, consistent with Heaps' Law predictions.
-            </p>
-          </div>
-
-          {/* Sign-off */}
-          <div className="flex items-end justify-between pt-4 border-t border-slate-200">
-            <div className="text-xs text-slate-400">
-              <p>Generated by KGIRS Virtual Laboratory Portal</p>
-              <p className="font-mono">{new Date().toISOString()}</p>
-            </div>
-            <div className="text-center">
-              <div className="w-40 h-0.5 bg-slate-400 mb-1" />
-              <p className="text-xs text-slate-500">Evaluator / Faculty Signature</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════
-// MAIN EXPERIMENT 3 COMPONENT
-// ══════════════════════════════════════════════════════════
-export default function Experiment3({ onBack }) {
-  const [activeTab, setActiveTab] = useState('theory');
-  const [trials, setTrials] = useState([]);
-
   const tabs = [
-    { id: 'theory',     label: 'Theory & Objectives', short: 'Theory',     icon: BookOpen,    color: 'indigo' },
-    { id: 'lab',        label: 'Simulation & Lab',    short: 'Lab',         icon: FlaskConical,color: 'violet' },
-    { id: 'assessment', label: 'Assessment',           short: 'Quiz',        icon: HelpCircle,  color: 'rose' },
-    { id: 'report',     label: 'Lab Report',           short: 'Report',      icon: FileText,    color: 'teal' },
+    { id: 'theory',      label: 'Theory',        short: 'Theory', icon: BookOpen,     color: 'indigo' },
+    { id: 'lab',         label: 'Simulation Lab', short: 'Lab',    icon: FlaskConical, color: 'violet' },
+    { id: 'quiz',        label: 'Quiz',           short: 'Quiz',   icon: HelpCircle,   color: 'rose'   },
+    { id: 'certificate', label: 'Certificate',    short: 'Cert.',  icon: Award,        color: 'amber'  },
+    { id: 'report',      label: 'Report',         short: 'Report', icon: FileText,     color: 'teal'   },
   ];
 
-  const tabActiveStyles = {
+  const TAB_ACTIVE = {
     indigo: 'bg-indigo-600 text-white shadow-indigo-200',
     violet: 'bg-violet-600 text-white shadow-violet-200',
     rose:   'bg-rose-500 text-white shadow-rose-200',
+    amber:  'bg-amber-500 text-white shadow-amber-200',
     teal:   'bg-teal-600 text-white shadow-teal-200',
-  };
-
-  const handleRecordTrial = (trial) => {
-    setTrials(prev => [...prev, trial]);
   };
 
   return (
@@ -1328,24 +1027,54 @@ export default function Experiment3({ onBack }) {
         title="Exp 03: Construction of an Inverted Index"
         tabs={tabs}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={goTo}
         onBack={onBack}
-        tabActiveStyles={tabActiveStyles}
+        quizScore={quizScore}
+        totalQuestions={QUIZ_QUESTIONS.length}
+        tabActiveStyles={TAB_ACTIVE}
       />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1">
         <AnimatePresence mode="wait">
           {activeTab === 'theory' && (
-            <TheoryTab key="theory" onGoToLab={() => setActiveTab('lab')} />
+            <motion.div key="theory" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+                <TheoryTab onGoToLab={() => goTo('lab')} />
+              </div>
+            </motion.div>
           )}
           {activeTab === 'lab' && (
-            <SimulationTab key="lab" onRecordTrial={handleRecordTrial} trials={trials} />
+            <motion.div key="lab" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+                <SimulationTab onRecordTrial={(t) => setTrials(prev => [...prev, t])} trials={trials} />
+              </div>
+            </motion.div>
           )}
-          {activeTab === 'assessment' && (
-            <AssessmentTab key="assessment" />
+          {activeTab === 'quiz' && (
+            <motion.div key="quiz" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
+              <QuizSection onNext={() => goTo('certificate')} onScoreUpdate={handleScoreUpdate} />
+            </motion.div>
+          )}
+          {activeTab === 'certificate' && (
+            <motion.div key="certificate" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
+              <CertificateSection
+                quizScore={quizScore}
+                totalQuestions={QUIZ_QUESTIONS.length}
+                studentInfo={studentInfo}
+                onInfoChange={handleInfoChange}
+                onNext={() => goTo('report')}
+              />
+            </motion.div>
           )}
           {activeTab === 'report' && (
-            <ReportTab key="report" trials={trials} />
+            <motion.div key="report" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
+              <ReportSection
+                quizScore={quizScore}
+                totalQuestions={QUIZ_QUESTIONS.length}
+                studentInfo={studentInfo}
+                trials={trials}
+              />
+            </motion.div>
           )}
         </AnimatePresence>
       </main>
@@ -1354,11 +1083,11 @@ export default function Experiment3({ onBack }) {
         <div>
           <span className="font-semibold text-slate-600">Construction of an Inverted Index</span>
           <span className="mx-2">·</span>
-          <span className="font-mono">Lab Module 03 · KGIRS</span>
+          <span className="font-mono">CS-KGIRS-03 · Lab Module 03</span>
         </div>
         <span className="hidden sm:inline">·</span>
         <button onClick={onBack} className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer underline underline-offset-2">
-          ← Return to 15 Experiments Portal
+          ← Return to 15 Experiments Portal
         </button>
       </footer>
     </div>
