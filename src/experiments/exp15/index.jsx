@@ -14,6 +14,7 @@ import QuizSection from './components/QuizSection';
 import CertificateSection from './components/CertificateSection';
 import ReportSection from './components/ReportSection';
 import { EXPERIMENT, QUIZ_QUESTIONS } from './data/labData';
+import { useAuth } from '../../context/AuthContext';
 
 const TABS = [
   { id: 'theory', label: 'Theory', short: 'Theory', icon: BookOpen, color: 'indigo' },
@@ -32,19 +33,40 @@ const TAB_ACTIVE = {
 };
 
 export default function Experiment15({ onBack }) {
+  const { user, recordQuizScore, recordExpCompleted } = useAuth();
   const [activeTab, setActiveTab] = useState('theory');
   const [quizScore, setQuizScore] = useState(null);
   const [studentInfo, setStudentInfo] = useState({
-    name: '',
-    studentId: '',
-    institution: 'VESIT - Dept. of Computer Engineering',
+    name: user?.displayName || (user ? `${user.firstName} ${user.lastName}`.trim() : ''),
+    studentId: user?.username || user?.email || '',
+    institution: user?.institution || 'VESIT - Dept. of Computer Engineering',
     instructor: 'Dr. Sharmila Sengupta / Mrs. Abha Tewari / Mrs. Sunita Suralkar',
   });
+
+  // Update studentInfo if user logs in during the session
+  React.useEffect(() => {
+    if (user) {
+      setStudentInfo(prev => ({
+        ...prev,
+        name: prev.name || user.displayName || `${user.firstName} ${user.lastName}`.trim(),
+        studentId: prev.studentId || user.username || user.email || '',
+        institution: user.institution || prev.institution,
+      }));
+    }
+  }, [user]);
 
   const handleInfoChange = (key, value) =>
     setStudentInfo(prev => ({ ...prev, [key]: value }));
 
-  const handleScoreUpdate = (score) => setQuizScore(score);
+  const handleScoreUpdate = (score) => {
+    setQuizScore(score);
+    if (recordQuizScore) {
+      recordQuizScore(15, score, QUIZ_QUESTIONS?.length || 5);
+    }
+    if (recordExpCompleted) {
+      recordExpCompleted(15, { score });
+    }
+  };
 
   const goTo = (tab) => {
     setActiveTab(tab);

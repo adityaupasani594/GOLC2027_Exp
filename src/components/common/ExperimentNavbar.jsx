@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FlaskConical, Award, Home } from 'lucide-react';
+import { FlaskConical, Award, Home, LogIn } from 'lucide-react';
 import collegeLogo from '../../image.png';
+import { useAuth } from '../../context/AuthContext';
+import UserDropdown from './UserDropdown';
 
 const DEFAULT_TAB_ACTIVE = {
   indigo: 'bg-indigo-600 text-white shadow-indigo-200',
@@ -21,6 +23,7 @@ export default function ExperimentNavbar({
   totalQuestions = null,
   tabActiveStyles = DEFAULT_TAB_ACTIVE,
 }) {
+  const { user } = useAuth();
   return (
     <header className="sticky top-0 z-50 glass border-b border-white/60 shadow-sm no-print">
       {/* ── Top Bar: Logo (Left) | Tabs (Center) | Home (Right) ── */}
@@ -68,13 +71,25 @@ export default function ExperimentNavbar({
             </nav>
           )}
 
-          {/* Right: Quiz Score & Home Button */}
+          {/* Right: Quiz Score, User & Home Button */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {quizScore !== null && totalQuestions && (
               <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
                 <Award className="w-3.5 h-3.5" />
                 <span>{quizScore}/{totalQuestions}</span>
               </div>
+            )}
+
+            {user ? (
+              <UserDropdown />
+            ) : (
+              <a
+                href="#login"
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white/80 hover:bg-white text-indigo-600 border border-indigo-200/80 text-xs font-semibold shadow-xs transition-all cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </a>
             )}
 
             <button

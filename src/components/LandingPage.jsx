@@ -23,7 +23,7 @@ import CurriculumGraph from './CurriculumGraph';
 import collegeLogo from '../image.png';
 import { LandingNavbar, Footer, AmbientBackground } from './common';
 
-export default function LandingPage({ onLaunchExperiment, onLaunchExp15 }) {
+export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavigateToAuth }) {
   const [viewMode, setViewMode] = useState('graph'); // 'graph' | 'cards'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTrack, setSelectedTrack] = useState('all');
@@ -68,7 +68,10 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15 }) {
       <AmbientBackground />
 
       {/* ── Top Header / Navbar ── */}
-      <LandingNavbar />
+      <LandingNavbar
+        onNavigateToAuth={onNavigateToAuth}
+        onNavigateToLab={handleLaunch}
+      />
 
       {/* ── Hero Section ── */}
       <section className="relative pt-12 pb-14 lg:pt-20 lg:pb-20 overflow-hidden">
