@@ -8,7 +8,8 @@ import {
   ArrowRight,
   Loader2,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Building2
 } from 'lucide-react';
 import PasswordStrengthBar from './PasswordStrengthBar';
 
@@ -18,9 +19,9 @@ export default function RegisterForm({ onSubmit, loading }) {
     lastName: '',
     username: '',
     email: '',
+    institution: '',
     password: '',
     confirmPassword: '',
-    agreeHonorCode: true,
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -48,7 +49,7 @@ export default function RegisterForm({ onSubmit, loading }) {
     }
 
     if (!formData.email.trim()) {
-      errs.email = 'Academic or personal email is required.';
+      errs.email = 'Email address is required.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       errs.email = 'Please enter a valid email address.';
     }
@@ -63,10 +64,6 @@ export default function RegisterForm({ onSubmit, loading }) {
       errs.confirmPassword = 'Confirm your password.';
     } else if (formData.password !== formData.confirmPassword) {
       errs.confirmPassword = 'Passwords do not match.';
-    }
-
-    if (!formData.agreeHonorCode) {
-      errs.agreeHonorCode = 'You must agree to the academic integrity code.';
     }
 
     setFormErrors(errs);
@@ -107,10 +104,11 @@ export default function RegisterForm({ onSubmit, loading }) {
               type="text"
               value={formData.firstName}
               onChange={(e) => handleChange('firstName', e.target.value)}
-              placeholder="e.g. Yash"
+              placeholder="e.g. Alex"
               disabled={loading}
-              className={`w-full pl-9 pr-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${formErrors.firstName ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
-                } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400`}
+              className={`w-full pl-9 pr-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${
+                formErrors.firstName ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
+              } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400`}
             />
           </div>
           {formErrors.firstName && (
@@ -130,10 +128,11 @@ export default function RegisterForm({ onSubmit, loading }) {
               type="text"
               value={formData.lastName}
               onChange={(e) => handleChange('lastName', e.target.value)}
-              placeholder="e.g. Upasani"
+              placeholder="e.g. Rivers"
               disabled={loading}
-              className={`w-full pl-9 pr-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${formErrors.lastName ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
-                } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400`}
+              className={`w-full pl-9 pr-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${
+                formErrors.lastName ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
+              } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400`}
             />
           </div>
           {formErrors.lastName && (
@@ -155,10 +154,11 @@ export default function RegisterForm({ onSubmit, loading }) {
             type="text"
             value={formData.username}
             onChange={(e) => handleChange('username', e.target.value)}
-            placeholder="yash_vesit"
+            placeholder="scholar_user"
             disabled={loading}
-            className={`w-full pl-9 pr-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${formErrors.username ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
-              } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400 font-mono`}
+            className={`w-full pl-9 pr-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${
+              formErrors.username ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
+            } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400 font-mono`}
           />
         </div>
         {formErrors.username && (
@@ -169,7 +169,7 @@ export default function RegisterForm({ onSubmit, loading }) {
       {/* Email Field */}
       <div>
         <label className="block text-xs font-semibold text-slate-700 mb-1">
-          Email<span className="text-rose-500">*</span>
+          Email <span className="text-rose-500">*</span>
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -179,15 +179,36 @@ export default function RegisterForm({ onSubmit, loading }) {
             type="email"
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
-            placeholder="student@ves.ac.in"
+            placeholder="e.g. scholar@university.edu or yourname@gmail.com"
             disabled={loading}
-            className={`w-full pl-9 pr-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${formErrors.email ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
-              } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400`}
+            className={`w-full pl-9 pr-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${
+              formErrors.email ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
+            } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400`}
           />
         </div>
         {formErrors.email && (
           <p className="mt-1 text-[10px] text-rose-500 font-medium">{formErrors.email}</p>
         )}
+      </div>
+
+      {/* Institution / University Field (Optional) */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-700 mb-1">
+          Institution / University <span className="text-slate-400 font-normal">(Optional)</span>
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            <Building2 className="w-3.5 h-3.5" />
+          </div>
+          <input
+            type="text"
+            value={formData.institution}
+            onChange={(e) => handleChange('institution', e.target.value)}
+            placeholder="e.g. University / College / Independent Scholar"
+            disabled={loading}
+            className="w-full pl-9 pr-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border border-slate-200 focus:border-indigo-500 focus:ring-indigo-100 focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400"
+          />
+        </div>
       </div>
 
       {/* Create Password */}
@@ -205,8 +226,9 @@ export default function RegisterForm({ onSubmit, loading }) {
             onChange={(e) => handleChange('password', e.target.value)}
             placeholder="Minimum 8 characters"
             disabled={loading}
-            className={`w-full pl-9 pr-10 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${formErrors.password ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
-              } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400`}
+            className={`w-full pl-9 pr-10 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${
+              formErrors.password ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
+            } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400`}
           />
           <button
             type="button"
@@ -237,12 +259,13 @@ export default function RegisterForm({ onSubmit, loading }) {
             onChange={(e) => handleChange('confirmPassword', e.target.value)}
             placeholder="Re-enter your password"
             disabled={loading}
-            className={`w-full pl-9 pr-10 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${formErrors.confirmPassword || passwordsMismatch
-              ? 'border-rose-400 focus:ring-rose-200'
-              : passwordsMatch
-                ? 'border-emerald-400 focus:ring-emerald-100'
-                : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
-              } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400`}
+            className={`w-full pl-9 pr-10 py-2 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${
+              formErrors.confirmPassword || passwordsMismatch
+                ? 'border-rose-400 focus:ring-rose-200'
+                : passwordsMatch
+                  ? 'border-emerald-400 focus:ring-emerald-100'
+                  : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
+            } focus:bg-white focus:outline-none focus:ring-4 transition-all text-slate-900 placeholder:text-slate-400`}
           />
           <button
             type="button"
@@ -268,24 +291,6 @@ export default function RegisterForm({ onSubmit, loading }) {
         )}
         {formErrors.confirmPassword && !passwordsMismatch && (
           <p className="mt-1 text-[10px] text-rose-500 font-medium">{formErrors.confirmPassword}</p>
-        )}
-      </div>
-
-      {/* Honor Code Checkbox */}
-      <div className="pt-1">
-        <label className="flex items-start gap-2.5 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={formData.agreeHonorCode}
-            onChange={(e) => handleChange('agreeHonorCode', e.target.checked)}
-            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 mt-0.5 cursor-pointer"
-          />
-          <span className="text-[11px] text-slate-600 leading-snug">
-            I agree to the <span className="font-semibold text-slate-800">Academic Integrity Code</span> and agree that all simulation benchmarks and certificates reflect my own laboratory work.
-          </span>
-        </label>
-        {formErrors.agreeHonorCode && (
-          <p className="mt-1 text-[10px] text-rose-500 font-medium">{formErrors.agreeHonorCode}</p>
         )}
       </div>
 

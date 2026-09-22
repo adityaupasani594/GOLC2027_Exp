@@ -16,8 +16,10 @@ import {
 } from 'lucide-react';
 import { ExperimentNavbar } from '../components/common';
 import { EXPERIMENTS_LIST } from '../data/experimentsData';
+import { useAuth } from '../context/AuthContext';
 
-export default function ExperimentTemplate({ expNumber, onBack, children }) {
+export default function ExperimentTemplate({ expNumber, onBack, children, onOpenProfile }) {
+  const { user, recordExpCompleted, recordReport } = useAuth();
   const [activeTab, setActiveTab] = useState('theory');
   const [consoleOutput, setConsoleOutput] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
@@ -50,6 +52,9 @@ export default function ExperimentTemplate({ expNumber, onBack, children }) {
 
   const runSimulation = () => {
     setIsRunning(true);
+    if (recordExpCompleted) {
+      recordExpCompleted(expNumber, { completedAt: new Date().toISOString() });
+    }
     setConsoleOutput([`[Init] Launching pipeline for Experiment ${expNumber}...`]);
     setTimeout(() => {
       setConsoleOutput(prev => [
@@ -77,6 +82,7 @@ export default function ExperimentTemplate({ expNumber, onBack, children }) {
         onTabChange={(tabId) => setActiveTab(tabId)}
         onBack={onBack}
         tabActiveStyles={tabActiveStyles}
+        onOpenProfile={onOpenProfile}
       />
 
       {/* ── Main Content Area ── */}
@@ -322,7 +328,7 @@ export default function ExperimentTemplate({ expNumber, onBack, children }) {
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
                   <p><span className="font-bold text-slate-700">Course:</span> Information Retrieval & Knowledge Graphs</p>
                   <p><span className="font-bold text-slate-700">Experiment:</span> Lab {expNumber} — {experiment.title}</p>
-                  <p><span className="font-bold text-slate-700">Department:</span> Department of Computer Engineering, VESIT</p>
+                  <p><span className="font-bold text-slate-700">Platform:</span> Virtual Laboratory Suite • GOLC 2027</p>
                 </div>
               </motion.div>
             )}

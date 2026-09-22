@@ -22,6 +22,7 @@ export default function ExperimentNavbar({
   quizScore = null,
   totalQuestions = null,
   tabActiveStyles = DEFAULT_TAB_ACTIVE,
+  onOpenProfile,
 }) {
   const { user } = useAuth();
   return (
@@ -81,7 +82,7 @@ export default function ExperimentNavbar({
             )}
 
             {user ? (
-              <UserDropdown />
+              <UserDropdown onOpenProfile={onOpenProfile} />
             ) : (
               <a
                 href="#login"

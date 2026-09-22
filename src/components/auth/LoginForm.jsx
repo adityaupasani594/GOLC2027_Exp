@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Lock, Eye, EyeOff, ArrowRight, Loader2, KeyRound } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 
 export default function LoginForm({ onSubmit, loading, error }) {
   const [identifier, setIdentifier] = useState('');
@@ -26,11 +26,8 @@ export default function LoginForm({ onSubmit, loading, error }) {
     onSubmit({ identifier, password, rememberMe });
   };
 
-  // Demo autofill helper for instant testing
-  const handleAutofillDemo = () => {
-    setIdentifier('aarav_sharma');
-    setPassword('Password@123');
-    setFormErrors({});
+  const handleForgotPassword = () => {
+    alert('To reset your password, please contact the laboratory administrator or register a new account.');
   };
 
   return (
@@ -51,10 +48,11 @@ export default function LoginForm({ onSubmit, loading, error }) {
               setIdentifier(e.target.value);
               if (formErrors.identifier) setFormErrors((prev) => ({ ...prev, identifier: null }));
             }}
-            placeholder="e.g. student.vesit@ves.ac.in or username"
+            placeholder="e.g. scholar@university.edu or username"
             disabled={loading}
-            className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${formErrors.identifier ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
-              } focus:bg-white focus:outline-none focus:ring-4 transition-all duration-150 text-slate-900 placeholder:text-slate-400`}
+            className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${
+              formErrors.identifier ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
+            } focus:bg-white focus:outline-none focus:ring-4 transition-all duration-150 text-slate-900 placeholder:text-slate-400`}
           />
         </div>
         {formErrors.identifier && (
@@ -70,7 +68,7 @@ export default function LoginForm({ onSubmit, loading, error }) {
           </label>
           <button
             type="button"
-            onClick={() => alert('For this demonstration, use the demo student account (aarav_sharma / Password@123) or create a new account in the Register tab.')}
+            onClick={handleForgotPassword}
             className="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium hover:underline cursor-pointer"
           >
             Forgot password?
@@ -89,8 +87,9 @@ export default function LoginForm({ onSubmit, loading, error }) {
             }}
             placeholder="Enter your password"
             disabled={loading}
-            className={`w-full pl-10 pr-10 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${formErrors.password ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
-              } focus:bg-white focus:outline-none focus:ring-4 transition-all duration-150 text-slate-900 placeholder:text-slate-400`}
+            className={`w-full pl-10 pr-10 py-2.5 rounded-xl text-xs sm:text-sm bg-slate-50/70 border ${
+              formErrors.password ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100'
+            } focus:bg-white focus:outline-none focus:ring-4 transition-all duration-150 text-slate-900 placeholder:text-slate-400`}
           />
           <button
             type="button"
@@ -106,7 +105,7 @@ export default function LoginForm({ onSubmit, loading, error }) {
         )}
       </div>
 
-      {/* Remember Me & Quick Demo Autofill */}
+      {/* Remember Me */}
       <div className="flex items-center justify-between pt-0.5">
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <input
@@ -117,16 +116,6 @@ export default function LoginForm({ onSubmit, loading, error }) {
           />
           <span className="text-xs text-slate-600">Remember my session</span>
         </label>
-
-        <button
-          type="button"
-          onClick={handleAutofillDemo}
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-indigo-600 bg-slate-100 hover:bg-indigo-50 px-2 py-1 rounded-lg border border-slate-200/80 transition-colors cursor-pointer"
-          title="Fill with test student credentials"
-        >
-          <KeyRound className="w-3 h-3 text-indigo-500" />
-          <span>Demo Account</span>
-        </button>
       </div>
 
       {/* Submit Button */}

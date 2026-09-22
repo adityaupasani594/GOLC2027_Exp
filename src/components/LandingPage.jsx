@@ -23,7 +23,7 @@ import CurriculumGraph from './CurriculumGraph';
 import collegeLogo from '../image.png';
 import { LandingNavbar, Footer, AmbientBackground } from './common';
 
-export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavigateToAuth }) {
+export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavigateToAuth, onOpenProfile }) {
   const [viewMode, setViewMode] = useState('graph'); // 'graph' | 'cards'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTrack, setSelectedTrack] = useState('all');
@@ -71,6 +71,7 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
       <LandingNavbar
         onNavigateToAuth={onNavigateToAuth}
         onNavigateToLab={handleLaunch}
+        onOpenProfile={onOpenProfile}
       />
 
       {/* ── Hero Section ── */}
@@ -230,7 +231,7 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
               <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Track III • Exp 8–13</p>
               <h4 className="text-base font-bold text-slate-900 mt-1">Knowledge Graphs</h4>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                Entity recognition, relation extraction triples, knowledge graph schema design, data import, and Cypher traversal.
+                Entity recognition, relation extraction triples, knowledge graph schema design, data import, and traversal.
               </p>
               <div className="mt-4 flex items-center text-xs font-semibold text-emerald-600 group-hover:gap-1.5 transition-all">
                 <span>View 6 experiments</span>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Printer, Download, Target, BarChart2, BookOpen, FlaskConical } from 'lucide-react';
 import { GRADE } from './CertificateSection';
@@ -28,13 +28,20 @@ const PIPELINE_STAGES = [
   { stage: 'Stage 4', name: 'Postings List Inversion', desc: 'Aggregate consecutive triples by term to build df, cf, and postings dict {docId: {tf, positions[]}}.' },
 ];
 
-export default function ReportSection({ quizScore, totalQuestions, studentInfo, trials }) {
+export default function ReportSection({ quizScore, totalQuestions, studentInfo, trials, onReportGenerated }) {
   const score = quizScore ?? 0;
   const pct   = Math.round((score / totalQuestions) * 100);
   const grade = GRADE(pct);
   const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
 
+  useEffect(() => {
+    if (onReportGenerated) {
+      onReportGenerated();
+    }
+  }, [onReportGenerated]);
+
   const handlePrintReport = () => {
+    if (onReportGenerated) onReportGenerated();
     document.body.classList.add('print-report');
     window.onafterprint = () => {
       document.body.classList.remove('print-report');
@@ -44,6 +51,7 @@ export default function ReportSection({ quizScore, totalQuestions, studentInfo, 
   };
 
   const handleDownload = () => {
+    if (onReportGenerated) onReportGenerated();
     const data = {
       experiment: EXP_INFO.title,
       code:       EXP_INFO.code,

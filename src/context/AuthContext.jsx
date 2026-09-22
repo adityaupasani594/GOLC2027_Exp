@@ -9,20 +9,49 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(null);
+  const [certificates, setCertificates] = useState({});
+  const [reports, setReports] = useState({});
 
-  // Initialize active session on mount
-  useEffect(() => {
-    try {
-      const activeUser = authService.getCurrentUser();
-      if (activeUser) {
-        setUser(activeUser);
-        setProgress(progressService.getUserProgress(activeUser.uid));
-      }
-    } catch (err) {
-      console.error('Error initializing auth session:', err);
-    } finally {
-      setLoading(false);
+  // Helper to load user-associated progress, certificates, and reports
+  const syncUserData = async (uid) => {
+    if (!uid) {
+      setProgress(null);
+      setCertificates({});
+      setReports({});
+      return;
     }
+
+    try {
+      const [prog, certs, reps] = await Promise.all([
+        progressService.getUserProgress(uid),
+        progressService.getUserCertificates(uid),
+        progressService.getUserReports(uid)
+      ]);
+      setProgress(prog);
+      setCertificates(certs || {});
+      setReports(reps || {});
+    } catch (err) {
+      console.warn('Error syncing user data from storage:', err);
+    }
+  };
+
+  // Subscribe to auth changes (Firebase listener or localStorage initial session)
+  useEffect(() => {
+    const unsubscribe = authService.subscribeToAuthChanges(async (activeUser) => {
+      setUser(activeUser);
+      if (activeUser) {
+        await syncUserData(activeUser.uid);
+      } else {
+        setProgress(null);
+        setCertificates({});
+        setReports({});
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
   }, []);
 
   const clearError = () => setError(null);
@@ -33,7 +62,7 @@ export function AuthProvider({ children }) {
     try {
       const loggedUser = await authService.loginWithEmail(emailOrUsername, password);
       setUser(loggedUser);
-      setProgress(progressService.getUserProgress(loggedUser.uid));
+      await syncUserData(loggedUser.uid);
       return loggedUser;
     } catch (err) {
       setError(err.message || 'Login failed. Please verify credentials.');
@@ -49,7 +78,7 @@ export function AuthProvider({ children }) {
     try {
       const newUser = await authService.registerUser(userData);
       setUser(newUser);
-      setProgress(progressService.getUserProgress(newUser.uid));
+      await syncUserData(newUser.uid);
       return newUser;
     } catch (err) {
       setError(err.message || 'Registration failed. Please check inputs.');
@@ -65,7 +94,7 @@ export function AuthProvider({ children }) {
     try {
       const googleUser = await authService.signInWithGoogle();
       setUser(googleUser);
-      setProgress(progressService.getUserProgress(googleUser.uid));
+      await syncUserData(googleUser.uid);
       return googleUser;
     } catch (err) {
       setError(err.message || 'Google sign-in encountered an issue.');
@@ -81,6 +110,8 @@ export function AuthProvider({ children }) {
       await authService.logout();
       setUser(null);
       setProgress(null);
+      setCertificates({});
+      setReports({});
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
@@ -88,16 +119,49 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const recordQuizScore = (expNumber, score, total) => {
+  const recordQuizScore = async (expNumber, score, total) => {
     if (!user) return;
-    const updated = progressService.saveQuizScore(user.uid, expNumber, score, total);
+    const updated = await progressService.saveQuizScore(user.uid, expNumber, score, total);
     setProgress(updated);
   };
 
-  const recordExpCompleted = (expNumber, details) => {
+  const recordExpCompleted = async (expNumber, details) => {
     if (!user) return;
-    const updated = progressService.saveExperimentProgress(user.uid, expNumber, details);
+    const updated = await progressService.saveExperimentProgress(user.uid, expNumber, details);
     setProgress(updated);
+  };
+
+  const recordCertificate = async (certData) => {
+    if (!user) return;
+    const updatedCerts = await progressService.saveCertificate(user.uid, {
+      studentName: user.displayName || `${user.firstName} ${user.lastName}`.trim(),
+      institution: user.institution,
+      ...certData
+    });
+    setCertificates(updatedCerts);
+  };
+
+  const recordReport = async (reportData) => {
+    if (!user) return;
+    const updatedReports = await progressService.saveReport(user.uid, {
+      studentName: user.displayName || `${user.firstName} ${user.lastName}`.trim(),
+      institution: user.institution,
+      ...reportData
+    });
+    setReports(updatedReports);
+  };
+
+  const updateUserProfile = async (updates) => {
+    if (!user) return;
+    const updated = await authService.updateUserProfile(updates);
+    setUser(updated);
+    return updated;
+  };
+
+  const reloadUserData = async () => {
+    if (user?.uid) {
+      await syncUserData(user.uid);
+    }
   };
 
   const value = {
@@ -111,8 +175,14 @@ export function AuthProvider({ children }) {
     loginWithGoogle,
     logout,
     progress,
+    certificates,
+    reports,
     recordQuizScore,
     recordExpCompleted,
+    recordCertificate,
+    recordReport,
+    updateUserProfile,
+    reloadUserData,
     isFirebaseConfigured: authService.isUsingFirebase(),
   };
 

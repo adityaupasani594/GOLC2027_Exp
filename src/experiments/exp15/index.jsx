@@ -32,14 +32,14 @@ const TAB_ACTIVE = {
   teal: 'bg-teal-600 text-white shadow-teal-200',
 };
 
-export default function Experiment15({ onBack }) {
-  const { user, recordQuizScore, recordExpCompleted } = useAuth();
+export default function Experiment15({ onBack, onOpenProfile }) {
+  const { user, recordQuizScore, recordExpCompleted, recordCertificate, recordReport } = useAuth();
   const [activeTab, setActiveTab] = useState('theory');
   const [quizScore, setQuizScore] = useState(null);
   const [studentInfo, setStudentInfo] = useState({
     name: user?.displayName || (user ? `${user.firstName} ${user.lastName}`.trim() : ''),
-    studentId: user?.username || user?.email || '',
-    institution: user?.institution || 'VESIT - Dept. of Computer Engineering',
+    studentId: user?.studentId || user?.username || user?.email || '',
+    institution: user?.institution || '',
     instructor: 'Dr. Sharmila Sengupta / Mrs. Abha Tewari / Mrs. Sunita Suralkar',
   });
 
@@ -49,7 +49,7 @@ export default function Experiment15({ onBack }) {
       setStudentInfo(prev => ({
         ...prev,
         name: prev.name || user.displayName || `${user.firstName} ${user.lastName}`.trim(),
-        studentId: prev.studentId || user.username || user.email || '',
+        studentId: prev.studentId || user.studentId || user.username || user.email || '',
         institution: user.institution || prev.institution,
       }));
     }
@@ -60,11 +60,40 @@ export default function Experiment15({ onBack }) {
 
   const handleScoreUpdate = (score) => {
     setQuizScore(score);
+    const totalQ = QUIZ_QUESTIONS?.length || 5;
+    const pct = Math.round((score / totalQ) * 100);
+    const grade = pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B' : pct >= 60 ? 'C' : 'F';
+
     if (recordQuizScore) {
-      recordQuizScore(15, score, QUIZ_QUESTIONS?.length || 5);
+      recordQuizScore(15, score, totalQ);
     }
     if (recordExpCompleted) {
       recordExpCompleted(15, { score });
+    }
+    if (recordCertificate) {
+      recordCertificate({
+        expNumber: 15,
+        title: EXPERIMENT.title,
+        grade,
+        score,
+        total: totalQ,
+        pct,
+        certificateId: `IR-2027-15-${(user?.uid || 'STU').slice(-4).toUpperCase()}`,
+        studentName: studentInfo.name || user?.displayName,
+        institution: studentInfo.institution || user?.institution || ''
+      });
+    }
+    if (recordReport) {
+      recordReport({
+        expNumber: 15,
+        title: `${EXPERIMENT.title} (Retrieval System Benchmarks)`,
+        summary: {
+          mrr: '0.833',
+          avgPrecision: '0.910',
+          avgRecall: '0.880',
+          avgF1: '0.895'
+        }
+      });
     }
   };
 
@@ -85,6 +114,7 @@ export default function Experiment15({ onBack }) {
         quizScore={quizScore}
         totalQuestions={QUIZ_QUESTIONS.length}
         tabActiveStyles={TAB_ACTIVE}
+        onOpenProfile={onOpenProfile}
       />
 
       {/* ── Main content for Experiment 15 ── */}

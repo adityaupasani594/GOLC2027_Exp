@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Award, Printer, ShieldCheck, User, Building2, Calendar, Star, ChevronRight } from 'lucide-react';
 
@@ -17,17 +17,23 @@ export const GRADE = (pct) => {
   return            { label: 'F',  color: 'text-red-600',      bg: 'bg-red-50 border-red-200',         gradient: 'from-red-500 to-rose-500' };
 };
 
-export default function CertificateSection({ quizScore, totalQuestions, studentInfo, onInfoChange, onNext }) {
+export default function CertificateSection({ quizScore, totalQuestions, studentInfo, onInfoChange, onNext, onCertificateObtained }) {
   const score = quizScore ?? 0;
   const pct   = Math.round((score / totalQuestions) * 100);
   const grade = GRADE(pct);
   const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
 
+  useEffect(() => {
+    if (onCertificateObtained) {
+      onCertificateObtained();
+    }
+  }, [onCertificateObtained]);
+
   const fields = [
-    { key: 'name',        label: 'Full Name',               icon: User,       placeholder: 'e.g. Aditya Upasani' },
-    { key: 'studentId',   label: 'Roll / Student ID',       icon: ShieldCheck, placeholder: 'e.g. 2023KGIRS11' },
-    { key: 'institution', label: 'Institution / Department', icon: Building2,  placeholder: 'e.g. VESIT – Dept. of Computer Engineering' },
-    { key: 'instructor',  label: 'Faculty Instructor',       icon: Star,       placeholder: 'e.g. Dr. Sharmila Sengupta' },
+    { key: 'name',        label: 'Full Name',               icon: User,       placeholder: 'e.g. Student Scholar' },
+    { key: 'studentId',   label: 'Roll / Student ID',       icon: ShieldCheck, placeholder: 'e.g. 2026-CS-042' },
+    { key: 'institution', label: 'Institution / Department', icon: Building2,  placeholder: 'e.g. Dept. of Computer Science / University' },
+    { key: 'instructor',  label: 'Faculty Instructor',       icon: Star,       placeholder: 'e.g. Course Instructor' },
   ];
 
   return (
@@ -68,7 +74,10 @@ export default function CertificateSection({ quizScore, totalQuestions, studentI
         <div className="flex flex-wrap gap-3 pt-1">
           <motion.button
             whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }}
-            onClick={() => window.print()}
+            onClick={() => {
+              if (onCertificateObtained) onCertificateObtained();
+              window.print();
+            }}
             className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-200 cursor-pointer"
           >
             <Printer className="w-4 h-4" /> Print Certificate

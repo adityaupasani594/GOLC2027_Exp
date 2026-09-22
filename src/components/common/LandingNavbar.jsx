@@ -4,7 +4,7 @@ import collegeLogo from '../../image.png';
 import { useAuth } from '../../context/AuthContext';
 import UserDropdown from './UserDropdown';
 
-export default function LandingNavbar({ onNavigateToAuth, onNavigateToLab }) {
+export default function LandingNavbar({ onNavigateToAuth, onNavigateToLab, onOpenProfile }) {
   const { user } = useAuth();
 
   const handleSignInClick = () => {
@@ -73,7 +73,7 @@ export default function LandingNavbar({ onNavigateToAuth, onNavigateToLab }) {
 
             {/* Auth: User Dropdown or Sign In Button */}
             {user ? (
-              <UserDropdown onNavigateToLab={onNavigateToLab} />
+              <UserDropdown onNavigateToLab={onNavigateToLab} onOpenProfile={onOpenProfile} />
             ) : (
               <button
                 type="button"

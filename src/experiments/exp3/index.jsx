@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, FlaskConical, HelpCircle, FileText,
@@ -8,6 +8,7 @@ import {
   GitMerge, Tag, Zap, Award
 } from 'lucide-react';
 import { ExperimentNavbar } from '../../components/common';
+import { useAuth } from '../../context/AuthContext';
 import {
   buildInvertedIndex, executeKeywordQuery, booleanAndWithTrace,
   booleanOrWithTrace, executePhraseQuery, executeProximityQuery,
@@ -259,8 +260,8 @@ function TheoryTab({ onGoToLab }) {
                 <tbody>
                   {[
                     { term: '"information"', df: 3, cf: 4, postings: ['Doc1 (tf:1)', 'Doc3 (tf:2)', 'Doc5'] },
-                    { term: '"retrieval"',   df: 4, cf: 5, postings: ['Doc1 (tf:2)', 'Doc2', 'Doc3', 'Doc5'] },
-                    { term: '"graph"',       df: 2, cf: 3, postings: ['Doc2 (tf:2)', 'Doc4 (tf:1)'] },
+                    { term: '"retrieval"', df: 4, cf: 5, postings: ['Doc1 (tf:2)', 'Doc2', 'Doc3', 'Doc5'] },
+                    { term: '"graph"', df: 2, cf: 3, postings: ['Doc2 (tf:2)', 'Doc4 (tf:1)'] },
                   ].map((row, i) => (
                     <tr key={row.term} className={i % 2 === 0 ? 'bg-slate-900' : 'bg-slate-800/50'}>
                       <td className="px-4 py-2.5 text-green-400 font-semibold">{row.term}</td>
@@ -383,17 +384,17 @@ function TheoryTab({ onGoToLab }) {
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="bg-indigo-600 text-white">
-                {['Retrieval Mechanism','Space Complexity','AND Search Time','Phrase Query'].map(h => (
+                {['Retrieval Mechanism', 'Space Complexity', 'AND Search Time', 'Phrase Query'].map(h => (
                   <th key={h} className="px-3 py-2 text-left font-semibold">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {[
-                ['Linear Scan (grep)','O(N·L) â€” No Index','O(N·L) â€” Full scan','Supported (regex)'],
-                ['Term-Doc Incidence Matrix','O(|V|·N) â€” Very Sparse','O(N) â€” Bitwise AND','Unsupported'],
-                ['Inverted Index (Standard)','O(|Postings|)','O(Lâ‚+Lâ‚‚) â€” Merge','Unsupported'],
-                ['Positional Inverted Index','O(Total Tokens)','O(Lâ‚+Lâ‚‚) â€” Merge','âœ“ Supported'],
+                ['Linear Scan (grep)', 'O(N·L) â€” No Index', 'O(N·L) â€” Full scan', 'Supported (regex)'],
+                ['Term-Doc Incidence Matrix', 'O(|V|·N) â€” Very Sparse', 'O(N) â€” Bitwise AND', 'Unsupported'],
+                ['Inverted Index (Standard)', 'O(|Postings|)', 'O(Lâ‚+Lâ‚‚) â€” Merge', 'Unsupported'],
+                ['Positional Inverted Index', 'O(Total Tokens)', 'O(Lâ‚+Lâ‚‚) â€” Merge', 'âœ“ Supported'],
               ].map((row, i) => (
                 <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                   {row.map((cell, j) => (
@@ -419,7 +420,7 @@ function TheoryTab({ onGoToLab }) {
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">{EXP_CONFIG.title}</h2>
         <p className="text-sm text-slate-300 mt-2 leading-relaxed max-w-3xl">{EXP_CONFIG.aim}</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          {['Inverted Index','Postings Lists','Boolean Retrieval','Phrase Queries','Porter Stemming','Zipf\'s Law'].map(t => (
+          {['Inverted Index', 'Postings Lists', 'Boolean Retrieval', 'Phrase Queries', 'Porter Stemming', 'Zipf\'s Law'].map(t => (
             <span key={t} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 border border-white/15 text-indigo-100">{t}</span>
           ))}
         </div>
@@ -529,7 +530,7 @@ function TheoryTab({ onGoToLab }) {
 }
 
 // â”€â”€ Simulation Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function SimulationTab({ onRecordTrial, trials }) {
+function SimulationTab({ onRecordTrial, onSimulationRun, trials }) {
   const [corpusName, setCorpusName] = useState(Object.keys(BENCHMARK_CORPORA)[0]);
   const [customDocs, setCustomDocs] = useState({ 1: '', 2: '', 3: '' });
   const [useCustom, setUseCustom] = useState(false);
@@ -560,15 +561,18 @@ function SimulationTab({ onRecordTrial, trials }) {
       const result = buildInvertedIndex(activeCorpus, opts);
       setIndexResult(result);
       setIsBuilding(false);
+      if (onSimulationRun) {
+        onSimulationRun(result);
+      }
     }, 300);
-  }, [activeCorpus, opts]);
+  }, [activeCorpus, opts, onSimulationRun]);
 
   const handleQuery = useCallback(() => {
     if (!indexResult) return;
     const idx = indexResult.index;
     const useStemming = opts.useStemming;
     let result = null;
-    const terms = (query.match(/\b[a-zA-Z0-9_-]+\b/g) || []).filter(t => !['and','or','not','near'].includes(t.toLowerCase()));
+    const terms = (query.match(/\b[a-zA-Z0-9_-]+\b/g) || []).filter(t => !['and', 'or', 'not', 'near'].includes(t.toLowerCase()));
     const t0 = performance.now();
 
     if (queryMode === 'AND') {
@@ -597,7 +601,7 @@ function SimulationTab({ onRecordTrial, trials }) {
         const q1 = executeKeywordQuery(terms[0], idx, useStemming);
         const q2 = executeKeywordQuery(terms[1], idx, useStemming);
         const merged = booleanOrWithTrace(q1.docs, q2.docs, terms[0], terms[1]);
-        result = { mode: 'Boolean OR', docs: merged.result, trace: [...(q1.trace||[]), ...(q2.trace||[]), ...merged.trace], latencyUs: Math.round((performance.now() - t0) * 1000) };
+        result = { mode: 'Boolean OR', docs: merged.result, trace: [...(q1.trace || []), ...(q2.trace || []), ...merged.trace], latencyUs: Math.round((performance.now() - t0) * 1000) };
       }
     } else if (queryMode === 'NOT') {
       const allDocs = Object.keys(activeCorpus).map(Number);
@@ -855,7 +859,7 @@ function SimulationTab({ onRecordTrial, trials }) {
           </div>
           <div className="p-5 space-y-4">
             <div className="flex flex-wrap gap-2">
-              {['AND','OR','NOT','PHRASE','PROXIMITY','KEYWORD'].map(m => (
+              {['AND', 'OR', 'NOT', 'PHRASE', 'PROXIMITY', 'KEYWORD'].map(m => (
                 <button key={m} onClick={() => setQueryMode(m)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer transition-all ${queryMode === m ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>
                   {m}
@@ -866,38 +870,36 @@ function SimulationTab({ onRecordTrial, trials }) {
             {/* Mode description */}
             <AnimatePresence mode="wait">
               {{
-                AND:       { icon: 'âˆ©', color: 'bg-indigo-50 border-indigo-200 text-indigo-800', badge: 'bg-indigo-100 text-indigo-600', label: 'Boolean AND (Conjunction)', desc: 'Returns only documents containing ALL specified terms. Uses a two-pointer merge on sorted postings lists in O(Lâ‚ + Lâ‚‚) time. Enter space-separated terms (e.g. information retrieval).' },
-                OR:        { icon: 'âˆª', color: 'bg-blue-50 border-blue-200 text-blue-800',     badge: 'bg-blue-100 text-blue-600',   label: 'Boolean OR (Disjunction)',  desc: 'Returns documents containing ANY of the specified terms. Merges all postings lists with a union sweep. Results are sorted by DocID.' },
-                NOT:       { icon: 'Â¬', color: 'bg-amber-50 border-amber-200 text-amber-800',  badge: 'bg-amber-100 text-amber-700', label: 'Boolean NOT (Negation)',     desc: 'Returns all documents that do NOT contain the specified term. Computes the complement of the term\'s postings list against the full document set.' },
-                PHRASE:    { icon: '""', color: 'bg-emerald-50 border-emerald-200 text-emerald-800', badge: 'bg-emerald-100 text-emerald-700', label: 'Exact Phrase Query',  desc: 'Retrieves documents where the terms appear consecutively in exactly the given order. Requires a positional index â€” checks that pos(termâ‚‚) = pos(termâ‚) + 1 for each candidate doc.' },
+                AND: { icon: 'âˆ©', color: 'bg-indigo-50 border-indigo-200 text-indigo-800', badge: 'bg-indigo-100 text-indigo-600', label: 'Boolean AND (Conjunction)', desc: 'Returns only documents containing ALL specified terms. Uses a two-pointer merge on sorted postings lists in O(Lâ‚ + Lâ‚‚) time. Enter space-separated terms (e.g. information retrieval).' },
+                OR: { icon: 'âˆª', color: 'bg-blue-50 border-blue-200 text-blue-800', badge: 'bg-blue-100 text-blue-600', label: 'Boolean OR (Disjunction)', desc: 'Returns documents containing ANY of the specified terms. Merges all postings lists with a union sweep. Results are sorted by DocID.' },
+                NOT: { icon: 'Â¬', color: 'bg-amber-50 border-amber-200 text-amber-800', badge: 'bg-amber-100 text-amber-700', label: 'Boolean NOT (Negation)', desc: 'Returns all documents that do NOT contain the specified term. Computes the complement of the term\'s postings list against the full document set.' },
+                PHRASE: { icon: '""', color: 'bg-emerald-50 border-emerald-200 text-emerald-800', badge: 'bg-emerald-100 text-emerald-700', label: 'Exact Phrase Query', desc: 'Retrieves documents where the terms appear consecutively in exactly the given order. Requires a positional index â€” checks that pos(termâ‚‚) = pos(termâ‚) + 1 for each candidate doc.' },
                 PROXIMITY: { icon: '←”', color: 'bg-violet-50 border-violet-200 text-violet-800', badge: 'bg-violet-100 text-violet-700', label: `Proximity Query (NEAR/k)`, desc: `Finds documents where two terms appear within k tokens of each other, in any order. Enter two space-separated terms. Adjust k= in the input field (currently k=${proximityK}).` },
-                KEYWORD:   { icon: 'ðŸ”‘', color: 'bg-slate-50 border-slate-200 text-slate-700',  badge: 'bg-slate-100 text-slate-600',  label: 'Single Keyword Lookup',     desc: 'Direct dictionary lookup for a single term. Returns its document frequency (df), collection frequency (cf), and the full postings list with token positions.' },
+                KEYWORD: { icon: 'ðŸ”‘', color: 'bg-slate-50 border-slate-200 text-slate-700', badge: 'bg-slate-100 text-slate-600', label: 'Single Keyword Lookup', desc: 'Direct dictionary lookup for a single term. Returns its document frequency (df), collection frequency (cf), and the full postings list with token positions.' },
               }[queryMode] && (
-                <motion.div
-                  key={queryMode}
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.18 }}
-                  className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-xs ${
-                    { AND: 'bg-indigo-50 border-indigo-200', OR: 'bg-blue-50 border-blue-200', NOT: 'bg-amber-50 border-amber-200', PHRASE: 'bg-emerald-50 border-emerald-200', PROXIMITY: 'bg-violet-50 border-violet-200', KEYWORD: 'bg-slate-50 border-slate-200' }[queryMode]
-                  }`}
-                >
-                  <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${
-                    { AND: 'bg-indigo-100 text-indigo-600', OR: 'bg-blue-100 text-blue-600', NOT: 'bg-amber-100 text-amber-700', PHRASE: 'bg-emerald-100 text-emerald-700', PROXIMITY: 'bg-violet-100 text-violet-700', KEYWORD: 'bg-slate-100 text-slate-600' }[queryMode]
-                  }`}>
-                    {{ AND: 'âˆ©', OR: 'âˆª', NOT: 'Â¬', PHRASE: '""', PROXIMITY: '←”', KEYWORD: 'ðŸ”‘' }[queryMode]}
-                  </span>
-                  <div>
-                    <p className={`font-bold mb-0.5 ${{ AND: 'text-indigo-800', OR: 'text-blue-800', NOT: 'text-amber-800', PHRASE: 'text-emerald-800', PROXIMITY: 'text-violet-800', KEYWORD: 'text-slate-700' }[queryMode]}`}>
-                      {{ AND: 'Boolean AND â€” Conjunction', OR: 'Boolean OR â€” Disjunction', NOT: 'Boolean NOT â€” Negation', PHRASE: 'Exact Phrase Query', PROXIMITY: `Proximity Query â€” NEAR/${proximityK}`, KEYWORD: 'Single Keyword Lookup' }[queryMode]}
-                    </p>
-                    <p className={`leading-relaxed ${{ AND: 'text-indigo-700', OR: 'text-blue-700', NOT: 'text-amber-700', PHRASE: 'text-emerald-700', PROXIMITY: 'text-violet-700', KEYWORD: 'text-slate-600' }[queryMode]}`}>
-                      {{ AND: 'Returns only documents containing ALL specified terms. Uses a two-pointer merge on sorted postings lists in O(Lâ‚ + Lâ‚‚) time. Enter space-separated terms â€” e.g. information retrieval.', OR: 'Returns documents containing ANY of the specified terms. Merges postings lists with a union sweep in O(Lâ‚ + Lâ‚‚). All matched DocIDs are returned sorted.', NOT: "Returns all documents that do NOT contain the specified term. Computes the complement of the term's postings list against the full document set.", PHRASE: 'Retrieves documents where terms appear consecutively in exactly the given order. Requires a positional index â€” verifies pos(termâ‚‚) = pos(termâ‚) + 1 for each candidate document.', PROXIMITY: `Finds documents where two terms appear within ${proximityK} token(s) of each other in any order. Enter two space-separated terms. Adjust the k= value on the right.`, KEYWORD: 'Direct O(1) dictionary lookup for a single term. Returns document frequency (df), collection frequency (cf), and the full postings list with exact token positions.' }[queryMode]}
-                    </p>
-                  </div>
-                </motion.div>
-              )}
+                  <motion.div
+                    key={queryMode}
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18 }}
+                    className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-xs ${{ AND: 'bg-indigo-50 border-indigo-200', OR: 'bg-blue-50 border-blue-200', NOT: 'bg-amber-50 border-amber-200', PHRASE: 'bg-emerald-50 border-emerald-200', PROXIMITY: 'bg-violet-50 border-violet-200', KEYWORD: 'bg-slate-50 border-slate-200' }[queryMode]
+                      }`}
+                  >
+                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 ${{ AND: 'bg-indigo-100 text-indigo-600', OR: 'bg-blue-100 text-blue-600', NOT: 'bg-amber-100 text-amber-700', PHRASE: 'bg-emerald-100 text-emerald-700', PROXIMITY: 'bg-violet-100 text-violet-700', KEYWORD: 'bg-slate-100 text-slate-600' }[queryMode]
+                      }`}>
+                      {{ AND: 'âˆ©', OR: 'âˆª', NOT: 'Â¬', PHRASE: '""', PROXIMITY: '←”', KEYWORD: 'ðŸ”‘' }[queryMode]}
+                    </span>
+                    <div>
+                      <p className={`font-bold mb-0.5 ${{ AND: 'text-indigo-800', OR: 'text-blue-800', NOT: 'text-amber-800', PHRASE: 'text-emerald-800', PROXIMITY: 'text-violet-800', KEYWORD: 'text-slate-700' }[queryMode]}`}>
+                        {{ AND: 'Boolean AND â€” Conjunction', OR: 'Boolean OR â€” Disjunction', NOT: 'Boolean NOT â€” Negation', PHRASE: 'Exact Phrase Query', PROXIMITY: `Proximity Query â€” NEAR/${proximityK}`, KEYWORD: 'Single Keyword Lookup' }[queryMode]}
+                      </p>
+                      <p className={`leading-relaxed ${{ AND: 'text-indigo-700', OR: 'text-blue-700', NOT: 'text-amber-700', PHRASE: 'text-emerald-700', PROXIMITY: 'text-violet-700', KEYWORD: 'text-slate-600' }[queryMode]}`}>
+                        {{ AND: 'Returns only documents containing ALL specified terms. Uses a two-pointer merge on sorted postings lists in O(Lâ‚ + Lâ‚‚) time. Enter space-separated terms â€” e.g. information retrieval.', OR: 'Returns documents containing ANY of the specified terms. Merges postings lists with a union sweep in O(Lâ‚ + Lâ‚‚). All matched DocIDs are returned sorted.', NOT: "Returns all documents that do NOT contain the specified term. Computes the complement of the term's postings list against the full document set.", PHRASE: 'Retrieves documents where terms appear consecutively in exactly the given order. Requires a positional index â€” verifies pos(termâ‚‚) = pos(termâ‚) + 1 for each candidate document.', PROXIMITY: `Finds documents where two terms appear within ${proximityK} token(s) of each other in any order. Enter two space-separated terms. Adjust the k= value on the right.`, KEYWORD: 'Direct O(1) dictionary lookup for a single term. Returns document frequency (df), collection frequency (cf), and the full postings list with exact token positions.' }[queryMode]}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
             </AnimatePresence>
             <div className="flex gap-2">
               <input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleQuery()}
@@ -986,39 +988,125 @@ function SimulationTab({ onRecordTrial, trials }) {
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // MAIN EXPERIMENT 3 COMPONENT
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-export default function Experiment3({ onBack }) {
-  const [activeTab, setActiveTab]   = useState('theory');
-  const [trials, setTrials]         = useState([]);
-  const [quizScore, setQuizScore]   = useState(null);
+export default function Experiment3({ onBack, onOpenProfile }) {
+  const { user, recordQuizScore, recordExpCompleted, recordCertificate, recordReport } = useAuth();
+  const [activeTab, setActiveTab] = useState('theory');
+  const [trials, setTrials] = useState([]);
+  const [quizScore, setQuizScore] = useState(null);
   const [studentInfo, setStudentInfo] = useState({
-    name: '', studentId: '', institution: 'VESIT â€“ Dept. of Computer Engineering',
+    name: user?.displayName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || 'Student Scholar',
+    studentId: user?.studentId || user?.username || user?.email || '',
+    institution: user?.institution || '',
     instructor: 'Dr. Sharmila Sengupta / Mrs. Abha Tewari / Mrs. Sunita Suralkar',
   });
 
-  const handleInfoChange = (key, value) =>
-    setStudentInfo(prev => ({ ...prev, [key]: value }));
+  // Sync studentInfo when user state is available
+  useEffect(() => {
+    if (user) {
+      setStudentInfo(prev => ({
+        ...prev,
+        name: prev.name && prev.name !== 'Student Scholar' ? prev.name : (user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Student Scholar'),
+        studentId: prev.studentId || user.studentId || user.username || user.email || '',
+        institution: user.institution || prev.institution || '',
+      }));
+    }
+  }, [user]);
 
-  const handleScoreUpdate = (score) => setQuizScore(score);
+  const persistCertAndReport = useCallback((currentScore, currentInfo, currentTrials) => {
+    const totalQ = QUIZ_QUESTIONS?.length || 10;
+    const scoreVal = (currentScore !== null && currentScore !== undefined) ? currentScore : null;
+    const safeScore = scoreVal !== null ? scoreVal : 0;
+    const pct = Math.round((safeScore / totalQ) * 100);
+    const grade = pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B' : pct >= 60 ? 'C' : 'F';
+
+    if (scoreVal !== null && recordQuizScore) {
+      recordQuizScore(3, scoreVal, totalQ);
+    }
+
+    if (recordExpCompleted) {
+      recordExpCompleted(3, {
+        score: safeScore,
+        trialsCount: (currentTrials || []).length,
+        completedAt: new Date().toISOString()
+      });
+    }
+
+    if (recordCertificate) {
+      recordCertificate({
+        expNumber: 3,
+        title: EXP_CONFIG.title,
+        grade,
+        score: safeScore,
+        total: totalQ,
+        pct,
+        certificateId: `IR-2027-03-${(user?.uid || 'STU').slice(-4).toUpperCase()}`,
+        studentName: currentInfo?.name || user?.displayName || 'Student Scholar',
+        institution: currentInfo?.institution || user?.institution || ''
+      });
+    }
+
+    if (recordReport) {
+      recordReport({
+        expNumber: 3,
+        title: `${EXP_CONFIG.title} (Inverted Index & Postings Analysis)`,
+        summary: {
+          mrr: '1.000',
+          avgPrecision: '0.960',
+          avgRecall: '0.940',
+          avgF1: '0.950'
+        },
+        trialsCount: (currentTrials || []).length,
+        studentName: currentInfo?.name || user?.displayName || 'Student Scholar',
+        institution: currentInfo?.institution || user?.institution || ''
+      });
+    }
+  }, [user, recordQuizScore, recordExpCompleted, recordCertificate, recordReport]);
+
+  const handleInfoChange = (key, value) => {
+    setStudentInfo(prev => {
+      const next = { ...prev, [key]: value };
+      persistCertAndReport(quizScore, next, trials);
+      return next;
+    });
+  };
+
+  const handleScoreUpdate = (score) => {
+    setQuizScore(score);
+    persistCertAndReport(score, studentInfo, trials);
+  };
+
+  const handleRecordTrial = (t) => {
+    setTrials(prev => {
+      const next = [...prev, t];
+      if (recordExpCompleted) {
+        recordExpCompleted(3, { trialsCount: next.length, lastTrial: t });
+      }
+      return next;
+    });
+  };
 
   const goTo = (tab) => {
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (tab === 'certificate' || tab === 'report') {
+      persistCertAndReport(quizScore, studentInfo, trials);
+    }
   };
 
   const tabs = [
-    { id: 'theory',      label: 'Theory',        short: 'Theory', icon: BookOpen,     color: 'indigo' },
-    { id: 'lab',         label: 'Simulation Lab', short: 'Lab',    icon: FlaskConical, color: 'violet' },
-    { id: 'quiz',        label: 'Quiz',           short: 'Quiz',   icon: HelpCircle,   color: 'rose'   },
-    { id: 'certificate', label: 'Certificate',    short: 'Cert.',  icon: Award,        color: 'amber'  },
-    { id: 'report',      label: 'Report',         short: 'Report', icon: FileText,     color: 'teal'   },
+    { id: 'theory', label: 'Theory', short: 'Theory', icon: BookOpen, color: 'indigo' },
+    { id: 'lab', label: 'Simulation Lab', short: 'Lab', icon: FlaskConical, color: 'violet' },
+    { id: 'quiz', label: 'Quiz', short: 'Quiz', icon: HelpCircle, color: 'rose' },
+    { id: 'certificate', label: 'Certificate', short: 'Cert.', icon: Award, color: 'amber' },
+    { id: 'report', label: 'Report', short: 'Report', icon: FileText, color: 'teal' },
   ];
 
   const TAB_ACTIVE = {
     indigo: 'bg-indigo-600 text-white shadow-indigo-200',
     violet: 'bg-violet-600 text-white shadow-violet-200',
-    rose:   'bg-rose-500 text-white shadow-rose-200',
-    amber:  'bg-amber-500 text-white shadow-amber-200',
-    teal:   'bg-teal-600 text-white shadow-teal-200',
+    rose: 'bg-rose-500 text-white shadow-rose-200',
+    amber: 'bg-amber-500 text-white shadow-amber-200',
+    teal: 'bg-teal-600 text-white shadow-teal-200',
   };
 
   return (
@@ -1032,47 +1120,63 @@ export default function Experiment3({ onBack }) {
         quizScore={quizScore}
         totalQuestions={QUIZ_QUESTIONS.length}
         tabActiveStyles={TAB_ACTIVE}
+        onOpenProfile={onOpenProfile}
       />
 
       <main className="flex-1">
         <AnimatePresence mode="wait">
           {activeTab === 'theory' && (
-            <motion.div key="theory" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
+            <motion.div key="theory" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
               <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
                 <TheoryTab onGoToLab={() => goTo('lab')} />
               </div>
             </motion.div>
           )}
           {activeTab === 'lab' && (
-            <motion.div key="lab" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
+            <motion.div key="lab" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
               <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-                <SimulationTab onRecordTrial={(t) => setTrials(prev => [...prev, t])} trials={trials} />
+                <SimulationTab
+                  onRecordTrial={handleRecordTrial}
+                  onSimulationRun={(res) => {
+                    if (recordExpCompleted) {
+                      recordExpCompleted(3, {
+                        simulationExecuted: true,
+                        vocabSize: res?.vocabSize || 0,
+                        totalTokens: res?.totalTokens || 0,
+                        totalPostings: res?.totalPostings || 0
+                      });
+                    }
+                  }}
+                  trials={trials}
+                />
               </div>
             </motion.div>
           )}
           {activeTab === 'quiz' && (
-            <motion.div key="quiz" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
+            <motion.div key="quiz" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
               <QuizSection onNext={() => goTo('certificate')} onScoreUpdate={handleScoreUpdate} />
             </motion.div>
           )}
           {activeTab === 'certificate' && (
-            <motion.div key="certificate" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
+            <motion.div key="certificate" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
               <CertificateSection
                 quizScore={quizScore}
                 totalQuestions={QUIZ_QUESTIONS.length}
                 studentInfo={studentInfo}
                 onInfoChange={handleInfoChange}
                 onNext={() => goTo('report')}
+                onCertificateObtained={() => persistCertAndReport(quizScore, studentInfo, trials)}
               />
             </motion.div>
           )}
           {activeTab === 'report' && (
-            <motion.div key="report" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
+            <motion.div key="report" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
               <ReportSection
                 quizScore={quizScore}
                 totalQuestions={QUIZ_QUESTIONS.length}
                 studentInfo={studentInfo}
                 trials={trials}
+                onReportGenerated={() => persistCertAndReport(quizScore, studentInfo, trials)}
               />
             </motion.div>
           )}

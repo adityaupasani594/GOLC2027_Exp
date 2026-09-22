@@ -6,8 +6,8 @@ import ExperimentTemplate from '../ExperimentTemplate';
  * Modular implementation for Experiment 7.
  * Customize or replace the tabs below with dedicated components.
  */
-export default function Experiment7({ onBack }) {
+export default function Experiment7({ onBack, onOpenProfile }) {
   return (
-    <ExperimentTemplate expNumber={7} onBack={onBack} />
+    <ExperimentTemplate expNumber={7} onBack={onBack} onOpenProfile={onOpenProfile} />
   );
 }

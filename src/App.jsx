@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LandingPage from './components/LandingPage';
 import AuthPage from './pages/AuthPage';
+import StudentProfileModal from './components/profile/StudentProfileModal';
 import { EXPERIMENT_COMPONENTS } from './experiments';
 import { AmbientBackground } from './components/common';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -9,12 +10,16 @@ import { Loader2 } from 'lucide-react';
 
 function MainApp() {
   const { user, loading } = useAuth();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Helper to inspect hash
   const parseHash = () => {
     if (typeof window === 'undefined') return { view: 'landing', authMode: 'login', expNum: null };
     const hash = window.location.hash.toLowerCase();
 
+    if (hash === '#profile') {
+      return { view: 'profile', authMode: 'login', expNum: null };
+    }
     if (hash === '#register' || hash === '#signup') {
       return { view: 'auth', authMode: 'register', expNum: null };
     }
@@ -42,9 +47,13 @@ function MainApp() {
   useEffect(() => {
     const handleHashChange = () => {
       const parsed = parseHash();
-      setRouteState(parsed);
-      if (parsed.expNum) {
-        setPendingExpNum(parsed.expNum);
+      if (parsed.view === 'profile') {
+        setIsProfileOpen(true);
+      } else {
+        setRouteState(parsed);
+        if (parsed.expNum) {
+          setPendingExpNum(parsed.expNum);
+        }
       }
     };
 
@@ -77,6 +86,14 @@ function MainApp() {
       setPendingExpNum(null);
     } else {
       returnToLanding();
+    }
+  };
+
+  const openProfile = () => setIsProfileOpen(true);
+  const closeProfile = () => {
+    setIsProfileOpen(false);
+    if (window.location.hash === '#profile') {
+      window.location.hash = routeState.expNum ? `exp${routeState.expNum}` : '';
     }
   };
 
@@ -171,7 +188,10 @@ function MainApp() {
             transition={{ duration: 0.25 }}
             className="flex-1 flex flex-col"
           >
-            <ActiveExperiment onBack={returnToLanding} />
+            <ActiveExperiment
+              onBack={returnToLanding}
+              onOpenProfile={openProfile}
+            />
           </motion.div>
         ) : (
           <motion.div
@@ -186,10 +206,21 @@ function MainApp() {
               onLaunchExperiment={launchExperiment}
               onLaunchExp15={() => launchExperiment(15)}
               onNavigateToAuth={navigateToAuth}
+              onOpenProfile={openProfile}
             />
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Global Student Profile Modal ── */}
+      <StudentProfileModal
+        isOpen={isProfileOpen}
+        onClose={closeProfile}
+        onLaunchExperiment={(num) => {
+          closeProfile();
+          launchExperiment(num);
+        }}
+      />
     </div>
   );
 }
