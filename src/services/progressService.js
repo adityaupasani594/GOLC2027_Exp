@@ -37,6 +37,45 @@ const sanitizeForFirestore = (val) => {
   return result;
 };
 
+// Rate Limiter & Debouncer for progress sync
+let pendingProgressTimer = null;
+let lastProgressPayload = null;
+let progressWriteCountThisMinute = 0;
+let progressMinuteTimer = null;
+
+const checkProgressRateLimit = () => {
+  if (!progressMinuteTimer) {
+    progressMinuteTimer = setTimeout(() => {
+      progressWriteCountThisMinute = 0;
+      progressMinuteTimer = null;
+    }, 60000);
+  }
+  if (progressWriteCountThisMinute >= 20) {
+    console.warn('[Firebase RateLimiter] Progress write limit reached for this minute (max 20). Kept in local cache.');
+    return false;
+  }
+  progressWriteCountThisMinute++;
+  return true;
+};
+
+const debouncedSyncProgressDoc = (uid, data) => {
+  if (!isLive() || !uid) return;
+  lastProgressPayload = data;
+  if (pendingProgressTimer) clearTimeout(pendingProgressTimer);
+
+  pendingProgressTimer = setTimeout(async () => {
+    pendingProgressTimer = null;
+    if (!checkProgressRateLimit()) return;
+    try {
+      const progressDocRef = doc(db, 'users', uid, 'progress', 'current');
+      await setDoc(progressDocRef, sanitizeForFirestore(lastProgressPayload), { merge: true });
+      console.info(`[Firebase RateLimiter] Synced progress document to Firestore.`);
+    } catch (err) {
+      console.error('[Firebase] Could not sync progress to Firestore:', err);
+    }
+  }, 800); // 800ms debounce
+};
+
 export const progressService = {
   /**
    * Get all recorded progress for a specific user ID
@@ -126,17 +165,7 @@ export const progressService = {
     };
 
     localStorage.setItem(`${PROGRESS_STORAGE_PREFIX}${uid}`, JSON.stringify(updated));
-
-    if (isLive()) {
-      try {
-        const progressDocRef = doc(db, 'users', uid, 'progress', 'current');
-        await setDoc(progressDocRef, sanitizeForFirestore(updated), { merge: true });
-        console.info(`[Firebase] Successfully synced Experiment ${expNumber} progress to Firestore.`);
-      } catch (err) {
-        console.error('[Firebase] Could not sync experiment completion to Firestore:', err);
-      }
-    }
-
+    debouncedSyncProgressDoc(uid, updated);
     return updated;
   },
 
@@ -158,17 +187,7 @@ export const progressService = {
     };
 
     localStorage.setItem(`${PROGRESS_STORAGE_PREFIX}${uid}`, JSON.stringify(updated));
-
-    if (isLive()) {
-      try {
-        const progressDocRef = doc(db, 'users', uid, 'progress', 'current');
-        await setDoc(progressDocRef, sanitizeForFirestore(updated), { merge: true });
-        console.info(`[Firebase] Successfully synced Exp ${expNumber} quiz score (${score}/${total}) to Firestore.`);
-      } catch (err) {
-        console.error('[Firebase] Could not sync quiz score to Firestore:', err);
-      }
-    }
-
+    debouncedSyncProgressDoc(uid, updated);
     return updated;
   },
 

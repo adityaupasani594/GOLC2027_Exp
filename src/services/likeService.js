@@ -90,6 +90,26 @@ const saveUserLikedSet = (uid, likedSet) => {
   }
 };
 
+// Global rate-limiter & debounced write queue to prevent quota exhaustion
+const pendingLikeTimers = {};
+let writeCountThisMinute = 0;
+let minuteResetTimer = null;
+
+const checkRateLimit = () => {
+  if (!minuteResetTimer) {
+    minuteResetTimer = setTimeout(() => {
+      writeCountThisMinute = 0;
+      minuteResetTimer = null;
+    }, 60000);
+  }
+  if (writeCountThisMinute >= 20) {
+    console.warn('[Firebase RateLimiter] Firestore write cap reached for this minute (max 20). Keeping state in local cache.');
+    return false;
+  }
+  writeCountThisMinute++;
+  return true;
+};
+
 export const likeService = {
   /**
    * Get all like counts and user-liked states for all experiments
@@ -180,50 +200,59 @@ export const likeService = {
       );
     }
 
-    // Live Firebase Firestore persistence
+    // Debounced & Rate-Limited Live Firebase Firestore persistence
     if (isLive()) {
-      try {
-        const expDocRef = doc(db, 'experiment_likes', key);
-
-        // 1. Update the aggregated counter in experiment_likes collection
-        await setDoc(
-          expDocRef,
-          {
-            experimentKey: key,
-            count: increment(delta),
-            lastUpdated: serverTimestamp()
-          },
-          { merge: true }
-        );
-
-        // 2. If authenticated, update user_likes subcollection and user's likes subcollection
-        if (uid && uid !== 'guest') {
-          const userLikeInExpRef = doc(db, 'experiment_likes', key, 'user_likes', uid);
-          const userLikeInUserRef = doc(db, 'users', uid, 'likes', key);
-
-          if (newIsLiked) {
-            const likePayload = {
-              uid,
-              experimentKey: key,
-              displayName: user.displayName || user.firstName || 'Student',
-              email: user.email || '',
-              likedAt: serverTimestamp()
-            };
-            await Promise.allSettled([
-              setDoc(userLikeInExpRef, likePayload, { merge: true }),
-              setDoc(userLikeInUserRef, likePayload, { merge: true })
-            ]);
-          } else {
-            await Promise.allSettled([
-              deleteDoc(userLikeInExpRef),
-              deleteDoc(userLikeInUserRef)
-            ]);
-          }
-        }
-        console.info(`[Firebase] Experiment ${key} like status synced to Firestore (${updatedCount} likes).`);
-      } catch (err) {
-        console.warn('[Firebase] Failed to persist like to Firestore, kept in local cache:', err);
+      if (pendingLikeTimers[key]) {
+        clearTimeout(pendingLikeTimers[key]);
       }
+
+      pendingLikeTimers[key] = setTimeout(async () => {
+        delete pendingLikeTimers[key];
+        if (!checkRateLimit()) return;
+
+        try {
+          const expDocRef = doc(db, 'experiment_likes', key);
+
+          // 1. Update the aggregated counter in experiment_likes collection
+          await setDoc(
+            expDocRef,
+            {
+              experimentKey: key,
+              count: increment(delta),
+              lastUpdated: serverTimestamp()
+            },
+            { merge: true }
+          );
+
+          // 2. If authenticated, update user_likes subcollection and user's likes subcollection
+          if (uid && uid !== 'guest') {
+            const userLikeInExpRef = doc(db, 'experiment_likes', key, 'user_likes', uid);
+            const userLikeInUserRef = doc(db, 'users', uid, 'likes', key);
+
+            if (newIsLiked) {
+              const likePayload = {
+                uid,
+                experimentKey: key,
+                displayName: user.displayName || user.firstName || 'Student',
+                email: user.email || '',
+                likedAt: serverTimestamp()
+              };
+              await Promise.allSettled([
+                setDoc(userLikeInExpRef, likePayload, { merge: true }),
+                setDoc(userLikeInUserRef, likePayload, { merge: true })
+              ]);
+            } else {
+              await Promise.allSettled([
+                deleteDoc(userLikeInExpRef),
+                deleteDoc(userLikeInUserRef)
+              ]);
+            }
+          }
+          console.info(`[Firebase RateLimiter] Experiment ${key} like status synced to Firestore.`);
+        } catch (err) {
+          console.warn('[Firebase] Failed to persist like to Firestore, kept in local cache:', err);
+        }
+      }, 600); // 600ms debounce
     }
 
     return { isLiked: newIsLiked, count: updatedCount };
