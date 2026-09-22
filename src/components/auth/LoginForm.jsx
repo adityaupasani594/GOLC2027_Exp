@@ -131,7 +131,7 @@ export default function LoginForm({ onSubmit, loading, error }) {
           </>
         ) : (
           <>
-            <span>Sign In to Virtual Lab</span>
+            <span>Sign In to KIRA Lab</span>
             <ArrowRight className="w-4 h-4" />
           </>
         )}

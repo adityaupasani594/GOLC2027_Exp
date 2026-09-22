@@ -14,13 +14,13 @@ export default function Footer() {
         </div>
         <div className="flex items-center justify-center gap-2 font-bold text-slate-800 text-sm">
           <span className="w-2 h-2 rounded-full bg-indigo-600" />
-          <span>Information Retrieval & Knowledge Graphs Virtual Laboratory</span>
+          <span>KIRA Lab — Knowledge Graph & Information Retrieval Analytics Lab</span>
         </div>
         <p className="text-slate-600 font-medium">
           Department of Computer Engineering • Vivekanand Education Society's Institute of Technology (VESIT)
         </p>
         <p className="text-slate-400 text-[11px]">
-          GOLC 2027 Curriculum Standards • 15 Prescribed Experiments • Contributed by the 2027 Batch
+          GOLC 2027 Curriculum Standards • Prescribed Practical Modules • Contributed by the 2027 Batch
         </p>
       </div>
     </footer>

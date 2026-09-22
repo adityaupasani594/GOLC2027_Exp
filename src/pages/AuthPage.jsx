@@ -141,7 +141,7 @@ export default function AuthPage({ initialMode = 'login', onBack, onSuccess, can
               <p className="mt-1.5 text-xs sm:text-sm text-slate-500">
                 {mode === 'login'
                   ? 'Sign in to review evaluation reports, resume experiments, and verify certificates.'
-                  : 'Register with your college or Email to access all 15 experiments and simulators.'}
+                  : 'Register with your college or Email to access all laboratory experiments and simulators.'}
               </p>
             </div>
 

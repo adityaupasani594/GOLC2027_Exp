@@ -2,13 +2,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // Each student can read and write only their own user document
-    // AND all of their subcollections (progress, certificates, reports)
+    // AND all of their subcollections (progress, certificates, reports, likes)
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
       
       match /{allSubcollections=**} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+    }
+
+    // Experiment likes collection:
+    // Anyone can read aggregated like counts, authenticated users can submit/toggle likes
+    match /experiment_likes/{expId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+
+      match /user_likes/{userId} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    match /likes/{likeId} {
+      allow read: if true;
+      allow write: if request.auth != null;
     }
   }
 }

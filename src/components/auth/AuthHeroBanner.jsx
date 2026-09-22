@@ -16,7 +16,7 @@ export default function AuthHeroBanner() {
   const highlights = [
     {
       icon: GitFork,
-      title: '15 Sequenced IR & KG Experiments',
+      title: 'Sequenced IR & KG Experiments',
       desc: 'Directed prerequisite learning graph from tokenization to Cypher & GraphRAG.'
     },
     {
@@ -42,15 +42,15 @@ export default function AuthHeroBanner() {
       <div className="relative z-10">
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center text-white font-extrabold shadow-lg shadow-indigo-500/30">
-              IR
+            <div className="w-12 h-11 rounded-2xl bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center text-white font-black text-sm tracking-wider shadow-lg shadow-indigo-500/30">
+              KIRA
             </div>
             <div>
               <span className="text-xs uppercase tracking-widest text-cyan-300 font-semibold">
-                Virtual Laboratory Portal
+                Knowledge Graph & IR Analytics Lab
               </span>
               <h2 className="text-lg font-bold text-white leading-tight">
-                IR & Knowledge Graphs
+                KIRA Lab
               </h2>
             </div>
           </div>

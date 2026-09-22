@@ -76,17 +76,18 @@ function MainApp() {
 
   const returnToLanding = () => {
     setRouteState({ view: 'landing', authMode: 'login', expNum: null });
-    window.location.hash = '';
+    if (typeof window !== 'undefined') {
+      window.location.hash = '';
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleAuthSuccess = () => {
-    if (pendingExpNum) {
-      launchExperiment(pendingExpNum);
-      setPendingExpNum(null);
-    } else {
-      returnToLanding();
-    }
+    setPendingExpNum(null);
+    returnToLanding();
   };
 
   const openProfile = () => setIsProfileOpen(true);
@@ -106,12 +107,12 @@ function MainApp() {
       >
         <AmbientBackground />
         <div className="relative z-10 flex flex-col items-center gap-3 p-6 rounded-2xl bg-white/80 backdrop-blur-md border border-white/80 shadow-lg">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold shadow-md">
-            IR
+          <div className="w-12 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white font-black text-xs tracking-wider shadow-md">
+            KIRA
           </div>
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
             <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
-            <span>Initializing Virtual Laboratory...</span>
+            <span>Initializing KIRA Lab...</span>
           </div>
         </div>
       </div>

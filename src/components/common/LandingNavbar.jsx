@@ -21,15 +21,15 @@ export default function LandingNavbar({ onNavigateToAuth, onNavigateToLab, onOpe
         <div className="relative flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
           {/* Left: Brand Logo & Title */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 z-10">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-violet-700 flex items-center justify-center shadow-md shadow-indigo-300/40 text-white font-bold text-sm sm:text-base">
-              IR
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-violet-700 flex items-center justify-center shadow-md shadow-indigo-300/40 text-white font-black text-xs sm:text-sm tracking-wider">
+              KIRA
             </div>
             <div className="min-w-0">
-              <h1 className="text-xs sm:text-sm md:text-base font-bold text-slate-900 leading-tight truncate max-w-[135px] sm:max-w-[200px] md:max-w-none">
-                IR & Knowledge Graphs Lab
+              <h1 className="text-xs sm:text-sm md:text-base font-extrabold text-slate-900 leading-tight truncate max-w-[160px] sm:max-w-[260px] md:max-w-none tracking-tight">
+                KIRA Lab
               </h1>
               <p className="text-[10px] sm:text-[11px] text-slate-500 hidden md:block">
-                GOLC 2027 • Practical Curriculum & Simulation Suite
+                Knowledge Graph & Information Retrieval Analytics Lab • GOLC 2027
               </p>
             </div>
           </div>

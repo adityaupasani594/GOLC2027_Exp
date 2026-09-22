@@ -106,7 +106,8 @@ export default function Experiment15({ onBack, onOpenProfile }) {
     <div className="flex-1 flex flex-col min-h-screen">
       {/* ── Sticky Navbar for Experiment 15 ── */}
       <ExperimentNavbar
-        title="Exp 15: Evaluation of Retrieval Systems"
+        title="Evaluation of Retrieval Systems"
+        expId={15}
         tabs={TABS}
         activeTab={activeTab}
         onTabChange={goTo}
@@ -170,7 +171,7 @@ export default function Experiment15({ onBack, onOpenProfile }) {
           onClick={onBack}
           className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer underline underline-offset-2"
         >
-          ← Return to 15 Experiments Portal
+          ← Return to Laboratory Portal
         </button>
       </footer>
     </div>

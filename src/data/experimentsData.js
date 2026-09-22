@@ -2,10 +2,10 @@
 
 export const EXPERIMENT_TRACKS = [
   { id: 'all', label: 'All Experiments', count: 15 },
-  { id: 'foundations', label: 'IR Foundations (Exp 1–5)', range: 'Exp 1-5', count: 5, color: '#6366f1' },
-  { id: 'semantic', label: 'Semantic & Hybrid (Exp 6–7)', range: 'Exp 6-7', count: 2, color: '#9333ea' },
-  { id: 'graphs', label: 'Knowledge Graphs (Exp 8–13)', range: 'Exp 8-13', count: 6, color: '#0d9488' },
-  { id: 'evaluation', label: 'Integration & Evaluation (Exp 14–15)', range: 'Exp 14-15', count: 2, color: '#e11d48' },
+  { id: 'foundations', label: 'IR Foundations', range: 'Foundations', count: 5, color: '#6366f1' },
+  { id: 'semantic', label: 'Semantic & Hybrid', range: 'Semantic', count: 2, color: '#9333ea' },
+  { id: 'graphs', label: 'Knowledge Graphs', range: 'Knowledge Graphs', count: 6, color: '#0d9488' },
+  { id: 'evaluation', label: 'Integration & Evaluation', range: 'Evaluation', count: 2, color: '#e11d48' },
 ];
 
 export const GRAPH_EDGES = [

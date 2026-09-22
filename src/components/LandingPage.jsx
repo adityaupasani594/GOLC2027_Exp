@@ -21,7 +21,7 @@ import { EXPERIMENTS_LIST, EXPERIMENT_TRACKS } from '../data/experimentsData';
 import ExperimentModal from './ExperimentModal';
 import CurriculumGraph from './CurriculumGraph';
 import collegeLogo from '../image.png';
-import { LandingNavbar, Footer, AmbientBackground } from './common';
+import { LandingNavbar, Footer, AmbientBackground, ExperimentLikeButton } from './common';
 
 export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavigateToAuth, onOpenProfile }) {
   const [viewMode, setViewMode] = useState('graph'); // 'graph' | 'cards'
@@ -94,13 +94,14 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15] sm:leading-[1.15]"
+              className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.1] sm:leading-[1.1]"
             >
-              Information Retrieval &{' '}
-              <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-600 bg-clip-text text-transparent">
-                Knowledge Graphs
-              </span>{' '}
-              Virtual Lab
+              <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-500 bg-clip-text text-transparent">
+                KIRA Lab
+              </span>
+              <div className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-slate-800 mt-2 sm:mt-3 tracking-normal">
+                Knowledge Graph & Information Retrieval Analytics Lab
+              </div>
             </motion.h2>
 
             {/* Description */}
@@ -110,7 +111,7 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
               transition={{ duration: 0.5, delay: 0.2 }}
               className="mt-6 text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto"
             >
-              An interactive virtual laboratory portal spanning 15 structured experiments arranged in a directed prerequisite learning graph — from text preprocessing and inverted indexing, to knowledge graphs, neural semantic search, and quantitative empirical evaluation.
+              An interactive virtual analytics laboratory arranged in a learning graph — from text preprocessing and inverted indexing, to knowledge graphs, neural semantic search, and quantitative empirical evaluation.
             </motion.p>
 
             {/* Quick Actions & Jump to Graph */}
@@ -126,7 +127,7 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
                 className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer"
               >
                 <GitFork className="w-4 h-4 rotate-90" />
-                <span>Explore Prerequisite Graph</span>
+                <span>Explore Experiment Graph</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </a>
 
@@ -154,8 +155,8 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
                 <p className="text-xs font-medium text-slate-500 mt-0.5">Curriculum Tracks</p>
               </div>
               <div className="p-4 rounded-xl bg-white/70 backdrop-blur-sm border border-white/80 shadow-sm text-center">
-                <p className="text-2xl sm:text-3xl font-extrabold text-cyan-600">18</p>
-                <p className="text-xs font-medium text-slate-500 mt-0.5">Prerequisite Edges</p>
+                <p className="text-2xl sm:text-3xl font-extrabold text-cyan-600">Interactive</p>
+                <p className="text-xs font-medium text-slate-500 mt-0.5">Visual Simulations</p>
               </div>
               <div className="p-4 rounded-xl bg-white/70 backdrop-blur-sm border border-white/80 shadow-sm text-center">
                 <p className="text-2xl sm:text-3xl font-extrabold text-emerald-600">100%</p>
@@ -190,13 +191,13 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
               <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
                 01
               </div>
-              <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Track I • Exp 1–5</p>
+              <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Track I • Foundations</p>
               <h4 className="text-base font-bold text-slate-900 mt-1">IR Foundations & Indexing</h4>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
                 Pipelines, normalization, tokenization, postings lists, TF-IDF vector space, and BM25 probabilistic ranking.
               </p>
               <div className="mt-4 flex items-center text-xs font-semibold text-indigo-600 group-hover:gap-1.5 transition-all">
-                <span>View 5 experiments</span>
+                <span>Explore Track Modules</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -209,13 +210,13 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
               <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
                 02
               </div>
-              <p className="text-xs font-bold text-purple-600 uppercase tracking-wider">Track II • Exp 6–7</p>
+              <p className="text-xs font-bold text-purple-600 uppercase tracking-wider">Track II • Semantic</p>
               <h4 className="text-base font-bold text-slate-900 mt-1">Semantic & Hybrid Search</h4>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
                 Dense neural embeddings, bi-encoders, FAISS indexing, and Reciprocal Rank Fusion of lexical and semantic vectors.
               </p>
               <div className="mt-4 flex items-center text-xs font-semibold text-purple-600 group-hover:gap-1.5 transition-all">
-                <span>View 2 experiments</span>
+                <span>Explore Track Modules</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -228,13 +229,13 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
               <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
                 03
               </div>
-              <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Track III • Exp 8–13</p>
+              <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider">Track III • Knowledge Graphs</p>
               <h4 className="text-base font-bold text-slate-900 mt-1">Knowledge Graphs</h4>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
                 Entity recognition, relation extraction triples, knowledge graph schema design, data import, and traversal.
               </p>
               <div className="mt-4 flex items-center text-xs font-semibold text-emerald-600 group-hover:gap-1.5 transition-all">
-                <span>View 6 experiments</span>
+                <span>Explore Track Modules</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -247,13 +248,13 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
               <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm mb-4 group-hover:scale-110 transition-transform">
                 04
               </div>
-              <p className="text-xs font-bold text-rose-600 uppercase tracking-wider">Track IV • Exp 14–15</p>
+              <p className="text-xs font-bold text-rose-600 uppercase tracking-wider">Track IV • Evaluation</p>
               <h4 className="text-base font-bold text-slate-900 mt-1">Integration & Evaluation</h4>
               <p className="text-xs text-slate-600 mt-2 leading-relaxed">
                 GraphRAG contextual expansion and empirical benchmarking (Precision, Recall, F1, MRR) across all retrieval models.
               </p>
               <div className="mt-4 flex items-center text-xs font-semibold text-rose-600 group-hover:gap-1.5 transition-all">
-                <span>View 2 experiments</span>
+                <span>Explore Track Modules</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </div>
             </div>
@@ -271,11 +272,11 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
                 Curriculum Structure
               </span>
               <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2 tracking-tight">
-                {viewMode === 'graph' ? 'Experiment Graph' : 'All 15 Laboratory Experiments'}
+                {viewMode === 'graph' ? 'Prerequisite Learning Graph' : 'All Laboratory Modules'}
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
                 {viewMode === 'graph'
-                  ? 'Interactive DAG: Directed edges (A → B) indicate that Experiment A must be completed before Experiment B.'
+                  ? 'Interactive DAG: Directed edges (A → B) indicate that module A must be completed before module B.'
                   : 'Filter by curriculum track or search by topic, title, or keywords.'}
               </p>
             </div>
@@ -376,15 +377,11 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
                       {/* Top Badges */}
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-3">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-slate-100 text-slate-800">
-                              EXP {exp.number < 10 ? `0${exp.number}` : exp.number}
-                            </span>
+                          <span className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            {exp.trackLabel}
+                          </span>
 
-                            <span className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                              {exp.trackLabel}
-                            </span>
-                          </div>
+                          <ExperimentLikeButton expId={exp.number} variant="card" />
                         </div>
 
                         {/* Title */}
@@ -398,7 +395,10 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
                             <span className="text-slate-400 italic">No prerequisites</span>
                           ) : (
                             <span className="text-indigo-600">
-                              Prerequisite: {exp.prerequisites.map(p => `Exp ${p}`).join(', ')}
+                              Prerequisite: {exp.prerequisites.map(p => {
+                                const found = EXPERIMENTS_LIST.find(e => e.number === p);
+                                return found ? (found.shortTitle || found.title) : 'Prerequisite';
+                              }).join(', ')}
                             </span>
                           )}
                         </div>
@@ -496,7 +496,7 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
               </div>
               <h4 className="text-sm font-bold text-slate-900">1. Automated Lab Reports</h4>
               <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                For Experiment 15, generate the standardized laboratory report directly from the experiment interface. Save as PDF or print with all empirical metric tables intact.
+                Generate standardized laboratory reports directly from the experiment interface. Save as PDF or print with all empirical metric tables intact.
               </p>
             </div>
 
@@ -706,13 +706,13 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
                   Students of the Department of Computer Engineering, VESIT
                 </h4>
                 <p className="text-sm text-slate-300 mt-2.5 leading-relaxed">
-                  The laboratory contributors are the students of the Department of Computer Engineering, Vivekanand Education Society's Institute of Technology (VESIT), 2027 Batch. The experimental algorithms, theoretical formulations, domain datasets, knowledge graph schemas, and retrieval benchmarks across all 15 experiments were authored and contributed by the batch.
+                  The laboratory contributors are the students of the Department of Computer Engineering, Vivekanand Education Society's Institute of Technology (VESIT), 2027 Batch. The experimental algorithms, theoretical formulations, domain datasets, knowledge graph schemas, and retrieval benchmarks across all laboratory modules were authored and contributed by the batch.
                 </p>
               </div>
 
               <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
                 <div className="px-5 py-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 text-center sm:text-right">
-                  <p className="text-2xl sm:text-3xl font-extrabold text-white">15 Labs</p>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-white">Full Labs</p>
                   <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Curriculum Suite</p>
                 </div>
                 <span className="text-xs text-indigo-300 font-semibold">

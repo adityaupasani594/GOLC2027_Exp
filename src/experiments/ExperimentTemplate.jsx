@@ -26,8 +26,8 @@ export default function ExperimentTemplate({ expNumber, onBack, children, onOpen
 
   const experiment = EXPERIMENTS_LIST.find(e => e.number === expNumber) || {
     number: expNumber,
-    title: `Experiment ${expNumber}`,
-    shortTitle: `Exp ${expNumber}`,
+    title: 'Laboratory Module',
+    shortTitle: 'Lab Module',
     explanation: 'Experiment implementation in progress.',
     expectedOutcome: 'Student will achieve deep conceptual and practical understanding.',
     detailedObjectives: ['Understand theoretical foundations.', 'Implement algorithmic pipelines.', 'Analyze empirical results.'],
@@ -55,7 +55,7 @@ export default function ExperimentTemplate({ expNumber, onBack, children, onOpen
     if (recordExpCompleted) {
       recordExpCompleted(expNumber, { completedAt: new Date().toISOString() });
     }
-    setConsoleOutput([`[Init] Launching pipeline for Experiment ${expNumber}...`]);
+    setConsoleOutput([`[Init] Launching pipeline for "${experiment.shortTitle || experiment.title}"...`]);
     setTimeout(() => {
       setConsoleOutput(prev => [
         ...prev,
@@ -76,7 +76,8 @@ export default function ExperimentTemplate({ expNumber, onBack, children, onOpen
     <div className="flex-1 flex flex-col min-h-screen">
       {/* ── Sticky Navbar ── */}
       <ExperimentNavbar
-        title={`Exp ${expNumber}: ${experiment.shortTitle || experiment.title}`}
+        title={experiment.shortTitle || experiment.title}
+        expId={expNumber}
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={(tabId) => setActiveTab(tabId)}
@@ -341,14 +342,14 @@ export default function ExperimentTemplate({ expNumber, onBack, children, onOpen
         <div>
           <span className="font-semibold text-slate-600">{experiment.title}</span>
           <span className="mx-2">·</span>
-          <span className="font-mono">Lab Module {expNumber}</span>
+          <span className="font-mono">Virtual Laboratory</span>
         </div>
         <span className="hidden sm:inline">·</span>
         <button
           onClick={onBack}
           className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer underline underline-offset-2"
         >
-          ← Return to 15 Experiments Portal
+          ← Return to Laboratory Portal
         </button>
       </footer>
     </div>

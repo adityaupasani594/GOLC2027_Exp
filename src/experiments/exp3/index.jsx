@@ -1112,7 +1112,8 @@ export default function Experiment3({ onBack, onOpenProfile }) {
   return (
     <div className="flex-1 flex flex-col min-h-screen">
       <ExperimentNavbar
-        title="Exp 03: Construction of an Inverted Index"
+        title="Construction of an Inverted Index"
+        expId={3}
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={goTo}
@@ -1187,11 +1188,11 @@ export default function Experiment3({ onBack, onOpenProfile }) {
         <div>
           <span className="font-semibold text-slate-600">Construction of an Inverted Index</span>
           <span className="mx-2">·</span>
-          <span className="font-mono">CS-KGIRS-03 · Lab Module 03</span>
+          <span className="font-mono">Virtual Laboratory</span>
         </div>
         <span className="hidden sm:inline">·</span>
         <button onClick={onBack} className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer underline underline-offset-2">
-          ← Return to 15 Experiments Portal
+          ← Return to Laboratory Portal
         </button>
       </footer>
     </div>

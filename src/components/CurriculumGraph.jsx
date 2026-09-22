@@ -86,7 +86,7 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
               Curriculum Prerequisite Graph
             </h4>
             <p className="text-[11px] text-slate-500">
-              Directed DAG layout: A → B denotes Experiment A is a prerequisite for Experiment B.
+              Directed DAG layout: A → B denotes module A is a prerequisite for module B.
             </p>
           </div>
         </div>
@@ -312,8 +312,8 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
                 {/* Node Top Row: Number & Status Badges */}
                 <div>
                   <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-800">
-                      EXP {exp.number < 10 ? `0${exp.number}` : exp.number}
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${trackStyle.badge}`}>
+                      {exp.trackLabel}
                     </span>
 
                     {isPrereq ? (
@@ -324,11 +324,7 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
                       <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700">
                         Enables
                       </span>
-                    ) : (
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${trackStyle.badge}`}>
-                        {exp.trackLabel}
-                      </span>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Title */}
@@ -339,15 +335,15 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
 
                 {/* Node Footer: Prereqs count & Action Prompt */}
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
-                  <span>
+                  <span className="truncate max-w-[150px]" title={exp.prerequisites.length > 0 ? exp.prerequisites.map(p => EXPERIMENTS_LIST.find(e => e.number === p)?.shortTitle || 'Module').join(', ') : 'Entry Point'}>
                     {exp.prerequisites.length === 0 ? (
                       <span className="text-slate-400">Entry Point</span>
                     ) : (
-                      <span>Prereq: {exp.prerequisites.map(p => `Exp ${p}`).join(', ')}</span>
+                      <span>Prereq: {exp.prerequisites.map(p => EXPERIMENTS_LIST.find(e => e.number === p)?.shortTitle || 'Module').join(', ')}</span>
                     )}
                   </span>
 
-                  <span className="text-indigo-600 font-semibold flex items-center gap-0.5 hover:underline">
+                  <span className="text-indigo-600 font-semibold flex items-center gap-0.5 hover:underline shrink-0">
                     {exp.number === 15 ? 'Launch' : 'Details'}
                     <ChevronRight className="w-3 h-3" />
                   </span>

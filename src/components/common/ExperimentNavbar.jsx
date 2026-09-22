@@ -4,6 +4,7 @@ import { FlaskConical, Award, Home, LogIn } from 'lucide-react';
 import collegeLogo from '../../image.png';
 import { useAuth } from '../../context/AuthContext';
 import UserDropdown from './UserDropdown';
+import ExperimentLikeButton from './ExperimentLikeButton';
 
 const DEFAULT_TAB_ACTIVE = {
   indigo: 'bg-indigo-600 text-white shadow-indigo-200',
@@ -15,6 +16,7 @@ const DEFAULT_TAB_ACTIVE = {
 
 export default function ExperimentNavbar({
   title,
+  expId = null,
   tabs = [],
   activeTab,
   onTabChange,
@@ -25,6 +27,8 @@ export default function ExperimentNavbar({
   onOpenProfile,
 }) {
   const { user } = useAuth();
+  const activeExpId = expId || (title && String(title).match(/Exp(?:eriment)?\s*(\d+)/i)?.[1]);
+  const cleanTitle = (title || '').replace(/^(Exp|Experiment)\s*\d+[\s:–-]+/i, '');
   return (
     <header className="sticky top-0 z-50 glass border-b border-white/60 shadow-sm no-print">
       {/* ── Top Bar: Logo (Left) | Tabs (Center) | Home (Right) ── */}
@@ -105,15 +109,22 @@ export default function ExperimentNavbar({
         </div>
       </div>
 
-      {/* ── Sub-bar: Experiment Number & Title (Centered) ── */}
+      {/* ── Sub-bar: Experiment Title & Like Action ── */}
       <div className="bg-slate-50/80 backdrop-blur-md border-t border-slate-200/60 py-2 sm:py-2.5 px-3 sm:px-6">
-        <div className="max-w-6xl mx-auto flex items-center justify-center gap-2 sm:gap-2.5 text-center">
-          <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-xs shrink-0">
-            <FlaskConical className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex-1 flex items-center justify-center gap-2 sm:gap-2.5 text-center">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-xs shrink-0">
+              <FlaskConical className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            </div>
+            <h1 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
+              {cleanTitle}
+            </h1>
           </div>
-          <h1 className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight">
-            {title}
-          </h1>
+          {activeExpId && (
+            <div className="shrink-0">
+              <ExperimentLikeButton expId={activeExpId} variant="navbar" />
+            </div>
+          )}
         </div>
       </div>
     </header>
