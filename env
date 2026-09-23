@@ -1,0 +1,10 @@
+# ── Firebase Authentication & Firestore Configuration ──────────────────────────
+# Replace the placeholder values below with your Firebase Web App configuration:
+# Found in: Firebase Console -> Project Settings -> General -> Your apps -> Web app (</>)
+
+VITE_FIREBASE_API_KEY= AIzaSyBrNp6l47uWL2tv8lObFL7x9BVE14beqc4
+VITE_FIREBASE_AUTH_DOMAIN= kira-golc.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID= kira-golc
+VITE_FIREBASE_STORAGE_BUCKET= kira-golc.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID= 267358877889
+VITE_FIREBASE_APP_ID= 1:267358877889:web:d5b1fc51620942ff74bc40

@@ -10,6 +10,7 @@ import Experiment9 from './exp9';
 import Experiment10 from './exp10';
 import Experiment11 from './exp11';
 import Experiment12 from './exp12';
+import Experiment12Cypher from './exp12cypher';
 import Experiment13 from './exp13';
 import Experiment14 from './exp14';
 import Experiment15 from './exp15';
@@ -20,13 +21,13 @@ export const EXPERIMENT_COMPONENTS = {
   3: Experiment3,
   4: Experiment4,
   5: Experiment5,
-  6: Experiment6,
+  6: Experiment12, // Dense Embedding-Based Semantic Search (Track: Semantic & Hybrid Search)
   7: Experiment7,
   8: Experiment8,
   9: Experiment9,
   10: Experiment10,
   11: Experiment11,
-  12: Experiment12,
+  12: Experiment12Cypher, // Query Knowledge Graphs using Cypher (Track: Knowledge Graphs)
   13: Experiment13,
   14: Experiment14,
   15: Experiment15,
@@ -45,6 +46,7 @@ export {
   Experiment10,
   Experiment11,
   Experiment12,
+  Experiment12Cypher,
   Experiment13,
   Experiment14,
   Experiment15,
