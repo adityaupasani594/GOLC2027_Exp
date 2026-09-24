@@ -4,6 +4,7 @@ import {
   BookOpen, ChevronDown, ChevronUp, FlaskConical,
   Zap, Brain, Target, AlertTriangle, CheckCircle2, XCircle
 } from 'lucide-react';
+import { MathJaxDiv, useMathJax } from '../../../components/common/useMathJax';
 
 const THEORY_SECTIONS = [
   {
@@ -99,13 +100,9 @@ const THEORY_SECTIONS = [
         <p className="text-slate-700 leading-relaxed text-sm">
           Cosine similarity measures the <strong>angle</strong> between two vectors:
         </p>
-        <div className="bg-slate-900 text-emerald-400 rounded-xl p-4 text-center font-mono text-sm">
-          sim(A, B) = (A · B) / (‖A‖ · ‖B‖) = cos(θ)
-        </div>
-        <p className="text-xs text-slate-600">
-          Because embeddings are pre-normalised to unit length (‖A‖ = ‖B‖ = 1), cosine similarity
-          simplifies to the <strong>dot product</strong>: sim(A, B) = A · B
-        </p>
+        <MathJaxDiv className="bg-[#faf5ea] border border-[#e8dfc8] text-slate-800 rounded-xl p-4 text-center text-sm shadow-sm overflow-x-auto">
+          {'$$\\text{sim}(\\mathbf{A}, \\mathbf{B}) = \\frac{\\mathbf{A} \\cdot \\mathbf{B}}{\\|\\mathbf{A}\\| \\, \\|\\mathbf{B}\\|} = \\cos(\\theta)$$'}
+        </MathJaxDiv>
         <div className="grid grid-cols-3 gap-3 text-center text-xs">
           {[
             { val: '+1.0', color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200', label: 'Identical direction (Max Similarity)' },
@@ -139,18 +136,18 @@ const THEORY_SECTIONS = [
       <div className="space-y-4">
         <div className="space-y-2">
           {[
-            { stage: 1, name: 'Document Collection', desc: 'A corpus of documents is assembled from structured domains (CS topics in this lab).', color: 'indigo' },
-            { stage: 2, name: 'Offline Embedding (Indexing)', desc: 'Each document is passed through all-MiniLM-L6-v2 once to produce a 384-D unit vector. These are stored as the vector index.', color: 'violet' },
-            { stage: 3, name: 'Query Encoding (Online)', desc: 'At query time, the user\'s text is encoded with the same model into a 384-D query vector.', color: 'rose' },
-            { stage: 4, name: 'Cosine Similarity Scoring', desc: 'The query vector is dot-multiplied against every document vector simultaneously (O(N·D) where N = documents, D = 384).', color: 'amber' },
-            { stage: 5, name: 'Top-K Ranking & Return', desc: 'Documents are sorted by descending similarity score. The top-K above a threshold are returned.', color: 'teal' },
-          ].map(({ stage, name, desc, color }) => (
-            <div key={stage} className={`flex gap-3 p-3 rounded-xl bg-${color}-50 border border-${color}-100`}>
-              <div className={`w-7 h-7 rounded-lg bg-${color}-600 text-white flex items-center justify-center text-xs font-black shrink-0`}>
+            { stage: 1, name: 'Document Collection', desc: 'A corpus of documents is assembled from structured domains (CS topics in this lab).', cardBg: 'bg-indigo-50 border-indigo-100', badgeBg: 'bg-indigo-600 text-white', titleColor: 'text-indigo-800' },
+            { stage: 2, name: 'Offline Embedding (Indexing)', desc: 'Each document is passed through all-MiniLM-L6-v2 once to produce a 384-D unit vector. These are stored as the vector index.', cardBg: 'bg-violet-50 border-violet-100', badgeBg: 'bg-violet-600 text-white', titleColor: 'text-violet-800' },
+            { stage: 3, name: 'Query Encoding (Online)', desc: 'At query time, the user\'s text is encoded with the same model into a 384-D query vector.', cardBg: 'bg-rose-50 border-rose-100', badgeBg: 'bg-rose-600 text-white', titleColor: 'text-rose-800' },
+            { stage: 4, name: 'Cosine Similarity Scoring', desc: 'The query vector is dot-multiplied against every document vector simultaneously (O(N·D) where N = documents, D = 384).', cardBg: 'bg-amber-50 border-amber-200', badgeBg: 'bg-amber-500 text-slate-900 font-black', titleColor: 'text-amber-800' },
+            { stage: 5, name: 'Top-K Ranking & Return', desc: 'Documents are sorted by descending similarity score. The top-K above a threshold are returned.', cardBg: 'bg-teal-50 border-teal-100', badgeBg: 'bg-teal-600 text-white', titleColor: 'text-teal-800' },
+          ].map(({ stage, name, desc, cardBg, badgeBg, titleColor }) => (
+            <div key={stage} className={`flex gap-3 p-3 rounded-xl border ${cardBg}`}>
+              <div className={`w-7 h-7 rounded-lg ${badgeBg} flex items-center justify-center text-xs font-black shrink-0 shadow-sm`}>
                 {stage}
               </div>
               <div>
-                <div className={`text-sm font-bold text-${color}-800`}>{name}</div>
+                <div className={`text-sm font-bold ${titleColor}`}>{name}</div>
                 <div className="text-xs text-slate-600 mt-0.5">{desc}</div>
               </div>
             </div>
@@ -233,6 +230,7 @@ function AccordionItem({ section, isOpen, onToggle }) {
 
 export default function TheorySection({ onGoToLab }) {
   const [openSection, setOpenSection] = useState('what');
+  useMathJax([openSection]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">

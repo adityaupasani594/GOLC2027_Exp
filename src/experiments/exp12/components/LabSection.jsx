@@ -454,12 +454,14 @@ function SemanticSearchAnimation() {
     // Step 3: Cosine Similarity Scoring
     setStep(3);
     setCaption('Step 4 — Cosine similarity dot-products are computed in parallel between Query vector and all 20 document vectors.');
+    const demoQuery = 'How do computers learn from data?';
+    const demoResults = computeSemanticSearch(demoQuery, 4);
     setLines(CORPUS_DOCS.map(d => ({
       from: QUERY_POS,
       to: { cx: d.pcaX, cy: d.pcaY },
       id: d.id,
       hot: false,
-      score: BENCHMARK_QUERIES['How do computers learn from data?'].scores[d.id] ?? 0.1
+      score: demoResults.allScores[d.id] ?? 0.1
     })));
     await sleep(900);
 
@@ -472,7 +474,7 @@ function SemanticSearchAnimation() {
       id: d.id,
       hot: TOP_K_DEMO_IDS.includes(d.id),
       cold: !TOP_K_DEMO_IDS.includes(d.id),
-      score: BENCHMARK_QUERIES['How do computers learn from data?'].scores[d.id] ?? 0.1
+      score: demoResults.allScores[d.id] ?? 0.1
     })));
     await sleep(600);
 
@@ -1156,9 +1158,9 @@ export default function LabSection({ onRecordTrial, trials, onGoToQuiz }) {
                     </span>
                   </td>
                   <td className="px-3 py-2">
-                    <span className="flex items-center gap-1.5 text-slate-600 font-medium capitalize">
+                    <span className="flex items-center gap-1.5 text-slate-600 font-medium">
                       <span className="w-2 h-2 rounded-full" style={{ background: CLUSTER_COLORS[doc.cluster] }} />
-                      {doc.cluster}
+                      {doc.cluster === 'ai' ? 'AI' : doc.cluster === 'data' ? 'Data' : doc.cluster === 'sys' ? 'Systems' : 'Other'}
                     </span>
                   </td>
                   <td className="px-3 py-2 text-slate-600 max-w-sm leading-relaxed">{doc.text}</td>
