@@ -2,464 +2,297 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, ChevronDown, ChevronUp, FlaskConical,
-  Brain, Target, Layers, GitMerge, Search, Cpu, Zap, Sliders,
-  CheckCircle2, ArrowRight, ShieldAlert, Sparkles, Network, Database
+  Brain, Target, Layers, GitMerge, Search, Cpu, Zap, Sliders, BarChart2
 } from 'lucide-react';
-import { EXPERIMENT_CONFIG, THEORY_CONTENT } from '../relationshipExtractionEngine';
 
-const PIPELINE_STAGES = [
+const THEORY_SECTIONS = [
   {
-    step: 1,
-    title: 'Text Preprocessing',
-    desc: 'Sentence boundary detection, tokenization, and hyphenated verb normalization (e.g., co-founded → co_founded).',
-    icon: Sparkles,
-    badge: 'Stage 1',
-    color: 'from-blue-500 to-indigo-600'
-  },
-  {
-    step: 2,
-    title: 'Named Entity Recognition (NER)',
-    desc: 'Identify entity spans and classify them into categories: PERSON, ORG, GPE, LOC, PRODUCT, and CONCEPT.',
-    icon: Brain,
-    badge: 'Stage 2',
-    color: 'from-purple-500 to-pink-600'
-  },
-  {
-    step: 3,
-    title: 'Dependency Parsing',
-    desc: 'Grammatical parse tree traversal analyzing subject noun phrases (nsubj), verbal predicates, and objects (obj/prep).',
-    icon: GitMerge,
-    badge: 'Stage 3',
-    color: 'from-teal-500 to-emerald-600'
-  },
-  {
-    step: 4,
-    title: 'Semantic Triple Generation',
-    desc: 'Transform identified relations into formal (Subject, Relationship, Object) triples with canonical predicate names.',
-    icon: Database,
-    badge: 'Stage 4',
-    color: 'from-amber-500 to-orange-600'
-  },
-  {
-    step: 5,
-    title: 'Knowledge Graph Ingestion',
-    desc: 'Render directed multi-graph nodes (entities) and labeled directed edges (semantic relationships) in graph stores.',
-    icon: Network,
-    badge: 'Stage 5',
-    color: 'from-rose-500 to-red-600'
-  }
-];
-
-export default function TheorySection({ onGoToLab }) {
-  const [activeStage, setActiveStage] = useState(1);
-  const [expandedSection, setExpandedSection] = useState('pipeline');
-
-  const toggleSection = (id) => {
-    setExpandedSection(prev => prev === id ? null : id);
-  };
-
-  return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
-      {/* Hero Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-teal-950 p-6 sm:p-8 text-white shadow-xl border border-indigo-800/40"
-      >
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold uppercase tracking-wider">
-              <BookOpen className="w-3.5 h-3.5" />
-              Experiment 7 · Knowledge Graph &amp; Information Retrieval Systems
+    id: 'overview',
+    icon: Search,
+    color: 'indigo',
+    title: '1. Overview of Hybrid Information Retrieval',
+    content: (
+      <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
+        <p>
+          Information Retrieval (IR) systems retrieve relevant documents from vast unstructured text corpora. Modern state-of-the-art search engines combine two complementary paradigms into a single hybrid retrieval pipeline:
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3.5 text-xs">
+          <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 shadow-sm space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-amber-500 text-white font-bold flex items-center justify-center text-xs">1</span>
+              <span className="font-bold text-amber-950 text-sm">Lexical BM25 (Okapi BM25)</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
-              Relationship Extraction from Text
-            </h1>
-            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-              Extract semantic connections between recognized entity mentions in natural language text and represent them as structured (Subject, Relationship, Object) triples for Knowledge Graph construction.
+            <p className="text-slate-600 leading-relaxed">
+              Probabilistic keyword matching relying on exact term frequencies, document length penalties, and inverse document frequency. Excels at exact terminology, domain jargon, product IDs, acronyms, and rare entities.
             </p>
-            <div className="flex flex-wrap gap-2 pt-2">
-              {['Named Entity Recognition (NER)', 'Syntactic Dependency Parsing', 'Passive Voice Inversion', 'Negation Filtering', 'Knowledge Graph Triples'].map(tag => (
-                <span key={tag} className="px-2.5 py-1 rounded-lg bg-white/10 backdrop-blur-sm text-white/90 text-xs font-medium border border-white/10">
-                  {tag}
-                </span>
-              ))}
+            <div className="pt-1 flex flex-wrap gap-1">
+              <span className="px-2 py-0.5 rounded-md bg-amber-100/70 text-amber-800 font-semibold text-[10px]">Exact Match</span>
+              <span className="px-2 py-0.5 rounded-md bg-amber-100/70 text-amber-800 font-semibold text-[10px]">Zero Training</span>
+              <span className="px-2 py-0.5 rounded-md bg-amber-100/70 text-amber-800 font-semibold text-[10px]">Low Latency</span>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
-            <button
-              onClick={onGoToLab}
-              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-bold text-sm shadow-lg shadow-teal-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <FlaskConical className="w-4 h-4" />
-              Launch Simulation Lab
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <div className="text-xs text-slate-400 text-center font-mono">
-              VESIT Dept. of Computer Engineering
+          <div className="p-4 rounded-2xl bg-purple-50/80 border border-purple-200/80 shadow-sm space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-purple-600 text-white font-bold flex items-center justify-center text-xs">2</span>
+              <span className="font-bold text-purple-950 text-sm">Dense Semantic (Sentence Transformers)</span>
             </div>
-          </div>
-        </div>
-
-        {/* Ambient background blur */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
-      </motion.div>
-
-      {/* 5-Stage Interactive Pipeline Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-3xl bg-white border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Layers className="w-5 h-5 text-indigo-600" />
-              The 5-Stage Relationship Extraction Pipeline
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-              Click through the sequential pipeline stages that transform raw natural language sentences into structured Knowledge Graph assertions.
+            <p className="text-slate-600 leading-relaxed">
+              Maps queries and documents into a continuous 384-dimensional latent embedding space. Overcomes the <em>vocabulary mismatch problem</em> by matching underlying conceptual meaning and semantic synonyms.
             </p>
+            <div className="pt-1 flex flex-wrap gap-1">
+              <span className="px-2 py-0.5 rounded-md bg-purple-100/70 text-purple-800 font-semibold text-[10px]">Synonymy Aware</span>
+              <span className="px-2 py-0.5 rounded-md bg-purple-100/70 text-purple-800 font-semibold text-[10px]">Contextual</span>
+              <span className="px-2 py-0.5 rounded-md bg-purple-100/70 text-purple-800 font-semibold text-[10px]">Cosine Similarity</span>
+            </div>
           </div>
-          <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-semibold text-xs border border-indigo-200 self-start sm:self-auto">
-            Stage {activeStage} of 5
-          </span>
-        </div>
-
-        {/* Pipeline Stepper */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-          {PIPELINE_STAGES.map((s) => {
-            const Icon = s.icon;
-            const isActive = activeStage === s.step;
-            return (
-              <button
-                key={s.step}
-                onClick={() => setActiveStage(s.step)}
-                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden ${
-                  isActive
-                    ? 'bg-indigo-50/80 border-indigo-400 shadow-sm ring-2 ring-indigo-500/20'
-                    : 'bg-slate-50/80 border-slate-200 hover:border-slate-300 hover:bg-slate-100/60'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center text-white bg-gradient-to-br ${s.color}`}>
-                    <Icon className="w-3.5 h-3.5" />
-                  </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-indigo-700' : 'text-slate-400'}`}>
-                    {s.badge}
-                  </span>
-                </div>
-                <div className={`text-xs font-bold ${isActive ? 'text-indigo-950' : 'text-slate-700'} leading-tight`}>
-                  {s.title}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Selected Stage Detail */}
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-slate-50 to-indigo-50/40 border border-slate-200 text-sm text-slate-700 leading-relaxed space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center text-xs">
-              {activeStage}
-            </span>
-            <span className="font-bold text-slate-900 text-base">
-              {PIPELINE_STAGES[activeStage - 1].title}
-            </span>
-          </div>
-          <p className="text-slate-600">
-            {PIPELINE_STAGES[activeStage - 1].desc}
-          </p>
-          {activeStage === 1 && (
-            <div className="p-3 bg-white rounded-xl border border-slate-200 font-mono text-xs text-slate-800">
-              Input: <span className="text-indigo-600">"Steve Wozniak co-founded Apple."</span> → Normalized: <span className="text-emerald-700">"Steve Wozniak co_founded Apple."</span>
-            </div>
-          )}
-          {activeStage === 2 && (
-            <div className="p-3 bg-white rounded-xl border border-slate-200 font-mono text-xs text-slate-800 flex flex-wrap gap-2">
-              <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold">[PERSON] Steve Wozniak</span>
-              <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">[ORG] Apple</span>
-            </div>
-          )}
-          {activeStage === 3 && (
-            <div className="p-3 bg-white rounded-xl border border-slate-200 font-mono text-xs text-slate-800">
-              Dependency Tree: <span className="font-bold text-purple-700">[nsubj: Steve Wozniak]</span> ← <span className="font-bold text-amber-700">[ROOT_VERB: co_founded]</span> → <span className="font-bold text-blue-700">[dobj: Apple]</span>
-            </div>
-          )}
-          {activeStage === 4 && (
-            <div className="p-3 bg-white rounded-xl border border-slate-200 font-mono text-xs text-slate-800">
-              Triple: <span className="text-purple-700 font-bold">Steve Wozniak</span> | <span className="text-teal-700 font-bold">co-founded</span> | <span className="text-blue-700 font-bold">Apple</span>
-            </div>
-          )}
-          {activeStage === 5 && (
-            <div className="p-3 bg-white rounded-xl border border-slate-200 font-mono text-xs text-slate-800">
-              Graph Edge: (Node: "Steve Wozniak" [PERSON]) —[directed_edge: "co-founded"]→ (Node: "Apple" [ORG])
-            </div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Accordion Theory Sections */}
-      <div className="space-y-4">
-        {/* Section 1: Core Concepts & Syntactic Handling */}
-        <div className="rounded-2xl bg-white border border-slate-200/80 shadow-sm overflow-hidden">
-          <button
-            onClick={() => toggleSection('syntax')}
-            className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/80 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm">
-                1
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Syntactic &amp; Linguistic Handling Strategies
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Active voice, passive voice inversion, role attachments, and negation filtering
-                </p>
-              </div>
-            </div>
-            {expandedSection === 'syntax' ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-          </button>
-
-          <AnimatePresence>
-            {expandedSection === 'syntax' && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="px-6 pb-6 pt-2 border-t border-slate-100 text-sm text-slate-700 leading-relaxed space-y-4"
-              >
-                <div className="grid sm:grid-cols-2 gap-4 pt-2">
-                  <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-200/80 space-y-2">
-                    <div className="font-bold text-purple-950 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-purple-600" />
-                      Active Voice Extraction
-                    </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      Traces direct nominal subjects (<code>nsubj</code>) and direct objects (<code>dobj</code>/<code>obj</code>) linked by a transitive root verb.
-                    </p>
-                    <div className="p-2.5 bg-white rounded-xl border border-purple-200/60 font-mono text-[11px] text-slate-800">
-                      "Steve Jobs founded Apple" → <strong>(Steve Jobs, founded, Apple)</strong>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-teal-50/60 border border-teal-200/80 space-y-2">
-                    <div className="font-bold text-teal-950 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-teal-600" />
-                      Passive Voice Inversion
-                    </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      Identifies passive nominal subjects (<code>nsubjpass</code>) and agent prepositional phrases (<code>prep "by"</code>) to invert the agent as the true semantic subject.
-                    </p>
-                    <div className="p-2.5 bg-white rounded-xl border border-teal-200/60 font-mono text-[11px] text-slate-800">
-                      "Apple was founded by Steve Jobs" → <strong>(Steve Jobs, founded, Apple)</strong>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-2">
-                    <div className="font-bold text-amber-950 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-amber-600" />
-                      Role &amp; Attribution Structures
-                    </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      Extracts role affiliations such as <em>"as CEO of &lt;Org&gt;"</em> and succession links into structured knowledge pairs.
-                    </p>
-                    <div className="p-2.5 bg-white rounded-xl border border-amber-200/60 font-mono text-[11px] text-slate-800">
-                      "Tim Cook succeeded Steve Jobs as CEO of Apple" → <strong>(Tim Cook, succeeded, Steve Jobs)</strong> &amp; <strong>(Tim Cook, CEO_of, Apple)</strong>
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-2xl bg-rose-50/60 border border-rose-200/80 space-y-2">
-                    <div className="font-bold text-rose-950 flex items-center gap-2">
-                      <ShieldAlert className="w-4 h-4 text-rose-600" />
-                      Negation Filtering
-                    </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      Detects syntactic negation dependencies (<code>neg</code>) and negative determiners (<em>"no company"</em>, <em>"never"</em>) to prevent hallucinated assertions.
-                    </p>
-                    <div className="p-2.5 bg-white rounded-xl border border-rose-200/60 font-mono text-[11px] text-rose-900">
-                      "Google was acquired by no company" → <strong>[Filtered: 0 triples generated]</strong>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Section 2: Learning Objectives */}
-        <div className="rounded-2xl bg-white border border-slate-200/80 shadow-sm overflow-hidden">
-          <button
-            onClick={() => toggleSection('objectives')}
-            className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/80 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">
-                2
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Learning Objectives
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Competencies and technical milestones of Experiment 7
-                </p>
-              </div>
-            </div>
-            {expandedSection === 'objectives' ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-          </button>
-
-          <AnimatePresence>
-            {expandedSection === 'objectives' && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="px-6 pb-6 pt-2 border-t border-slate-100 text-sm text-slate-700 leading-relaxed space-y-3"
-              >
-                <div className="space-y-2.5 pt-2">
-                  {EXPERIMENT_CONFIG.objectives.map((obj, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/70">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <div className="text-xs sm:text-sm text-slate-800">
-                        <span className="font-bold text-slate-900">Goal {i + 1}:</span> {obj}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Section 3: Experimental Procedure */}
-        <div className="rounded-2xl bg-white border border-slate-200/80 shadow-sm overflow-hidden">
-          <button
-            onClick={() => toggleSection('procedure')}
-            className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/80 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm">
-                3
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Step-by-Step Experimental Procedure
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Standard virtual laboratory protocol from raw text to signed PDF report
-                </p>
-              </div>
-            </div>
-            {expandedSection === 'procedure' ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-          </button>
-
-          <AnimatePresence>
-            {expandedSection === 'procedure' && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="px-6 pb-6 pt-2 border-t border-slate-100 text-sm text-slate-700 leading-relaxed space-y-3"
-              >
-                <div className="grid sm:grid-cols-2 gap-3 pt-2">
-                  {THEORY_CONTENT.procedure.map((step, idx) => (
-                    <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs sm:text-sm flex items-start gap-2.5">
-                      <span className="w-5 h-5 rounded-full bg-teal-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">
-                        {idx + 1}
-                      </span>
-                      <span className="text-slate-700 font-medium">
-                        {step.replace(/^Step \d+:\s*/, '')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Section 4: Key Terminology Table */}
-        <div className="rounded-2xl bg-white border border-slate-200/80 shadow-sm overflow-hidden">
-          <button
-            onClick={() => toggleSection('terms')}
-            className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-slate-50/80 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm">
-                4
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  Key Terminology &amp; Concept Reference
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Definitions of NER, SPO triples, dependency tags, and graph schemas
-                </p>
-              </div>
-            </div>
-            {expandedSection === 'terms' ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-          </button>
-
-          <AnimatePresence>
-            {expandedSection === 'terms' && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="px-6 pb-6 pt-2 border-t border-slate-100 text-sm text-slate-700 leading-relaxed"
-              >
-                <div className="overflow-x-auto rounded-xl border border-slate-200 mt-2">
-                  <table className="w-full text-xs text-left">
-                    <thead className="bg-slate-100/80 text-slate-700 font-bold uppercase tracking-wider text-[11px]">
-                      <tr>
-                        <th className="px-4 py-3">Term / Concept</th>
-                        <th className="px-4 py-3">Definition &amp; Operational Role</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {Object.entries(THEORY_CONTENT.key_terms).map(([term, def], i) => (
-                        <tr key={term} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50/60'}>
-                          <td className="px-4 py-3 font-bold text-indigo-900 whitespace-nowrap align-top">
-                            {term}
-                          </td>
-                          <td className="px-4 py-3 text-slate-600 leading-relaxed">
-                            {def}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
+    ),
+  },
+  {
+    id: 'bm25_formulation',
+    icon: Cpu,
+    color: 'amber',
+    title: '2. Okapi BM25 Lexical Formulation & Hyperparameters',
+    content: (
+      <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
+        <p>
+          Okapi BM25 computes the relevance score of document <span className="font-serif italic font-bold">d</span> for query <span className="font-serif italic font-bold">q</span> across constituent query terms <span className="font-serif italic font-bold">t</span>:
+        </p>
 
-      {/* CTA Bottom Bar */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-teal-50 via-indigo-50 to-purple-50 border border-teal-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <h4 className="font-bold text-slate-900 text-base">
-            Ready to test Relationship Extraction?
-          </h4>
-          <p className="text-xs text-slate-600">
-            Open the interactive simulation lab, test pre-loaded benchmark sentences or custom text, and view the generated knowledge graph.
-          </p>
+        {/* Clean Formatted Mathematical Card */}
+        <div className="p-5 rounded-2xl bg-slate-900 text-slate-100 border border-slate-800 shadow-md space-y-3">
+          <div className="text-amber-400 font-bold text-xs uppercase tracking-wider">Okapi BM25 Scoring Function</div>
+          
+          <div className="py-2 text-center overflow-x-auto">
+            <div className="inline-flex items-center gap-3 text-base sm:text-lg font-serif">
+              <span className="font-bold text-amber-300">BM25(q, d)</span>
+              <span>=</span>
+              <span className="text-xl font-sans font-bold">∑</span>
+              <span className="text-xs text-slate-400 -ml-2 self-end mb-1">t ∈ q</span>
+              <span className="font-bold text-teal-300">IDF(t)</span>
+              <span>·</span>
+              <div className="inline-flex flex-col items-center">
+                <span className="border-b border-slate-400 px-2 pb-0.5">
+                  f(t, d) · (k<sub>1</sub> + 1)
+                </span>
+                <span className="pt-0.5 text-xs sm:text-sm text-slate-300">
+                  f(t, d) + k<sub>1</sub> · (1 - b + b · <span className="text-amber-300">|d| / avgdl</span>)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-800/80 text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span className="text-teal-400 font-semibold font-serif">IDF(t)</span> = ln( (N - DF(t) + 0.5) / (DF(t) + 0.5) + 1 )
+            </div>
+            <div>
+              <span className="text-slate-300">N: Total Documents</span> | <span className="text-slate-300">DF(t): Document Frequency</span>
+            </div>
+          </div>
         </div>
-        <button
+
+        <div className="grid sm:grid-cols-2 gap-3 text-xs">
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span className="font-bold text-slate-900 block mb-1">⚡ Term Frequency Saturation (k<sub>1</sub> = 1.5)</span>
+            <p className="text-slate-600 leading-relaxed">
+              Controls non-linear term frequency scaling. As <span className="font-serif italic font-medium">f(t, d)</span> increases, the marginal score gain diminishes asymptotically, preventing repetitive keyword spam from inflating rankings.
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <span className="font-bold text-slate-900 block mb-1">📏 Document Length Normalization (b = 0.75)</span>
+            <p className="text-slate-600 leading-relaxed">
+              Calibrates document length penalty relative to the average collection length (<span className="font-mono text-[11px]">avgdl</span>). When <span className="font-serif italic font-medium">b = 1.0</span>, full length normalization is applied.
+            </p>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'fusion_methods',
+    icon: GitMerge,
+    color: 'teal',
+    title: '3. Score Normalization & Fusion Strategies',
+    content: (
+      <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
+        <p>
+          Because raw BM25 scores (<span className="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">0 to 35+</span>) and dense cosine similarity scores (<span className="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">-1.0 to 1.0</span>) occupy completely disparate numerical scales, calibration is essential:
+        </p>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="p-4 rounded-2xl bg-slate-900 text-slate-100 border border-slate-800 shadow-sm space-y-2.5">
+            <div className="text-teal-400 font-bold text-xs uppercase tracking-wider">Method A: Min-Max Convex Fusion</div>
+            <div className="text-xs space-y-1.5 font-mono text-slate-300">
+              <div className="text-slate-400">// Min-Max Normalization</div>
+              <div className="text-amber-300">S<sub>norm</sub> = (S - S<sub>min</sub>) / (S<sub>max</sub> - S<sub>min</sub> + ε)</div>
+              <div className="text-slate-400 pt-1">// Convex Combination (α ∈ [0, 1])</div>
+              <div className="text-teal-300 font-bold">
+                S<sub>hybrid</sub> = α · S<sub>BM25</sub> + (1 - α) · S<sub>dense</sub>
+              </div>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Allows smooth interpolative control between keyword fidelity (α = 1.0) and latent semantic concepts (α = 0.0).
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-900 text-slate-100 border border-slate-800 shadow-sm space-y-2.5">
+            <div className="text-purple-400 font-bold text-xs uppercase tracking-wider">Method B: Reciprocal Rank Fusion (RRF)</div>
+            <div className="text-xs space-y-1.5 font-mono text-slate-300">
+              <div className="text-slate-400">// RRF Formulation (k = 60)</div>
+              <div className="text-purple-300 font-bold">
+                RRF(d) = ∑<sub>m ∈ &#123;BM25, Dense&#125;</sub> 1 / (60 + r<sub>m</sub>(d))
+              </div>
+              <div className="text-slate-400 pt-1">// Rank position invariance</div>
+              <div className="text-emerald-300">r<sub>m</sub>(d): Rank of d in modality m</div>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Robust scale-invariant fusion that relies strictly on ordinal rank positions rather than noisy raw score distributions.
+            </p>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'metrics',
+    icon: BarChart2,
+    color: 'violet',
+    title: '4. Evaluation Metrics (Precision@K, Recall@K, F1@K, MRR@K)',
+    content: (
+      <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
+        <p>
+          Information retrieval systems are benchmarked against ground-truth relevance judgements using standard ranking metrics:
+        </p>
+
+        <div className="grid sm:grid-cols-2 gap-3 text-xs">
+          <div className="p-3.5 rounded-xl bg-violet-50/80 border border-violet-200/80 space-y-1">
+            <strong className="text-violet-950 font-bold text-sm block">Precision@K &amp; Recall@K</strong>
+            <p className="text-slate-600 leading-relaxed">
+              <span className="font-semibold text-slate-800">Precision@K</span> = (|Retrieved relevant in Top-K| / K). Measures result purity.<br />
+              <span className="font-semibold text-slate-800">Recall@K</span> = (|Retrieved relevant in Top-K| / |Total relevant|). Measures coverage.
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200/80 space-y-1">
+            <strong className="text-emerald-950 font-bold text-sm block">Mean Reciprocal Rank (MRR@K)</strong>
+            <p className="text-slate-600 leading-relaxed">
+              <span className="font-serif italic font-semibold text-slate-800">MRR</span> = (1 / rank<sub>first</sub>), where rank<sub>first</sub> is the index of the very first relevant document retrieved in the top-K list.
+            </p>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+];
+
+const COLOR_MAP = {
+  indigo: { bg: 'bg-indigo-600', light: 'bg-indigo-50 border-indigo-200', text: 'text-indigo-700', btn: 'hover:bg-indigo-50' },
+  teal:   { bg: 'bg-teal-600',   light: 'bg-teal-50 border-teal-200',   text: 'text-teal-700',   btn: 'hover:bg-teal-50' },
+  violet: { bg: 'bg-violet-600', light: 'bg-violet-50 border-violet-200', text: 'text-violet-700', btn: 'hover:bg-violet-50' },
+  amber:  { bg: 'bg-amber-500',  light: 'bg-amber-50 border-amber-200',  text: 'text-amber-700',  btn: 'hover:bg-amber-50' },
+};
+
+function AccordionSection({ section }) {
+  const [open, setOpen] = useState(true);
+  const Icon = section.icon;
+  const colors = COLOR_MAP[section.color] || COLOR_MAP.indigo;
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm transition-all hover:border-slate-300">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between p-4 sm:p-5 text-left bg-white hover:bg-slate-50/70 transition-colors cursor-pointer"
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-xl ${colors.light} border flex items-center justify-center shrink-0`}>
+            <Icon className={`w-5 h-5 ${colors.text}`} />
+          </div>
+          <span className="font-bold text-slate-800 text-sm sm:text-base">{section.title}</span>
+        </div>
+        <div className="text-slate-400">
+          {open ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        </div>
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="p-4 sm:p-5 pt-0 border-t border-slate-100 bg-slate-50/30">
+              {section.content}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export default function TheorySection({ onGoToLab }) {
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+      {/* Header Banner */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-50 via-purple-50 to-teal-50 border border-indigo-100 shadow-sm">
+        <div className="flex items-center gap-2 text-indigo-700 text-xs font-extrabold uppercase tracking-wider mb-2">
+          <Brain className="w-4 h-4" />
+          Semantic &amp; Hybrid Search Track · Experiment 7
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+          Hybrid Keyword and Semantic Retrieval
+        </h1>
+        <p className="text-sm text-slate-600 mt-2 max-w-2xl leading-relaxed">
+          Combine probabilistic keyword matching (Okapi BM25) with dense neural representation learning (SentenceTransformers) using score normalization, convex weighting α, and Reciprocal Rank Fusion.
+        </p>
+      </div>
+
+      {/* Learning Objectives */}
+      <div className="p-5 rounded-2xl border border-slate-200 bg-white shadow-sm space-y-3">
+        <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+          <Target className="w-4 h-4 text-indigo-600" />
+          Learning Objectives
+        </h2>
+        <ul className="space-y-2">
+          {[
+            'Understand the mathematical formulations and trade-offs between Lexical BM25 and Dense Semantic Vector retrieval.',
+            'Tune BM25 hyperparameters: term frequency saturation (k₁ = 1.5) and document length normalization (b = 0.75).',
+            'Implement score normalization (Min-Max Scaling) and weighted convex fusion: S_hybrid = α · S_BM25 + (1 - α) · S_dense.',
+            'Analyze rank transitions, document rank shifts, and Retrieval X-Ray score decompositions.',
+            'Benchmark IR performance across Knowledge Graph and Information Retrieval documents using Precision@K, Recall@K, F1@K, MRR@K, and α sensitivity curves.',
+          ].map((obj, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+              <span className="mt-0.5 w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-black flex items-center justify-center shrink-0">{i + 1}</span>
+              <span>{obj}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="space-y-3">
+        <h2 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+          <BookOpen className="w-4 h-4 text-teal-600" />
+          Core Foundations &amp; Formulations
+        </h2>
+        {THEORY_SECTIONS.map(s => <AccordionSection key={s.id} section={s} />)}
+      </div>
+
+      <div className="flex justify-center pt-2">
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
           onClick={onGoToLab}
-          className="px-6 py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer shrink-0"
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all cursor-pointer"
         >
           <FlaskConical className="w-4 h-4" />
-          Proceed to Lab Section
-          <ArrowRight className="w-4 h-4" />
-        </button>
+          Launch Interactive Retrieval Simulation
+        </motion.button>
       </div>
     </div>
   );
