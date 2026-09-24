@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, FlaskConical, HelpCircle, Award, FileText } from 'lucide-react';
 import { ExperimentNavbar } from '../../components/common';
+import { useAuth } from '../../context/AuthContext';
+import { EXPERIMENT_CONFIG } from './relationshipExtractionEngine';
 import TheorySection from './components/TheorySection';
 import LabSection from './components/LabSection';
 import QuizSection, { QUIZ_QUESTIONS } from './components/QuizSection';
@@ -24,18 +26,52 @@ const TAB_ACTIVE = {
 };
 
 export default function Experiment7({ onBack, onOpenProfile }) {
+  const { user, recordQuizScore, recordExpCompleted, recordCertificate, recordReport } = useAuth();
   const [activeTab, setActiveTab] = useState('theory');
   const [trials, setTrials] = useState([]);
   const [quizScore, setQuizScore] = useState(null);
   const [studentInfo, setStudentInfo] = useState({
-    name: '',
-    studentId: '',
-    institution: 'VESIT – Dept. of Computer Engineering',
+    name: user?.displayName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || 'Student Scholar',
+    studentId: user?.studentId || user?.username || user?.email || '',
+    institution: user?.institution || 'VESIT – Dept. of Computer Engineering',
     instructor: 'Dr. Sharmila Sengupta / Mrs. Abha Tewari / Mrs. Sunita Suralkar',
   });
 
-  const handleInfoChange = (key, value) => setStudentInfo(prev => ({ ...prev, [key]: value }));
-  const handleScoreUpdate = (score) => setQuizScore(score);
+  // Sync studentInfo when user state becomes available from Firebase
+  useEffect(() => {
+    if (user) {
+      setStudentInfo(prev => ({
+        ...prev,
+        name: prev.name && prev.name !== 'Student Scholar' ? prev.name : (user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Student Scholar'),
+        studentId: prev.studentId || user.studentId || user.username || user.email || '',
+        institution: user.institution || prev.institution || 'VESIT – Dept. of Computer Engineering',
+      }));
+    }
+  }, [user]);
+
+  const handleInfoChange = (key, value) => {
+    setStudentInfo(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleScoreUpdate = (score, total) => {
+    setQuizScore(score);
+    const totalQ = total || QUIZ_QUESTIONS?.length || 10;
+
+    // Persist Quiz Score & Experiment Completion to Cloud Firestore
+    if (user) {
+      if (recordQuizScore) {
+        recordQuizScore(7, score, totalQ);
+      }
+      if (recordExpCompleted) {
+        recordExpCompleted(7, {
+          score,
+          total: totalQ,
+          trialsCount: trials.length,
+          completedAt: new Date().toISOString()
+        });
+      }
+    }
+  };
 
   const goTo = (tab) => {
     setActiveTab(tab);
@@ -45,7 +81,7 @@ export default function Experiment7({ onBack, onOpenProfile }) {
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-slate-50">
       <ExperimentNavbar
-        title="Exp 7: Hybrid Keyword and Semantic Retrieval"
+        title="Exp 7: Relationship Extraction from Text"
         tabs={TABS}
         activeTab={activeTab}
         onTabChange={goTo}
@@ -58,11 +94,11 @@ export default function Experiment7({ onBack, onOpenProfile }) {
       <main className="flex-1">
         <AnimatePresence mode="wait">
           {activeTab === 'theory' && (
-            <motion.div 
-              key="theory" 
-              initial={{ opacity: 0, y: 10 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: -8 }} 
+            <motion.div
+              key="theory"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22 }}
             >
               <TheorySection onGoToLab={() => goTo('lab')} />
@@ -70,29 +106,30 @@ export default function Experiment7({ onBack, onOpenProfile }) {
           )}
 
           {activeTab === 'lab' && (
-            <motion.div 
-              key="lab" 
-              initial={{ opacity: 0, y: 10 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: -8 }} 
+            <motion.div
+              key="lab"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22 }}
             >
               <LabSection
                 onRecordTrial={(trial) => setTrials(prev => [trial, ...prev])}
+                trials={trials}
                 onGoToQuiz={() => goTo('quiz')}
               />
             </motion.div>
           )}
 
           {activeTab === 'quiz' && (
-            <motion.div 
-              key="quiz" 
-              initial={{ opacity: 0, y: 10 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: -8 }} 
+            <motion.div
+              key="quiz"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22 }}
             >
-              <QuizSection 
+              <QuizSection
                 onNext={() => goTo('certificate')}
                 onScoreUpdate={handleScoreUpdate}
                 onQuizComplete={(pct) => {
@@ -103,11 +140,11 @@ export default function Experiment7({ onBack, onOpenProfile }) {
           )}
 
           {activeTab === 'certificate' && (
-            <motion.div 
-              key="certificate" 
-              initial={{ opacity: 0, y: 10 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: -8 }} 
+            <motion.div
+              key="certificate"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22 }}
             >
               <CertificateSection
@@ -121,17 +158,18 @@ export default function Experiment7({ onBack, onOpenProfile }) {
           )}
 
           {activeTab === 'report' && (
-            <motion.div 
-              key="report" 
-              initial={{ opacity: 0, y: 10 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: -8 }} 
+            <motion.div
+              key="report"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22 }}
             >
               <ReportSection
                 quizScore={quizScore}
                 totalQuestions={QUIZ_QUESTIONS?.length || 10}
                 studentInfo={studentInfo}
+                recordedTrials={trials}
               />
             </motion.div>
           )}
@@ -140,14 +178,14 @@ export default function Experiment7({ onBack, onOpenProfile }) {
 
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 no-print flex flex-col sm:flex-row items-center justify-center gap-2">
         <div>
-          <span className="font-semibold text-slate-700">Hybrid Keyword and Semantic Retrieval</span>
+          <span className="font-semibold text-slate-700">Relationship Extraction from Text</span>
           <span className="mx-2">·</span>
-          <span className="font-mono">CS-KGIRS-07 · Semantic &amp; Hybrid Search Track</span>
+          <span className="font-mono">CS-KGIRS-07 · Knowledge Graphs &amp; IR Virtual Lab</span>
         </div>
         <span className="hidden sm:inline">·</span>
-        <button 
-          onClick={onBack} 
-          className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer underline underline-offset-2"
+        <button
+          onClick={onBack}
+          className="text-teal-600 hover:text-teal-800 font-semibold cursor-pointer underline underline-offset-2"
         >
           Return to 15 Experiments Portal
         </button>
