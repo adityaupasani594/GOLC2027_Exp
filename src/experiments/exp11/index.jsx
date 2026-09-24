@@ -1,13 +1,13 @@
 import React from 'react';
-import ExperimentTemplate from '../ExperimentTemplate';
+import Experiment13 from '../exp13';
 
 /**
  * Experiment 11
- * Modular implementation for Experiment 11.
- * Customize or replace the tabs below with dedicated components.
+ * Integrated with the Python EXP11 codebases (Academic & Enterprise Graph)
  */
 export default function Experiment11({ onBack, onOpenProfile }) {
   return (
-    <ExperimentTemplate expNumber={11} onBack={onBack} onOpenProfile={onOpenProfile} />
+    <Experiment13 onBack={onBack} onOpenProfile={onOpenProfile} />
   );
 }
+
