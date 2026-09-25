@@ -299,11 +299,12 @@ RETURN path, [n IN nodes(path) | n.label] AS ChainOfWork;`,
 // Dynamic openCypher Query Parsing & Execution Engine
 // -------------------------------------------------------------
 function extractReturnColumns(returnClause, sampleRow) {
-  if (!returnClause || returnClause.trim() === '*') {
+  if (!returnClause || returnClause.trim() === '*' || returnClause.trim() === '') {
     return sampleRow ? Object.keys(sampleRow) : ['Result'];
   }
-  const parts = returnClause.split(',').map(p => p.trim());
-  return parts.map(part => {
+  const cleanReturn = returnClause.replace(/;+\s*$/, '');
+  const parts = cleanReturn.split(',').map(p => p.trim()).filter(Boolean);
+  const cols = parts.map(part => {
     const asMatch = part.match(/\s+AS\s+([a-zA-Z0-9_]+)/i);
     if (asMatch) return asMatch[1];
     const dotMatch = part.match(/([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/);
@@ -311,16 +312,23 @@ function extractReturnColumns(returnClause, sampleRow) {
     const cleanCol = part.replace(/[^a-zA-Z0-9_]/g, '');
     return cleanCol || 'Column';
   }).filter(Boolean);
+  return cols.length > 0 ? cols : (sampleRow ? Object.keys(sampleRow) : ['Result']);
 }
 
-function projectReturnRow(returnClause, aliases) {
+function projectReturnRow(returnClause, aliases, context = {}) {
   const row = {};
-  if (!returnClause || returnClause.trim() === '*') {
-    const mainObj = Object.values(aliases)[0] || {};
-    return { ...mainObj };
+  if (!returnClause || returnClause.trim() === '*' || returnClause.trim() === '') {
+    Object.entries(aliases).forEach(([k, v]) => {
+      if (v && v.label) {
+        row[k] = v.label;
+      }
+    });
+    return Object.keys(row).length > 0 ? row : { Match: 'Found' };
   }
 
-  const parts = returnClause.split(',').map(p => p.trim());
+  const cleanReturn = returnClause.replace(/;+\s*$/, '');
+  const parts = cleanReturn.split(',').map(p => p.trim()).filter(Boolean);
+
   parts.forEach(part => {
     const asMatch = part.match(/(.+?)\s+AS\s+([a-zA-Z0-9_]+)/i);
     const expr = asMatch ? asMatch[1].trim() : part;
@@ -341,24 +349,40 @@ function projectReturnRow(returnClause, aliases) {
 
     // length(path)
     if (/length\(/i.test(expr)) {
-      row[colName] = '1 Hop';
+      row[colName] = context.hopCount ? `${context.hopCount} Hop${context.hopCount > 1 ? 's' : ''}` : '1 Hop';
       return;
     }
 
-    // Property access e.g. a.label, p.citations
+    // nodes(path) or [n IN nodes(p) | n.label]
+    if (/nodes\(/i.test(expr)) {
+      if (context.pathNodes) {
+        row[colName] = context.pathNodes.map(n => n.label).join(' ➔ ');
+        return;
+      }
+    }
+
+    // Property access e.g. p1.label, p2.citations, a.hIndex
     const propMatch = expr.match(/([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/);
     if (propMatch) {
       const varName = propMatch[1];
       const prop = propMatch[2];
       const obj = aliases[varName] || aliases[varName.toLowerCase()];
-      row[colName] = obj && obj[prop] !== undefined ? obj[prop] : '-';
+      if (obj && obj[prop] !== undefined) {
+        row[colName] = obj[prop];
+      } else {
+        row[colName] = '-';
+      }
       return;
     }
 
-    // Direct object e.g. a
-    if (aliases[expr] || aliases[expr.toLowerCase()]) {
-      const obj = aliases[expr] || aliases[expr.toLowerCase()];
-      row[colName] = obj.label || obj.id || JSON.stringify(obj);
+    // Direct object variable e.g. p1, p2, r, a, p
+    const obj = aliases[expr] || aliases[expr.toLowerCase()];
+    if (obj) {
+      if (typeof obj === 'object') {
+        row[colName] = obj.label || obj.name || obj.type || obj.id || JSON.stringify(obj);
+      } else {
+        row[colName] = obj;
+      }
       return;
     }
 
@@ -476,7 +500,7 @@ function executeCypherQuery(queryStr, graph, presets = []) {
       };
     }
 
-    const matchClause = matchMatch[1].trim();
+    let matchClause = matchMatch[1].trim();
     const returnClause = returnMatch ? returnMatch[1].trim() : '*';
     const whereMatch = cleanedQuery.match(whereRegex);
     const whereClause = whereMatch ? whereMatch[1].trim() : null;
@@ -487,6 +511,9 @@ function executeCypherQuery(queryStr, graph, presets = []) {
     const limitMatch = cleanedQuery.match(limitRegex);
     const limitVal = limitMatch ? parseInt(limitMatch[1], 10) : null;
 
+    // Strip leading path variable assignments like "path = ..."
+    matchClause = matchClause.replace(/^[a-zA-Z0-9_]+\s*=\s*/i, '').trim();
+
     const evaluateCondition = (nodeOrPair, conditionStr, aliases = {}) => {
       if (!conditionStr) return true;
       if (conditionStr.toUpperCase().includes('NOT') && conditionStr.includes('-[')) {
@@ -494,7 +521,7 @@ function executeCypherQuery(queryStr, graph, presets = []) {
       }
       
       const evalStr = conditionStr.replace(/([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/g, (m, varName, propName) => {
-        const obj = aliases[varName] || (nodeOrPair.id ? nodeOrPair : null);
+        const obj = aliases[varName] || aliases[varName.toLowerCase()] || (nodeOrPair.id ? nodeOrPair : null);
         if (obj && obj[propName] !== undefined) {
           const val = obj[propName];
           return typeof val === 'string' ? JSON.stringify(val) : val;
@@ -579,17 +606,32 @@ function executeCypherQuery(queryStr, graph, presets = []) {
       }
     }
 
-    // Case B: Variable-length path expansion [:REL*1..k] or [*1..k]
-    const varLengthMatch = matchClause.match(/(?:\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\))?\s*-\s*\[:?([a-zA-Z0-9_]*)\*(\d+)?\.\.(\d+)?\]\s*(->|-)\s*\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\)/i);
-    if (varLengthMatch) {
-      const srcType = varLengthMatch[2];
-      const srcProps = varLengthMatch[3];
-      const relType = varLengthMatch[4];
-      const minHop = parseInt(varLengthMatch[5] || '1', 10);
-      const maxHop = parseInt(varLengthMatch[6] || '3', 10);
-      const isDirected = varLengthMatch[7] === '->';
-      const tgtType = varLengthMatch[9];
-      const tgtProps = varLengthMatch[10];
+    // Case B & D: Universal 2-Node 1-Edge / Multi-Hop Matcher
+    // Supports:
+    // (p1:Paper) - [r:Cites] -> [p2:Paper]
+    // (p1:Paper)-[:CITES*1..3]->(p2:Paper)
+    // [a:Author] - [:AUTHORED] -> [p:Paper]
+    // (a) - [r] -> (b)
+    // (a) --> (b)
+    // (a) - (b)
+    const relRegex = /[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\s*[\)\]]\s*(<)?\s*-\s*(?:\[\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\*(\d+)?(?:\.\.(\d+)?)?)?\s*(?:\{[^}]*\})?\s*\])?\s*-\s*(>)?\s*[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\s*[\)\]]/i;
+    const relMatch = matchClause.match(relRegex);
+
+    if (relMatch) {
+      const srcVar = relMatch[1] || 'p1';
+      const srcType = relMatch[2];
+      const srcProps = relMatch[3];
+      const leftArrow = relMatch[4];
+      const relVar = relMatch[5] || 'r';
+      const relType = relMatch[6];
+      const minHop = relMatch[7] ? parseInt(relMatch[7], 10) : (relMatch[8] ? 1 : null);
+      const maxHop = relMatch[8] ? parseInt(relMatch[8], 10) : null;
+      const rightArrow = relMatch[9];
+      const tgtVar = relMatch[10] || 'p2';
+      const tgtType = relMatch[11];
+      const tgtProps = relMatch[12];
+
+      const isDirected = (rightArrow === '>' && !leftArrow) ? 'forward' : (leftArrow === '<' && !rightArrow) ? 'backward' : 'undirected';
 
       let startId = null;
       if (srcProps) {
@@ -602,86 +644,185 @@ function executeCypherQuery(queryStr, graph, presets = []) {
         if (idM) targetId = idM[1];
       }
 
-      const startCandidates = graph.nodes.filter(n => {
-        if (startId && n.id !== startId) return false;
-        if (srcType && n.type.toLowerCase() !== srcType.toLowerCase()) return false;
-        return true;
-      });
+      // If variable-length path expansion (*1..k or *)
+      if (minHop !== null || maxHop !== null) {
+        const actualMinHop = minHop || 1;
+        const actualMaxHop = maxHop || 3;
 
-      const matchedRows = [];
-      const allTargetNodes = new Set();
-      const allTargetEdges = new Set();
-      const hopSteps = [];
+        const startCandidates = graph.nodes.filter(n => {
+          if (startId && n.id !== startId) return false;
+          if (srcType && n.type.toLowerCase() !== srcType.toLowerCase()) return false;
+          return true;
+        });
 
-      for (const startNode of startCandidates) {
-        allTargetNodes.add(startNode.id);
-        const queue = [{ node: startNode, depth: 0, path: [startNode], edgePath: [] }];
+        const matchedRows = [];
+        const allTargetNodes = new Set();
+        const allTargetEdges = new Set();
+        const hopSteps = [];
 
-        while (queue.length > 0) {
-          const { node: curr, depth, path, edgePath } = queue.shift();
-          if (depth >= maxHop) continue;
+        for (const startNode of startCandidates) {
+          allTargetNodes.add(startNode.id);
+          const queue = [{ node: startNode, depth: 0, path: [startNode], edgePath: [] }];
 
-          const candidateEdges = graph.edges.filter(e => {
-            if (relType && e.type.toLowerCase() !== relType.toLowerCase()) return false;
-            if (isDirected) return e.source === curr.id;
-            return e.source === curr.id || e.target === curr.id;
-          });
+          while (queue.length > 0) {
+            const { node: curr, depth, path, edgePath } = queue.shift();
+            if (depth >= actualMaxHop) continue;
 
-          for (const edge of candidateEdges) {
-            const nextId = edge.source === curr.id ? edge.target : edge.source;
-            if (path.some(p => p.id === nextId)) continue;
-            const nextNode = graph.nodes.find(n => n.id === nextId);
-            if (!nextNode) continue;
+            const candidateEdges = graph.edges.filter(e => {
+              if (relType && e.type.toLowerCase() !== relType.toLowerCase()) return false;
+              if (isDirected === 'forward') return e.source === curr.id;
+              if (isDirected === 'backward') return e.target === curr.id;
+              return e.source === curr.id || e.target === curr.id;
+            });
 
-            const nextDepth = depth + 1;
-            const newPath = [...path, nextNode];
-            const newEdgePath = [...edgePath, edge.id];
+            for (const edge of candidateEdges) {
+              const nextId = edge.source === curr.id ? edge.target : edge.source;
+              if (path.some(p => p.id === nextId)) continue;
+              const nextNode = graph.nodes.find(n => n.id === nextId);
+              if (!nextNode) continue;
 
-            allTargetNodes.add(nextNode.id);
-            allTargetEdges.add(edge.id);
+              const nextDepth = depth + 1;
+              const newPath = [...path, nextNode];
+              const newEdgePath = [...edgePath, edge.id];
 
-            if (nextDepth >= minHop && (!targetId || nextNode.id === targetId) && (!tgtType || nextNode.type.toLowerCase() === tgtType.toLowerCase())) {
-              matchedRows.push({
-                Source: startNode.label,
-                HopDistance: `${nextDepth} Hop${nextDepth > 1 ? 's' : ''}`,
-                CitedPaper: nextNode.label,
-                Target: nextNode.label,
-                Venue: nextNode.venue || nextNode.dept || nextNode.category || '-',
-                Citations: nextNode.citations !== undefined ? nextNode.citations : (nextNode.hIndex || '-'),
-                ChainOfWork: newPath.map(p => p.label).join(' ➔ ')
-              });
+              allTargetNodes.add(nextNode.id);
+              allTargetEdges.add(edge.id);
 
-              if (hopSteps.length < 5) {
-                hopSteps.push({
-                  step: hopSteps.length + 1,
-                  activeNodes: [curr.id, nextNode.id],
-                  activeEdges: [edge.id],
-                  label: `Hop ${nextDepth}: ${curr.label} ➔ ${nextNode.label}`
-                });
+              if (nextDepth >= actualMinHop && (!targetId || nextNode.id === targetId) && (!tgtType || nextNode.type.toLowerCase() === tgtType.toLowerCase())) {
+                const aliases = {
+                  [srcVar]: startNode,
+                  [srcVar.toLowerCase()]: startNode,
+                  [tgtVar]: nextNode,
+                  [tgtVar.toLowerCase()]: nextNode,
+                  [relVar]: edge,
+                  [relVar.toLowerCase()]: edge
+                };
+
+                const row = projectReturnRow(returnClause, aliases, { pathNodes: newPath, hopCount: nextDepth, edge });
+                // Fallback default properties if returnClause was general
+                if (!returnClause || returnClause === '*') {
+                  row.Source = startNode.label;
+                  row.HopDistance = `${nextDepth} Hop${nextDepth > 1 ? 's' : ''}`;
+                  row.Target = nextNode.label;
+                  row.ChainOfWork = newPath.map(p => p.label).join(' ➔ ');
+                }
+                matchedRows.push(row);
+
+                if (hopSteps.length < 5) {
+                  hopSteps.push({
+                    step: hopSteps.length + 1,
+                    activeNodes: [curr.id, nextNode.id],
+                    activeEdges: [edge.id],
+                    label: `Hop ${nextDepth}: ${curr.label} ➔ ${nextNode.label}`
+                  });
+                }
               }
-            }
 
-            queue.push({ node: nextNode, depth: nextDepth, path: newPath, edgePath: newEdgePath });
+              queue.push({ node: nextNode, depth: nextDepth, path: newPath, edgePath: newEdgePath });
+            }
+          }
+        }
+
+        const cols = extractReturnColumns(returnClause, matchedRows[0]);
+        const sortedRows = applySortingAndLimit(matchedRows, orderByClause, limitVal);
+
+        return {
+          columns: cols,
+          results: sortedRows,
+          targetNodes: Array.from(allTargetNodes),
+          targetEdges: Array.from(allTargetEdges),
+          hops: hopSteps,
+          hiddenLinks: [],
+          error: null
+        };
+      }
+
+      // Single-hop relationship match (directed or undirected)
+      const targetNodes = new Set();
+      const targetEdges = new Set();
+      const matchedRows = [];
+      const hops = [];
+
+      for (const edge of graph.edges) {
+        if (relType && edge.type.toLowerCase() !== relType.toLowerCase()) continue;
+
+        let srcCandidates = [];
+        if (isDirected === 'forward') {
+          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.source), tgt: graph.nodes.find(n => n.id === edge.target) });
+        } else if (isDirected === 'backward') {
+          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.target), tgt: graph.nodes.find(n => n.id === edge.source) });
+        } else {
+          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.source), tgt: graph.nodes.find(n => n.id === edge.target) });
+          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.target), tgt: graph.nodes.find(n => n.id === edge.source) });
+        }
+
+        for (const { src, tgt } of srcCandidates) {
+          if (!src || !tgt) continue;
+          if (srcType && src.type.toLowerCase() !== srcType.toLowerCase()) continue;
+          if (tgtType && tgt.type.toLowerCase() !== tgtType.toLowerCase()) continue;
+          if (startId && src.id !== startId) continue;
+          if (targetId && tgt.id !== targetId) continue;
+
+          const aliases = {
+            [srcVar]: src,
+            [srcVar.toLowerCase()]: src,
+            [tgtVar]: tgt,
+            [tgtVar.toLowerCase()]: tgt,
+            [relVar]: edge,
+            [relVar.toLowerCase()]: edge
+          };
+
+          if (whereClause && !evaluateCondition(src, whereClause, aliases)) continue;
+
+          targetNodes.add(src.id);
+          targetNodes.add(tgt.id);
+          targetEdges.add(edge.id);
+
+          const row = projectReturnRow(returnClause, aliases, { edge, relVar });
+          matchedRows.push(row);
+
+          if (hops.length < 6) {
+            hops.push({
+              step: hops.length + 1,
+              activeNodes: [src.id, tgt.id],
+              activeEdges: [edge.id],
+              label: `${src.label} ➔ ${tgt.label}`
+            });
           }
         }
       }
 
-      const cols = extractReturnColumns(returnClause, matchedRows[0]);
+      if (withClause || returnClause.toLowerCase().includes('count(') || returnClause.toLowerCase().includes('collect(')) {
+        const aggregated = handleAggregation(matchedRows, returnClause, withClause);
+        return {
+          columns: aggregated.columns,
+          results: aggregated.results,
+          targetNodes: Array.from(targetNodes),
+          targetEdges: Array.from(targetEdges),
+          hops,
+          hiddenLinks: [],
+          error: null
+        };
+      }
+
+      const columns = extractReturnColumns(returnClause, matchedRows[0]);
       const sortedRows = applySortingAndLimit(matchedRows, orderByClause, limitVal);
 
       return {
-        columns: cols,
+        columns: columns.length > 0 ? columns : Object.keys(matchedRows[0] || { Match: 'None' }),
         results: sortedRows,
-        targetNodes: Array.from(allTargetNodes),
-        targetEdges: Array.from(allTargetEdges),
-        hops: hopSteps,
+        targetNodes: Array.from(targetNodes),
+        targetEdges: Array.from(targetEdges),
+        hops,
         hiddenLinks: [],
         error: null
       };
     }
 
     // Case C: Triadic Closure / 2-hop motif pattern
-    const triadMatch = matchClause.match(/\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?\)\s*-\s*\[:?([a-zA-Z0-9_]*)\]\s*-\s*\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?\)\s*-\s*\[:?([a-zA-Z0-9_]*)\]\s*-\s*\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?\)/i);
+    // (a1:Author)-[:COLLABORATED_WITH]-(a2:Author)-[:COLLABORATED_WITH]-(a3:Author)
+    const triadRegex = /[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?\s*[\)\]]\s*-\s*\[:?([a-zA-Z0-9_]*)\]\s*-\s*[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?\s*[\)\]]\s*-\s*\[:?([a-zA-Z0-9_]*)\]\s*-\s*[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?\s*[\)\]]/i;
+    const triadMatch = matchClause.match(triadRegex);
     if (triadMatch) {
       const type1 = triadMatch[2] || '';
       const type2 = triadMatch[5] || '';
@@ -759,89 +900,8 @@ function executeCypherQuery(queryStr, graph, presets = []) {
       };
     }
 
-    // Case D: Single Relationship 1-hop Pattern (Directed or Undirected)
-    const singleRelMatch = matchClause.match(/\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\)\s*-\s*\[:?([a-zA-Z0-9_]*)\]\s*(->|-|<-)\s*\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\)/i);
-    if (singleRelMatch) {
-      const srcVar = singleRelMatch[1] || 'a';
-      const srcType = singleRelMatch[2];
-      const relType = singleRelMatch[4];
-      const dir = singleRelMatch[5];
-      const tgtVar = singleRelMatch[6] || 'b';
-      const tgtType = singleRelMatch[7];
-
-      const targetNodes = new Set();
-      const targetEdges = new Set();
-      const matchedRows = [];
-      const hops = [];
-
-      for (const edge of graph.edges) {
-        if (relType && edge.type.toLowerCase() !== relType.toLowerCase()) continue;
-
-        let srcCandidates = [];
-        if (dir === '->') {
-          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.source), tgt: graph.nodes.find(n => n.id === edge.target) });
-        } else if (dir === '<-') {
-          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.target), tgt: graph.nodes.find(n => n.id === edge.source) });
-        } else {
-          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.source), tgt: graph.nodes.find(n => n.id === edge.target) });
-          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.target), tgt: graph.nodes.find(n => n.id === edge.source) });
-        }
-
-        for (const { src, tgt } of srcCandidates) {
-          if (!src || !tgt) continue;
-          if (srcType && src.type.toLowerCase() !== srcType.toLowerCase()) continue;
-          if (tgtType && tgt.type.toLowerCase() !== tgtType.toLowerCase()) continue;
-
-          const aliases = { [srcVar]: src, [tgtVar]: tgt, [srcVar.toLowerCase()]: src, [tgtVar.toLowerCase()]: tgt };
-          if (whereClause && !evaluateCondition(src, whereClause, aliases)) continue;
-
-          targetNodes.add(src.id);
-          targetNodes.add(tgt.id);
-          targetEdges.add(edge.id);
-
-          const row = projectReturnRow(returnClause, aliases);
-          matchedRows.push(row);
-
-          if (hops.length < 6) {
-            hops.push({
-              step: hops.length + 1,
-              activeNodes: [src.id, tgt.id],
-              activeEdges: [edge.id],
-              label: `${src.label} ➔ ${tgt.label}`
-            });
-          }
-        }
-      }
-
-      if (withClause || returnClause.toLowerCase().includes('count(') || returnClause.toLowerCase().includes('collect(')) {
-        const aggregated = handleAggregation(matchedRows, returnClause, withClause);
-        return {
-          columns: aggregated.columns,
-          results: aggregated.results,
-          targetNodes: Array.from(targetNodes),
-          targetEdges: Array.from(targetEdges),
-          hops,
-          hiddenLinks: [],
-          error: null
-        };
-      }
-
-      const columns = extractReturnColumns(returnClause, matchedRows[0]);
-      const sortedRows = applySortingAndLimit(matchedRows, orderByClause, limitVal);
-
-      return {
-        columns: columns.length > 0 ? columns : Object.keys(matchedRows[0] || { Match: 'None' }),
-        results: sortedRows,
-        targetNodes: Array.from(targetNodes),
-        targetEdges: Array.from(targetEdges),
-        hops,
-        hiddenLinks: [],
-        error: null
-      };
-    }
-
     // Case E: Single Node Scans MATCH (n:Type) or MATCH (n)
-    const singleNodeMatch = matchClause.match(/\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\)/i);
+    const singleNodeMatch = matchClause.match(/[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\s*[\)\]]/i);
     if (singleNodeMatch) {
       const varName = singleNodeMatch[1] || 'n';
       const nodeType = singleNodeMatch[2];
