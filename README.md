@@ -548,7 +548,7 @@ The app uses a lightweight hash-based SPA router — no external routing library
 Every experiment was designed and implemented by student teams as part of the GOLC 2027 academic programme.
 
 <details>
-<summary>Full contributor list by experiment</summary>
+<summary>Full contributor list by experiment (Dropdown)</summary>
 
 | Exp | Contributors |
 |-----|-------------|
@@ -568,11 +568,13 @@ Every experiment was designed and implemented by student teams as part of the GO
 | 14 | Aliza Khan · Manish Raje · Alfiya Siddique · Akritee Singh · Ruchika Dingria |
 | 15 | Aditya Upasani · Vedant Mhatre · Yash Mahajan |
 
+</details>
+
+<br>
+
 **Faculty:** Dr. Sharmila Sengupta · Mrs. Abha Tewari · Mrs. Sunita Suralkar
 
 **Core Developers Team:** Aditya Upasani, Vedant Mhatre, Yash Mahajan
-
-</details>
 
 ---
 
