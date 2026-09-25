@@ -26,7 +26,7 @@ export const EXPERIMENT_COMPONENTS = {
   9: Experiment9,
   10: Experiment10,
   11: Experiment11,
-  12: Experiment12, // Query Knowledge Graphs using Cypher (Track: Knowledge Graphs)
+  12: Experiment12, // Query Knowledge Graphs with Pattern-Based Queries (Track: Knowledge Graphs)
   13: Experiment13,
   14: Experiment14,
   15: Experiment15,
