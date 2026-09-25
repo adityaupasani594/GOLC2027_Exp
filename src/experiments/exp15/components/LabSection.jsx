@@ -14,7 +14,10 @@ import {
   AlertTriangle, 
   CheckCircle2, 
   Layers,
-  HelpCircle
+  HelpCircle,
+  Database,
+  FileText,
+  Filter
 } from 'lucide-react';
 import {
   RETRIEVAL_SYSTEMS, 
@@ -69,7 +72,7 @@ function MetricCard({ label, value, formula, color, description }) {
   );
 }
 
-// Document Card with relevance animation
+// Document Card with relevance score badge and status indicator
 function DocCard({ doc, rank, isNew }) {
   return (
     <motion.div
@@ -78,10 +81,10 @@ function DocCard({ doc, rank, isNew }) {
       initial={isNew ? { opacity: 0, x: -16 } : false}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, ease: [0.16,1,0.3,1] }}
-      className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${
+      className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all ${
         doc.isRelevant
           ? 'bg-emerald-50/90 border-emerald-300 shadow-sm'
-          : 'bg-slate-50/70 border-slate-200/80 opacity-80'
+          : 'bg-slate-50/70 border-slate-200/80 opacity-85'
       }`}
     >
       <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold font-mono shrink-0 mt-0.5 ${
@@ -90,29 +93,31 @@ function DocCard({ doc, rank, isNew }) {
         {rank}
       </span>
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-2 flex-wrap">
           <p className="text-xs font-semibold text-slate-800 leading-snug">{doc.title}</p>
-          <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
-            doc.isRelevant ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-200 text-slate-600'
-          }`}>
-            {doc.isRelevant ? (
-              <>
-                <CheckCircle2 className="w-3 h-3 text-emerald-700 inline" />
-                Relevant Hit
-              </>
-            ) : (
-              'Non-Relevant'
+          <div className="flex items-center gap-1.5 shrink-0">
+            {doc.scoreFormatted !== undefined && (
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200 shadow-2xs">
+                {doc.scoreType ? `${doc.scoreType}: ` : 'Score: '}{doc.scoreFormatted}
+              </span>
             )}
-          </span>
-        </div>
-        <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">{doc.snippet}</p>
-        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{doc.id}</span>
-          {doc.topics && doc.topics.slice(0, 3).map((t, idx) => (
-            <span key={idx} className="text-[9px] text-indigo-600 bg-indigo-50/70 border border-indigo-100 px-1.5 py-0.2 rounded-full font-medium">
-              #{t}
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+              doc.isRelevant ? 'bg-emerald-200 text-emerald-800' : 'bg-slate-200 text-slate-600'
+            }`}>
+              {doc.isRelevant ? (
+                <>
+                  <CheckCircle2 className="w-3 h-3 text-emerald-700 inline" />
+                  Relevant Hit
+                </>
+              ) : (
+                'Non-Relevant'
+              )}
             </span>
-          ))}
+          </div>
+        </div>
+        <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{doc.snippet}</p>
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded font-medium">{doc.id}</span>
         </div>
       </div>
     </motion.div>
@@ -206,11 +211,24 @@ function ComparisonChart({ table, activeMetric }) {
 
 export default function LabSection({ onNext }) {
   const [queryInput, setQueryInput] = useState(DEFAULT_QUERY);
+  const [corpusSearch, setCorpusSearch] = useState('');
   const [showScopeGuide, setShowScopeGuide] = useState(false);
   const [selectedSystem, setSelectedSystem] = useState('keyword');
   const [selectedMetric, setSelectedMetric] = useState('precision');
   const [k, setK] = useState(5);
   const [view, setView] = useState('sim'); // 'sim' | 'curve' | 'compare'
+
+  // Filtered 50 documents reference
+  const filteredCorpusDocs = useMemo(() => {
+    if (!corpusSearch.trim()) return DOCUMENT_POOL;
+    const q = corpusSearch.toLowerCase();
+    return DOCUMENT_POOL.filter(doc =>
+      doc.id.toLowerCase().includes(q) ||
+      doc.title.toLowerCase().includes(q) ||
+      doc.snippet.toLowerCase().includes(q) ||
+      (doc.topics && doc.topics.some(t => t.toLowerCase().includes(q)))
+    );
+  }, [corpusSearch]);
 
   // Metric computations dynamic to query and K
   const metrics = useMemo(() => computeMetrics(selectedSystem, k, queryInput), [selectedSystem, k, queryInput]);
@@ -322,7 +340,7 @@ export default function LabSection({ onNext }) {
                       </span>
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Enter any query to evaluate how different IR algorithms score and rank the 14-document corpus.
+                      Enter any query to evaluate how different IR algorithms score and rank the 50-document corpus.
                     </p>
                   </div>
                 </div>
@@ -372,8 +390,8 @@ export default function LabSection({ onNext }) {
                   )}
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
                     metrics.totalRelevant > 0 
-                      ? 'bg-emerald-100 text-emerald-800' 
-                      : 'bg-amber-100 text-amber-800'
+                       ? 'bg-emerald-100 text-emerald-800' 
+                       : 'bg-amber-100 text-amber-800'
                   }`}>
                     {metrics.totalRelevant > 0 ? `${metrics.totalRelevant} Matches` : '0 Matches'}
                   </span>
@@ -396,7 +414,7 @@ export default function LabSection({ onNext }) {
                           Corpus Scope & Query Boundaries
                         </p>
                         <p className="text-slate-600 leading-relaxed text-[11px]">
-                          This virtual lab operates on a curated academic test collection of <strong>14 Computer Science & Information Retrieval documents</strong>. For meaningful precision and recall calculations, queries should revolve around topics covered in the collection:
+                          This virtual lab operates on a curated academic test collection of <strong>50 Computer Science & Information Retrieval documents</strong>. For meaningful precision and recall calculations, queries should revolve around topics covered in the collection:
                         </p>
                         <div className="flex flex-wrap gap-1.5 pt-1">
                           {CORPUS_SCOPE.categories.map((cat, idx) => (
@@ -459,11 +477,112 @@ export default function LabSection({ onNext }) {
                   <div className="space-y-0.5">
                     <p className="font-semibold text-amber-900">Out-of-Scope Query Detected</p>
                     <p className="text-[11px] text-amber-700 leading-relaxed">
-                      No documents in the 14-paper academic corpus matched your search criteria. Consequently, <strong>Precision@k = 0.000</strong> and <strong>Recall@k = 0.000</strong>. Please try an Information Retrieval topic (e.g. <em>BM25</em>, <em>dense embeddings</em>, <em>vector search</em>, or <em>MRR</em>) or select an example query above.
+                      No documents in the 50-paper academic corpus matched your search criteria. Consequently, <strong>Precision@k = 0.000</strong> and <strong>Recall@k = 0.000</strong>. Please try an Information Retrieval topic (e.g. <em>BM25</em>, <em>dense embeddings</em>, <em>vector search</em>, or <em>MRR</em>) or select an example query above.
                     </p>
                   </div>
                 </motion.div>
               )}
+            </div>
+
+            {/* ── 50 DOCUMENTS SCROLLABLE REFERENCE TABLE (RIGHT BELOW EXPERIMENTAL SEARCH QUERY) ── */}
+            <div className="glass rounded-2xl p-5 border border-white/80 shadow-sm space-y-3.5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center font-bold">
+                    <Database className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                      Indexed Document Corpus Reference
+                      <span className="text-[10px] font-semibold bg-violet-100 text-violet-800 border border-violet-200 px-2 py-0.5 rounded-full">
+                        {DOCUMENT_POOL.length} Documents Total
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Browse all {DOCUMENT_POOL.length} indexed benchmark papers in the test collection.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Filter Input within Corpus Header */}
+                <div className="relative w-full sm:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400">
+                    <Filter className="w-3.5 h-3.5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={corpusSearch}
+                    onChange={(e) => setCorpusSearch(e.target.value)}
+                    placeholder="Filter 50 docs by title, ID, content..."
+                    className="w-full pl-8 pr-7 py-1.5 text-xs bg-white/90 border border-slate-200 rounded-lg shadow-2xs focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 text-slate-800 placeholder-slate-400"
+                  />
+                  {corpusSearch && (
+                    <button
+                      onClick={() => setCorpusSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Scrollable Table Viewport */}
+              <div className="border border-slate-200/90 rounded-xl overflow-hidden bg-white/95 shadow-inner">
+                <div className="max-h-72 overflow-y-auto overflow-x-auto divide-y divide-slate-100 scrollbar-thin">
+                  <table className="w-full text-left text-xs">
+                    <thead className="sticky top-0 bg-slate-100/95 backdrop-blur z-10 border-b border-slate-200 shadow-2xs">
+                      <tr className="text-slate-600 font-semibold text-[11px]">
+                        <th className="py-2.5 px-3 w-14 text-center">ID</th>
+                        <th className="py-2.5 px-3 min-w-[240px]">Document Title</th>
+                        <th className="py-2.5 px-3 min-w-[360px]">Content Abstract / Snippet</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredCorpusDocs.map((doc, idx) => {
+                        const isHit = metrics.results.some(r => r.id === doc.id);
+                        return (
+                          <tr
+                            key={doc.id}
+                            className={`transition-colors hover:bg-violet-50/40 ${
+                              isHit ? 'bg-emerald-50/40' : idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'
+                            }`}
+                          >
+                            <td className="py-2.5 px-3 text-center align-top">
+                              <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                                {doc.id}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 align-top font-semibold text-slate-800 leading-snug">
+                              {doc.title}
+                            </td>
+                            <td className="py-2.5 px-3 align-top text-[11px] text-slate-600 leading-relaxed">
+                              {doc.snippet}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredCorpusDocs.length === 0 && (
+                        <tr>
+                          <td colSpan={3} className="py-8 text-center text-slate-400 text-xs">
+                            No documents matched "{corpusSearch}". Try searching for terms like "BERT", "BM25", "FAISS", "Vector", or "Graph".
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Table Footer Stats */}
+              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                <span>
+                  Showing <strong>{filteredCorpusDocs.length}</strong> of <strong>{DOCUMENT_POOL.length}</strong> indexed documents
+                </span>
+                <span className="text-slate-400">
+                  Total Corpus: 50 Information Retrieval Research Papers
+                </span>
+              </div>
             </div>
 
             {/* Controls Row */}
@@ -711,7 +830,7 @@ export default function LabSection({ onNext }) {
                         ? 'bg-emerald-100 text-emerald-800' 
                         : 'bg-amber-100 text-amber-800'
                     }`}>
-                      {metrics.totalRelevant} Relevant in 14-Doc Corpus
+                      {metrics.totalRelevant} Relevant in 50-Doc Corpus
                     </span>
                   </div>
                   
@@ -842,7 +961,7 @@ export default function LabSection({ onNext }) {
                     Why are all systems showing the same score ({table[0][selectedMetric].toFixed(3)}) at k = {k}?
                   </p>
                   <p className="text-[11px] text-blue-800 leading-relaxed">
-                    This query has exactly <strong>{metrics.totalRelevant} relevant document{metrics.totalRelevant > 1 ? 's' : ''}</strong> in the 14-document corpus. At cutoff depth <strong>k = {k}</strong>, all 4 retrieval systems successfully placed all {metrics.totalRelevant} relevant document{metrics.totalRelevant > 1 ? 's' : ''} within their top {k} results, achieving 100% recall saturation ({metrics.totalRelevant}/{metrics.totalRelevant} = 1.000). Consequently, Precision@{k} = {metrics.totalRelevant}/{k} = {(metrics.totalRelevant / k).toFixed(3)} across all systems.
+                    This query has exactly <strong>{metrics.totalRelevant} relevant document{metrics.totalRelevant > 1 ? 's' : ''}</strong> in the 50-document corpus. At cutoff depth <strong>k = {k}</strong>, all 4 retrieval systems successfully placed all {metrics.totalRelevant} relevant document{metrics.totalRelevant > 1 ? 's' : ''} within their top {k} results, achieving 100% recall saturation ({metrics.totalRelevant}/{metrics.totalRelevant} = 1.000). Consequently, Precision@{k} = {metrics.totalRelevant}/{k} = {(metrics.totalRelevant / k).toFixed(3)} across all systems.
                   </p>
                   <p className="text-[11px] text-blue-900 font-semibold">
                     💡 Try setting <span className="underline decoration-indigo-500 font-bold">k = 2</span> or <span className="underline decoration-indigo-500 font-bold">k = 5</span> above to observe how the systems differ in how quickly they surface relevant documents near the very top of the ranking!

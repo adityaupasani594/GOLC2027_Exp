@@ -100,8 +100,8 @@ const THEORY_SECTIONS = [
           explicitly mentioned in the document text.
         </p>
         <div className="grid sm:grid-cols-2 gap-3">
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200">
-            <div className="font-bold text-rose-700 text-xs mb-1">1-Hop Context</div>
+          <div className="p-3 rounded-xl bg-orange-50 border border-orange-200">
+            <div className="font-bold text-orange-700 text-xs mb-1">1-Hop Context</div>
             <p className="text-xs text-slate-600">Nodes directly connected to the selected document.</p>
           </div>
           <div className="p-3 rounded-xl bg-orange-50 border border-orange-200">
