@@ -572,21 +572,7 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Column 1 (Blue) - Faculty 1: Dr. Sharmila Sengupta */}
-              <div className="relative group p-6 rounded-2xl bg-white border border-blue-100 hover:border-blue-400 shadow-sm hover:shadow-md hover:shadow-blue-50 transition-all flex items-center">
-                <div className="flex items-center gap-4 w-full">
-                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-blue-200 shrink-0">
-                    SS
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h5 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
-                      Dr. Sharmila Sengupta
-                    </h5>
-                    <p className="text-xs text-slate-500 mt-1 leading-snug">
-                      Department of Computer Engineering, VESIT
-                    </p>
-                  </div>
-                </div>
-              </div>
+
 
               {/* Column 2 (Yellow) - Faculty 2: Mrs. Abha Tewari */}
               <div className="relative group p-6 rounded-2xl bg-white border border-amber-100 hover:border-amber-400 shadow-sm hover:shadow-md hover:shadow-amber-50 transition-all flex items-center">
@@ -614,6 +600,22 @@ export default function LandingPage({ onLaunchExperiment, onLaunchExp15, onNavig
                   <div className="min-w-0 flex-1">
                     <h5 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors leading-snug">
                       Mrs. Sunita Suralkar
+                    </h5>
+                    <p className="text-xs text-slate-500 mt-1 leading-snug">
+                      Department of Computer Engineering, VESIT
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative group p-6 rounded-2xl bg-white border border-blue-100 hover:border-blue-400 shadow-sm hover:shadow-md hover:shadow-blue-50 transition-all flex items-center">
+                <div className="flex items-center gap-4 w-full">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-blue-200 shrink-0">
+                    SS
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h5 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
+                      Dr. Sharmila Sengupta
                     </h5>
                     <p className="text-xs text-slate-500 mt-1 leading-snug">
                       Department of Computer Engineering, VESIT

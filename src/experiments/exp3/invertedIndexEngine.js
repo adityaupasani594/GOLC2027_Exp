@@ -59,6 +59,8 @@ export function porterStem(word) {
   return word;
 }
 
+export const purePorterStem = porterStem;
+
 // ────────────────────────────────────────────────────────────────────
 // Preprocess a single document
 // Returns: [{term, pos, rawTok}]
