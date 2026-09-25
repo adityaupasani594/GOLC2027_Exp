@@ -10,6 +10,7 @@
  * - Negation Filtering ("acquired by no company" -> skipped)
  * - Semantic Triple Generation (Subject, Relationship, Object)
  * - Canonical Relation Normalization
+ * - General and Custom Input Support for Arbitrary Clauses and Verbs
  */
 
 export const EXPERIMENT_CONFIG = {
@@ -233,9 +234,34 @@ export function getEntityColor(entType) {
   return ENTITY_COLORS[entType?.toUpperCase()] || "#64748b";
 }
 
+/**
+ * Strips leading/trailing punctuation, quotes, trailing year modifiers, and determiners
+ */
 export function cleanEntityText(text) {
   if (!text) return "";
-  return text.trim().replace(/^[.,;:!?"'`()[\]{}]+|[.,;:!?"'`()[\]{}]+$/g, "").trim();
+  let clean = text.trim().replace(/^[.,;:!?"'`()[\]{}]+|[.,;:!?"'`()[\]{}]+$/g, "").trim();
+  
+  // Clean determiners from conceptual phrases (e.g., "the Nobel Prize" -> "Nobel Prize")
+  if (/^the\s+(nobel\s+prize|mahabharata|ramayana|university\s+of\s+paris|white\s+house|turing\s+machine)/i.test(clean)) {
+    clean = clean.replace(/^the\s+/i, "");
+  } else if (/^(a|an)\s+/i.test(clean)) {
+    clean = clean.replace(/^(a|an)\s+/i, "");
+  }
+  
+  // Strip trailing temporal year expressions (e.g. "in 2014", "in 2002")
+  clean = clean.replace(/\s+in\s+(?:18|19|20)\d{2}$/i, "").trim();
+  return clean;
+}
+
+export function isDateOrNum(text, entType) {
+  if (["DATE", "TIME", "PERCENT", "MONEY", "QUANTITY", "CARDINAL", "ORDINAL"].includes(entType)) {
+    return true;
+  }
+  const clean = text?.trim() || "";
+  if (/^\d+$/.test(clean) || /^(18|19|20)\d{2}$/.test(clean)) {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -244,7 +270,11 @@ export function cleanEntityText(text) {
  */
 export function normalizeRelation(relStr) {
   if (!relStr) return "relates_to";
-  const s = relStr.trim().toLowerCase();
+  let s = relStr.trim().toLowerCase();
+
+  // Strip auxiliary verbs
+  s = s.replace(/\b(is|was|are|were|has\s+been|have\s+been|had\s+been|did|does|do|also|currently|formerly)\b/g, "").trim();
+  s = s.replace(/\s+/g, " ");
 
   if (s.includes("co-found") || s.includes("cofound") || s.includes("co_found") || s === "co-founded") {
     return "co-founded";
@@ -288,7 +318,10 @@ export function normalizeRelation(relStr) {
     return s.includes("for") ? "works_for" : (s.includes("at") ? "worked_at" : "works_at");
   }
   if (s.includes("stud")) {
-    return s.includes("at") ? "studied_at" : "studied";
+    return s.includes("in") ? "studying_in" : (s.includes("at") ? "studied_at" : "studied");
+  }
+  if (s.includes("apply") || s.includes("applying")) {
+    return s.includes("for") ? "applying_for" : "applied";
   }
   if (s.includes("graduat")) {
     return "graduated_from";
@@ -335,6 +368,30 @@ export function normalizeRelation(relStr) {
   if (s.includes("live")) {
     return "lives_in";
   }
+  if (s.includes("conquer")) {
+    return "conquered";
+  }
+  if (s.includes("defeat")) {
+    return "defeated";
+  }
+  if (s.includes("orchestrat")) {
+    return "orchestrated";
+  }
+  if (s.includes("play")) {
+    return s.includes("for") ? "plays_for" : "played";
+  }
+  if (s.includes("rule")) {
+    return "ruled";
+  }
+  if (s.includes("write") || s.includes("wrote") || s.includes("written")) {
+    return "wrote";
+  }
+  if (s.includes("build") || s.includes("built")) {
+    return "built";
+  }
+  if (s.includes("visit")) {
+    return "visited";
+  }
   if (s.includes("part") && s.includes("of")) {
     return "part_of";
   }
@@ -354,20 +411,9 @@ export function normalizeRelation(relStr) {
     return "joined";
   }
 
-  const stopwords = new Set(["is", "was", "are", "were", "been", "has", "have", "had", "the", "a", "an", "also", "be"]);
+  const stopwords = new Set(["is", "was", "are", "were", "been", "has", "have", "had", "the", "a", "an", "also", "be", "did"]);
   const words = s.split(/[\s_]+/).filter(w => w && !stopwords.has(w));
   return words.length > 0 ? words.join("_") : (s.replace(/\s+/g, "_") || "relates_to");
-}
-
-export function isDateOrNum(text, entType) {
-  if (["DATE", "TIME", "PERCENT", "MONEY", "QUANTITY", "CARDINAL", "ORDINAL"].includes(entType)) {
-    return true;
-  }
-  const clean = text?.trim() || "";
-  if (/^\d+$/.test(clean) || /^(18|19|20)\d{2}$/.test(clean)) {
-    return true;
-  }
-  return false;
 }
 
 // Named Entity Dictionary & Knowledge Gazetteer
@@ -390,6 +436,17 @@ const KNOWN_ENTITIES = [
   { text: "Sam Altman", type: "PERSON" },
   { text: "Alan Turing", type: "PERSON" },
   { text: "Ada Lovelace", type: "PERSON" },
+  { text: "Krishna", type: "PERSON" },
+  { text: "Kans", type: "PERSON" },
+  { text: "Yash", type: "PERSON" },
+  { text: "Barack Obama", type: "PERSON" },
+  { text: "William Shakespeare", type: "PERSON" },
+  { text: "Shakespeare", type: "PERSON" },
+  { text: "Isaac Newton", type: "PERSON" },
+  { text: "Cristiano Ronaldo", type: "PERSON" },
+  { text: "Ronaldo", type: "PERSON" },
+  { text: "Martin Eberhard", type: "PERSON" },
+  { text: "Marc Tarpenning", type: "PERSON" },
 
   // Organizations
   { text: "Apple", type: "ORG" },
@@ -407,6 +464,13 @@ const KNOWN_ENTITIES = [
   { text: "MIT", type: "ORG" },
   { text: "Harvard University", type: "ORG" },
   { text: "VESIT", type: "ORG" },
+  { text: "Vivekanand Education Society", type: "ORG" },
+  { text: "DAV School", type: "ORG" },
+  { text: "DAV Public School", type: "ORG" },
+  { text: "YouTube", type: "ORG" },
+  { text: "Al Nassr", type: "ORG" },
+  { text: "The Cholas", type: "ORG" },
+  { text: "Cholas", type: "ORG" },
 
   // Geopolitical Entities / Locations
   { text: "Cupertino", type: "GPE" },
@@ -421,7 +485,12 @@ const KNOWN_ENTITIES = [
   { text: "New York", type: "GPE" },
   { text: "San Francisco", type: "GPE" },
   { text: "Mumbai", type: "GPE" },
+  { text: "Thane", type: "GPE" },
   { text: "India", type: "GPE" },
+  { text: "Asia", type: "GPE" },
+  { text: "Europe", type: "GPE" },
+  { text: "London", type: "GPE" },
+  { text: "Rome", type: "GPE" },
 
   // Concepts / Awards / Products
   { text: "Nobel Prize", type: "CONCEPT" },
@@ -430,217 +499,339 @@ const KNOWN_ENTITIES = [
   { text: "iPhone", type: "PRODUCT" },
   { text: "MacBook", type: "PRODUCT" },
   { text: "Falcon 9", type: "PRODUCT" },
-  { text: "Starship", type: "PRODUCT" }
+  { text: "Starship", type: "PRODUCT" },
+  { text: "Mahabharata", type: "CONCEPT" },
+  { text: "Hamlet", type: "CONCEPT" },
+  { text: "gravity", type: "CONCEPT" },
+  { text: "jobs", type: "CONCEPT" }
 ];
 
-/**
- * Preprocesses text for hyphenated verbs like co-founded -> co_founded
- */
 export function preprocessText(text) {
   if (!text) return "";
   return text.replace(/\b(co|re|pre|vice)-([a-zA-Z]+)\b/gi, "$1_$2");
 }
 
-/**
- * Detects named entities in the text
- */
-export function extractEntities(text) {
-  const detected = new Map();
-
-  // 1. Gazetteer exact matches
-  KNOWN_ENTITIES.forEach(({ text: entityName, type }) => {
-    const escaped = entityName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(`\\b${escaped}\\b`, "i");
-    if (regex.test(text)) {
-      const match = text.match(regex);
-      const clean = cleanEntityText(match ? match[0] : entityName);
-      if (clean && !isDateOrNum(clean, type)) {
-        detected.set(clean.toLowerCase(), { Entity: clean, Type: type });
-      }
-    }
-  });
-
-  // 2. Dates / Years
-  const yearMatches = text.match(/\b(18|19|20)\d{2}\b/g) || [];
-  yearMatches.forEach(y => {
-    // Only keep if meaningful
-  });
-
-  // 3. Proper noun chunks (Capitalized sequences like "Satya Nadella", "Princeton University")
-  const words = text.split(/\s+/);
-  const capitalizedChunks = [];
-  let currentChunk = [];
-
-  words.forEach(rawWord => {
-    const word = cleanEntityText(rawWord);
-    if (!word) {
-      if (currentChunk.length > 0) {
-        capitalizedChunks.push(currentChunk.join(" "));
-        currentChunk = [];
-      }
-      return;
-    }
-    const isCapital = /^[A-Z][a-zA-Z0-9_-]*$/.test(word);
-    const isConnector = ["of", "and", "the", "for", "&"].includes(word.toLowerCase());
-
-    if (isCapital) {
-      currentChunk.push(word);
-    } else if (isConnector && currentChunk.length > 0) {
-      currentChunk.push(word);
-    } else {
-      if (currentChunk.length > 0) {
-        capitalizedChunks.push(currentChunk.join(" "));
-        currentChunk = [];
-      }
-    }
-  });
-  if (currentChunk.length > 0) capitalizedChunks.push(currentChunk.join(" "));
-
-  const ignoreWords = new Set(["The", "A", "An", "In", "On", "At", "He", "She", "It", "They", "We", "Example", "Step", "Question", "Goal"]);
-
-  capitalizedChunks.forEach(chunk => {
-    const clean = cleanEntityText(chunk);
-    if (clean.length > 1 && !ignoreWords.has(clean) && !detected.has(clean.toLowerCase())) {
-      // Determine type heuristics
-      let type = "ENTITY";
-      if (clean.includes("University") || clean.includes("Inc") || clean.includes("Corp") || clean.includes("Technologies") || clean.includes("Labs")) {
-        type = "ORG";
-      } else if (clean.includes("City") || clean.includes("State") || clean.includes("Country")) {
-        type = "GPE";
-      } else if (clean.split(/\s+/).length >= 2 && !clean.includes("University")) {
-        type = "PERSON";
-      } else {
-        type = "CONCEPT";
-      }
-      detected.set(clean.toLowerCase(), { Entity: clean, Type: type });
-    }
-  });
-
-  return Array.from(detected.values());
-}
-
-/**
- * Checks for negation in a sentence or clause
- */
 export function checkNegation(sentence) {
   const s = sentence.toLowerCase();
   const negationPatterns = [
     /\b(acquired|founded|owned|bought|controlled)\s+by\s+no\s+(company|entity|one|person|corporation)\b/,
     /\bby\s+no\s+company\b/,
-    /\b(not|never|neither|nor|none|nobody|nothing|nowhere)\b/,
     /\bno\s+company\b/,
     /\bwas\s+not\b/,
     /\bdid\s+not\b/,
-    /\bdoes\s+not\b/
+    /\bdoes\s+not\b/,
+    /\bnever\b/
   ];
   return negationPatterns.some(pat => pat.test(s));
 }
 
 /**
- * Splits text into individual sentences
+ * Splits text into individual sentences, preserving sentence-terminal punctuation
  */
 export function splitSentences(text) {
   if (!text) return [];
-  return text
-    .split(/(?<=[.!?])\s+(?=[A-Z0-9])/)
-    .map(s => s.trim())
-    .filter(Boolean);
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+
+  // Protect common abbreviations with periods
+  const protectedText = trimmed.replace(/\b(Mr|Mrs|Ms|Dr|Prof|Inc|Corp|Ltd|Co|vs|i\.e|e\.g)\./gi, '$1_DOT_');
+  
+  // Match sentences ending in . ! ? or end of string / newline
+  const matches = protectedText.match(/[^.!?\n]+(?:[.!?]+|$)/g) || [protectedText];
+
+  return matches
+    .map(s => s.replace(/_DOT_/g, '.').trim())
+    .filter(s => s.length > 0);
 }
 
 /**
- * Resolves entity span from token text
+ * Contextual & Keyword Entity Type Classifier
  */
-function resolveEntity(name, entityMap) {
-  const clean = cleanEntityText(name);
-  if (!clean) return null;
-  const match = entityMap.get(clean.toLowerCase());
-  if (match) return match;
+function inferEntityType(entityName, contextHint) {
+  const clean = cleanEntityText(entityName);
+  const lower = clean.toLowerCase();
 
-  // Check partial
-  for (const [key, val] of entityMap.entries()) {
-    if (key.includes(clean.toLowerCase()) || clean.toLowerCase().includes(key)) {
-      return val;
+  // 1. Exact or Alias Gazetteer lookup
+  for (const item of KNOWN_ENTITIES) {
+    if (item.text.toLowerCase() === lower) {
+      return item.type;
     }
   }
 
-  // Fallback
-  return { Entity: clean, Type: "ENTITY" };
+  // 2. Keyword rules
+  if (/\b(University|College|School|Institute|Academy|Corp|Inc|Ltd|Company|Technologies|Labs|Electronics|NASA|VESIT|GitHub|Google|Apple|SpaceX|Tesla|Microsoft|Cholas)\b/i.test(clean)) {
+    return "ORG";
+  }
+  if (/\b(City|State|Country|Thane|Mumbai|Delhi|Paris|Germany|France|India|Asia|USA|California|Hawthorne|Cupertino|London|Rome)\b/i.test(clean)) {
+    return "GPE";
+  }
+  if (/\b(Prize|Award|vehicles|missions|Mahabharata|Ramayana|Hamlet|jobs|Theory|Gravity)\b/i.test(clean)) {
+    return "CONCEPT";
+  }
+
+  // 3. Contextual hints
+  if (contextHint === "person" || contextHint === "birth_subj" || contextHint === "education_subj") {
+    return "PERSON";
+  }
+  if (contextHint === "location" || contextHint === "birth_loc") {
+    return "GPE";
+  }
+  if (contextHint === "org" || contextHint === "education_loc") {
+    return "ORG";
+  }
+  if (contextHint === "concept") {
+    return "CONCEPT";
+  }
+
+  if (/^[A-Z][a-z]+\s+[A-Z][a-z]+$/.test(clean)) {
+    return "PERSON";
+  }
+
+  return "ENTITY";
 }
 
 /**
- * Core Rule-Based Relationship Extraction from a single sentence
- * Replicating spaCy dependency pattern matching from app.py
+ * Detects named entities across the input text
  */
-export function extractRelationshipsFromSentence(sentText, entityList) {
+export function extractEntities(text, extractedTriples = []) {
+  const detected = new Map();
+
+  const addEntity = (name, type) => {
+    const clean = cleanEntityText(name);
+    if (!clean || clean.length < 2 || isDateOrNum(clean, type)) return;
+    const lower = clean.toLowerCase();
+    const stopwords = new Set(["the", "a", "an", "and", "or", "in", "on", "at", "for", "with", "by", "to", "from", "was", "is", "were", "are", "did", "which", "who", "that", "he", "she", "it", "they"]);
+    if (stopwords.has(lower)) return;
+
+    if (!detected.has(lower) || (detected.get(lower).Type === "ENTITY" && type !== "ENTITY")) {
+      detected.set(lower, { Entity: clean, Type: type });
+    }
+  };
+
+  // 1. Entities registered from triples
+  extractedTriples.forEach(t => {
+    addEntity(t.subject, t.subject_type || inferEntityType(t.subject));
+    addEntity(t.object, t.object_type || inferEntityType(t.object));
+  });
+
+  // 2. Gazetteer matches (longest matches first)
+  const sortedGazetteer = [...KNOWN_ENTITIES].sort((a, b) => b.text.length - a.text.length);
+  sortedGazetteer.forEach(({ text: entityName, type }) => {
+    const escaped = entityName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\b${escaped}\\b`, "i");
+    const match = text.match(regex);
+    if (match) {
+      addEntity(match[0], type);
+    }
+  });
+
+  // 3. Capitalized sequences (e.g. proper nouns)
+  const capRegex = /\b[A-Z][a-zA-Z0-9_-]*(?:\s+(?:of|and|the|for|&)\s+[A-Z][a-zA-Z0-9_-]*|\s+[A-Z][a-zA-Z0-9_-]*)*\b/g;
+  let capMatch;
+  while ((capMatch = capRegex.exec(text)) !== null) {
+    const chunk = capMatch[0];
+    const clean = cleanEntityText(chunk);
+    if (clean && clean.length > 1) {
+      addEntity(clean, inferEntityType(clean));
+    }
+  }
+
+  return Array.from(detected.values());
+}
+
+const COMMON_VERBS = new Set([
+  "born", "work", "works", "worked", "working",
+  "study", "studies", "studied", "studying",
+  "apply", "applies", "applied", "applying",
+  "graduate", "graduates", "graduated", "graduating",
+  "partner", "partners", "partnered", "partnering",
+  "headquarter", "headquarters", "headquartered",
+  "locate", "locates", "located",
+  "found", "founds", "founded", "founding", "co-found", "co-founded", "co_founded", "cofounded",
+  "acquire", "acquires", "acquired", "acquiring",
+  "lead", "leads", "led", "leading",
+  "manufacture", "manufactures", "manufactured", "manufacturing",
+  "produce", "produces", "produced", "producing",
+  "invent", "invents", "invented", "inventing",
+  "create", "creates", "created", "creating",
+  "discover", "discovers", "discovered", "discovering",
+  "win", "wins", "won", "winning",
+  "conquer", "conquers", "conquered", "conquering",
+  "defeat", "defeats", "defeated", "defeating",
+  "orchestrate", "orchestrates", "orchestrated", "orchestrating",
+  "play", "plays", "played", "playing",
+  "live", "lives", "lived", "living",
+  "rule", "rules", "ruled", "ruling",
+  "write", "writes", "wrote", "written", "writing",
+  "build", "builds", "built", "building",
+  "visit", "visits", "visited", "visiting",
+  "join", "joins", "joined", "joining",
+  "own", "owns", "owned", "owning",
+  "run", "runs", "ran", "running",
+  "develop", "develops", "developed", "developing",
+  "succeed", "succeeds", "succeeded", "succeeding",
+  "is", "was", "are", "were", "has", "have", "had", "did", "does", "do"
+]);
+
+function isVerbWord(word) {
+  if (!word) return false;
+  const w = word.toLowerCase().replace(/[^a-z_-]/g, "");
+  if (!w) return false;
+  if (COMMON_VERBS.has(w)) return true;
+  if (w.endsWith("ed") && w.length > 3) return true;
+  if (w.endsWith("ing") && w.length > 4) return true;
+  return false;
+}
+
+function containsVerb(text) {
+  const words = text.split(/\s+/);
+  return words.some(w => isVerbWord(w));
+}
+
+/**
+ * Segments a sentence into atomic clauses along relative clauses,
+ * coordinate conjunctions, and serial clauses
+ */
+function segmentSentenceIntoClauses(sentText) {
+  // 1. Relative clauses: ", which ...", ", who ...", ", that ..."
+  const relRegex = /^(.*?)(?:,\s*|\s+)\b(which|who|that)\b\s+(.+)$/i;
+  const relMatch = sentText.match(relRegex);
+  if (relMatch) {
+    const mainClauses = segmentSentenceIntoClauses(relMatch[1]);
+    return [
+      ...mainClauses,
+      { text: relMatch[3].trim(), isRelative: true, relPronoun: relMatch[2].toLowerCase() }
+    ];
+  }
+
+  // 2. Coordinate clauses
+  const semiParts = sentText.split(/;\s*/);
+  const clauses = [];
+
+  semiParts.forEach(semiPart => {
+    const conjParts = semiPart.split(/(?:,\s+and\s+|\s+and\s+|,\s+but\s+|\s+but\s+)/i);
+
+    conjParts.forEach(conjPart => {
+      // Split on comma only if the fragment after comma contains a verb
+      const commaSplit = conjPart.split(/,\s*/);
+      if (commaSplit.length <= 1) {
+        clauses.push({ text: conjPart.trim(), isRelative: false });
+      } else {
+        let currentChunk = commaSplit[0];
+        for (let i = 1; i < commaSplit.length; i++) {
+          const nextPiece = commaSplit[i];
+          if (containsVerb(nextPiece)) {
+            clauses.push({ text: currentChunk.trim(), isRelative: false });
+            currentChunk = nextPiece;
+          } else {
+            // Keep with current chunk (e.g. "Cupertino, California")
+            currentChunk += ", " + nextPiece;
+          }
+        }
+        if (currentChunk.trim()) {
+          clauses.push({ text: currentChunk.trim(), isRelative: false });
+        }
+      }
+    });
+  });
+
+  return clauses.filter(c => c.text.length > 0);
+}
+
+const VERB_PATTERNS = [
+  // Multi-word prepositional verbs
+  { regex: /\b(?:was|is|were)\s+born\s+in\b/i, rel: "born_in", pattern: "Prepositional Birthplace", objType: "GPE", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:worked|works|working)\s+(?:at|for)\b/i, rel: "worked_at", pattern: "Prepositional Employment", objType: "ORG", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:did\s+is\s+|is\s+|was\s+)?(?:studied|studying)\s+at\b/i, rel: "studied_at", pattern: "Prepositional Education", objType: "ORG", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:did\s+is\s+|is\s+|was\s+)?(?:studied|studying)\s+in\b/i, rel: "studying_in", pattern: "Prepositional Education", objType: "ORG", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:is\s+|was\s+)?(?:applying|applied)\s+for\b/i, rel: "applying_for", pattern: "Prepositional Attachment", objType: "CONCEPT", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:graduated)\s+from\b/i, rel: "graduated_from", pattern: "Prepositional Education", objType: "ORG", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?partnered\s+with\b/i, rel: "partner_with", pattern: "Prepositional Partner Attachment", objType: "ORG", subjType: "ORG" },
+  { regex: /\b(?:and\s+)?(?:is|was)\s+headquartered\s+in\b/i, rel: "headquartered_in", pattern: "Headquarters Prepositional", objType: "GPE", subjType: "ORG" },
+  { regex: /\b(?:and\s+)?(?:is|was)\s+located\s+in\b/i, rel: "located_in", pattern: "Appositive Location", objType: "GPE", subjType: "GPE" },
+  { regex: /\b(?:and\s+)?(?:plays|played)\s+for\b/i, rel: "plays_for", pattern: "Prepositional Attachment", objType: "ORG", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:lives|lived)\s+in\b/i, rel: "lives_in", pattern: "Prepositional Attachment", objType: "GPE", subjType: "PERSON" },
+
+  // Transitive action verbs
+  { regex: /\b(?:and\s+)?(?:co_founded|co-founded|cofounded)\b/i, rel: "co-founded", pattern: "Active Voice nsubj-dobj", objType: "ORG", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?founded\b/i, rel: "founded", pattern: "Active Voice nsubj-dobj", objType: "ORG", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?acquired\b/i, rel: "acquired", pattern: "Direct Object Acquisition", objType: "ORG", subjType: "ORG" },
+  { regex: /\b(?:and\s+)?(?:also\s+)?leads\b/i, rel: "leads", pattern: "Leadership Predicate", objType: "ORG", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?manufactures\b/i, rel: "manufactures", pattern: "Relative Clause Extraction", objType: "PRODUCT", subjType: "ORG" },
+  { regex: /\b(?:and\s+)?(?:conquered|conquers)\b/i, rel: "conquered", pattern: "Active Voice nsubj-dobj", objType: "GPE", subjType: "ORG" },
+  { regex: /\b(?:and\s+)?(?:defeated|defeats)\b/i, rel: "defeated", pattern: "Active Voice nsubj-dobj", objType: "PERSON", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:orchestrated|orchestrates)\b/i, rel: "orchestrated", pattern: "Active Voice nsubj-dobj", objType: "CONCEPT", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:won|wins)\b/i, rel: "won", pattern: "Predicate Direct Object", objType: "CONCEPT", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:wrote|writes|written)\b/i, rel: "wrote", pattern: "Active Voice nsubj-dobj", objType: "CONCEPT", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:invented|invents)\b/i, rel: "invented", pattern: "Active Voice nsubj-dobj", objType: "CONCEPT", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:discovered|discovers)\b/i, rel: "discovered", pattern: "Active Voice nsubj-dobj", objType: "CONCEPT", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:visited|visits)\b/i, rel: "visited", pattern: "Active Voice nsubj-dobj", objType: "GPE", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:built|builds)\b/i, rel: "built", pattern: "Active Voice nsubj-dobj", objType: "PRODUCT", subjType: "PERSON" },
+  { regex: /\b(?:and\s+)?(?:created|creates)\b/i, rel: "created", pattern: "Active Voice nsubj-dobj", objType: "CONCEPT", subjType: "PERSON" }
+];
+
+/**
+ * Extracts relationship triples from an individual sentence
+ */
+export function extractRelationshipsFromSentence(sentText) {
   const triples = [];
-  const entityMap = new Map(entityList.map(e => [e.Entity.toLowerCase(), e]));
 
   // Check 1: Negation Filter (app.py: is_negated check)
   if (checkNegation(sentText)) {
     return []; // Negative case: No false assertions allowed
   }
 
-  const prepText = preprocessText(sentText);
-
   // Pattern A: Passive Voice Inversion:
   // "[Patient] was/is/were [verb] by [Agent]" -> (Agent, verb, Patient)
-  const passiveRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+(?:was|is|were|has\s+been)\s+([a-zA-Z_]+(?:\s+by)?)\s+by\s+([A-Z][a-zA-Z0-9_\s&'-]+)/i;
-  const passiveMatch = prepText.match(passiveRegex);
+  const passiveMatch = sentText.match(/([a-zA-Z0-9_\s&'-]+?)\s+(?:was|is|were|has\s+been)\s+([a-zA-Z_]+(?:\s+by)?)\s+by\s+([a-zA-Z0-9_\s&',-]+?)(?:\.|$)/i);
+  let handledPassive = false;
   if (passiveMatch) {
     const rawPatient = cleanEntityText(passiveMatch[1]);
     const rawVerb = passiveMatch[2];
-    const rawAgent = cleanEntityText(passiveMatch[3]);
+    const rawAgents = passiveMatch[3];
 
-    if (!rawAgent.toLowerCase().includes("no company") && !rawAgent.toLowerCase().includes("nobody")) {
-      const agentEnt = resolveEntity(rawAgent, entityMap) || { Entity: rawAgent, Type: "PERSON" };
-      const patientEnt = resolveEntity(rawPatient, entityMap) || { Entity: rawPatient, Type: "ORG" };
-
-      if (agentEnt.Entity.toLowerCase() !== patientEnt.Entity.toLowerCase()) {
+    const agentList = rawAgents.split(/\s+and\s+|,\s*/i).map(cleanEntityText).filter(Boolean);
+    agentList.forEach(agent => {
+      if (!agent.toLowerCase().includes("no company") && !agent.toLowerCase().includes("nobody")) {
         triples.push({
-          subject: agentEnt.Entity,
-          subject_type: agentEnt.Type,
+          subject: agent,
+          subject_type: inferEntityType(agent, "person"),
           relation: normalizeRelation(rawVerb),
-          object: patientEnt.Entity,
-          object_type: patientEnt.Type,
+          object: rawPatient,
+          object_type: inferEntityType(rawPatient, "org"),
           sentence: sentText,
           syntaxPattern: "Passive Voice Inversion"
         });
+        handledPassive = true;
       }
-    }
+    });
   }
 
   // Pattern B: Role / Successor Structure:
   // "Tim Cook succeeded Steve Jobs as CEO of Apple"
-  const roleRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+succeeded\s+([A-Z][a-zA-Z0-9_\s&'-]+?)\s+as\s+([A-Za-z]+)\s+of\s+([A-Z][a-zA-Z0-9_\s&'-]+)/i;
-  const roleMatch = prepText.match(roleRegex);
+  const roleMatch = sentText.match(/([a-zA-Z0-9_\s&'-]+?)\s+succeeded\s+([a-zA-Z0-9_\s&'-]+?)\s+as\s+([A-Za-z]+)\s+of\s+([a-zA-Z0-9_\s&'-]+)/i);
   if (roleMatch) {
-    const subjName = cleanEntityText(roleMatch[1]);
-    const predName = cleanEntityText(roleMatch[2]);
-    const roleName = cleanEntityText(roleMatch[3]);
-    const orgName = cleanEntityText(roleMatch[4]);
+    const subj = cleanEntityText(roleMatch[1]);
+    const pred = cleanEntityText(roleMatch[2]);
+    const role = cleanEntityText(roleMatch[3]);
+    const org = cleanEntityText(roleMatch[4]);
 
-    const subjEnt = resolveEntity(subjName, entityMap) || { Entity: subjName, Type: "PERSON" };
-    const predEnt = resolveEntity(predName, entityMap) || { Entity: predName, Type: "PERSON" };
-    const orgEnt = resolveEntity(orgName, entityMap) || { Entity: orgName, Type: "ORG" };
-
-    // Triple 1: (Tim Cook, succeeded, Steve Jobs)
     triples.push({
-      subject: subjEnt.Entity,
-      subject_type: subjEnt.Type,
+      subject: subj,
+      subject_type: inferEntityType(subj, "person"),
       relation: "succeeded",
-      object: predEnt.Entity,
-      object_type: predEnt.Type,
+      object: pred,
+      object_type: inferEntityType(pred, "person"),
       sentence: sentText,
       syntaxPattern: "Succession Relation"
     });
 
-    // Triple 2: (Tim Cook, CEO_of, Apple)
     triples.push({
-      subject: subjEnt.Entity,
-      subject_type: subjEnt.Type,
-      relation: normalizeRelation(`${roleName}_of`),
-      object: orgEnt.Entity,
-      object_type: orgEnt.Type,
+      subject: subj,
+      subject_type: inferEntityType(subj, "person"),
+      relation: normalizeRelation(`${role}_of`),
+      object: org,
+      object_type: inferEntityType(org, "org"),
       sentence: sentText,
       syntaxPattern: "Role Affiliation"
     });
@@ -648,270 +839,158 @@ export function extractRelationshipsFromSentence(sentText, entityList) {
 
   // Pattern C: Direct Role Copula:
   // "Satya Nadella is the CEO of Microsoft" / "Tim Cook is CEO of Apple"
-  const copulaRoleRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+(?:is|was|serves\s+as)\s+(?:the\s+)?([A-Za-z]+)\s+of\s+([A-Z][a-zA-Z0-9_\s&'-]+)/i;
-  const copulaRoleMatch = prepText.match(copulaRoleRegex);
-  if (copulaRoleMatch && !roleMatch) {
-    const subjName = cleanEntityText(copulaRoleMatch[1]);
-    const roleName = cleanEntityText(copulaRoleMatch[2]);
-    const orgName = cleanEntityText(copulaRoleMatch[3]);
-
-    const subjEnt = resolveEntity(subjName, entityMap) || { Entity: subjName, Type: "PERSON" };
-    const orgEnt = resolveEntity(orgName, entityMap) || { Entity: orgName, Type: "ORG" };
+  const copulaMatch = sentText.match(/([a-zA-Z0-9_\s&'-]+?)\s+(?:is|was|serves\s+as)\s+(?:the\s+)?([A-Za-z]+)\s+of\s+([a-zA-Z0-9_\s&'-]+)/i);
+  if (copulaMatch && !roleMatch) {
+    const subj = cleanEntityText(copulaMatch[1]);
+    const role = cleanEntityText(copulaMatch[2]);
+    const org = cleanEntityText(copulaMatch[3]);
 
     triples.push({
-      subject: subjEnt.Entity,
-      subject_type: subjEnt.Type,
-      relation: normalizeRelation(`${roleName}_of`),
-      object: orgEnt.Entity,
-      object_type: orgEnt.Type,
+      subject: subj,
+      subject_type: inferEntityType(subj, "person"),
+      relation: normalizeRelation(`${role}_of`),
+      object: org,
+      object_type: inferEntityType(org, "org"),
       sentence: sentText,
       syntaxPattern: "Copular Role Affiliation"
     });
   }
 
-  // Pattern D: Headquartered in / Located in:
-  // "SpaceX is headquartered in Hawthorne, California"
-  const hqRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+(?:is|was)\s+headquartered\s+in\s+([A-Z][a-zA-Z0-9_\s&'-]+?)(?:,\s*([A-Z][a-zA-Z0-9_\s&'-]+))?(?:\.|$)/i;
-  const hqMatch = prepText.match(hqRegex);
-  if (hqMatch) {
-    const orgName = cleanEntityText(hqMatch[1]);
-    const cityName = cleanEntityText(hqMatch[2]);
-    const stateName = cleanEntityText(hqMatch[3]);
+  // Pattern D: Clause-based SVO & Prepositional Extraction (if not fully consumed by passive)
+  if (!handledPassive) {
+    const clauses = segmentSentenceIntoClauses(sentText);
+    let activeSubject = null;
+    let activeSubjectType = null;
+    let lastObject = null;
 
-    const orgEnt = resolveEntity(orgName, entityMap) || { Entity: orgName, Type: "ORG" };
-    const cityEnt = resolveEntity(cityName, entityMap) || { Entity: cityName, Type: "GPE" };
+    clauses.forEach((clauseObj) => {
+      const cText = clauseObj.text.trim();
+      if (!cText) return;
 
-    triples.push({
-      subject: orgEnt.Entity,
-      subject_type: orgEnt.Type,
-      relation: "headquartered_in",
-      object: cityEnt.Entity,
-      object_type: cityEnt.Type,
-      sentence: sentText,
-      syntaxPattern: "Headquarters Prepositional"
-    });
+      let matched = false;
+      for (const vp of VERB_PATTERNS) {
+        const match = cText.match(vp.regex);
+        if (match) {
+          const matchIdx = match.index;
+          const matchLen = match[0].length;
 
-    if (stateName) {
-      const stateEnt = resolveEntity(stateName, entityMap) || { Entity: stateName, Type: "GPE" };
-      triples.push({
-        subject: cityEnt.Entity,
-        subject_type: cityEnt.Type,
-        relation: "located_in",
-        object: stateEnt.Entity,
-        object_type: stateEnt.Type,
-        sentence: sentText,
-        syntaxPattern: "Appositive Location"
-      });
-    }
-  }
+          let rawSubj = cText.substring(0, matchIdx).trim();
+          let rawObj = cText.substring(matchIdx + matchLen).trim();
 
-  // Pattern E: Born in / Worked at / Studied at / Won:
-  // "Albert Einstein was born in Germany and worked at Princeton University"
-  // "Marie Curie studied at University of Paris and won the Nobel Prize"
-  const bornRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+was\s+born\s+in\s+([A-Z][a-zA-Z0-9_\s&'-]+)/i;
-  const bornMatch = prepText.match(bornRegex);
-  if (bornMatch) {
-    const personName = cleanEntityText(bornMatch[1]);
-    const locName = cleanEntityText(bornMatch[2]);
-    const pEnt = resolveEntity(personName, entityMap) || { Entity: personName, Type: "PERSON" };
-    const lEnt = resolveEntity(locName, entityMap) || { Entity: locName, Type: "GPE" };
-    triples.push({
-      subject: pEnt.Entity,
-      subject_type: pEnt.Type,
-      relation: "born_in",
-      object: lEnt.Entity,
-      object_type: lEnt.Type,
-      sentence: sentText,
-      syntaxPattern: "Prepositional Birthplace"
-    });
-  }
+          // Antecedent resolution for relative clauses ("..., which manufactures electric vehicles")
+          if (clauseObj.isRelative) {
+            rawSubj = lastObject || activeSubject;
+          }
 
-  const workedRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+(?:and\s+)?worked\s+at\s+([A-Z][a-zA-Z0-9_\s&'-]+)/i;
-  const workedMatch = prepText.match(workedRegex);
-  if (workedMatch) {
-    const pName = cleanEntityText(workedMatch[1]);
-    const orgName = cleanEntityText(workedMatch[2]);
-    // If pName is short or conjunction, resolve to subject of sentence
-    const subjName = pName.length > 2 ? pName : (bornMatch ? cleanEntityText(bornMatch[1]) : pName);
-    const pEnt = resolveEntity(subjName, entityMap) || { Entity: subjName, Type: "PERSON" };
-    const oEnt = resolveEntity(orgName, entityMap) || { Entity: orgName, Type: "ORG" };
-    triples.push({
-      subject: pEnt.Entity,
-      subject_type: pEnt.Type,
-      relation: "worked_at",
-      object: oEnt.Entity,
-      object_type: oEnt.Type,
-      sentence: sentText,
-      syntaxPattern: "Prepositional Employment"
-    });
-  }
+          let subj = cleanEntityText(rawSubj);
+          let subjType = vp.subjType;
 
-  const studiedRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+studied\s+at\s+([A-Z][a-zA-Z0-9_\s&'-]+)/i;
-  const studiedMatch = prepText.match(studiedRegex);
-  if (studiedMatch) {
-    const pName = cleanEntityText(studiedMatch[1]);
-    const orgName = cleanEntityText(studiedMatch[2]);
-    const pEnt = resolveEntity(pName, entityMap) || { Entity: pName, Type: "PERSON" };
-    const oEnt = resolveEntity(orgName, entityMap) || { Entity: orgName, Type: "ORG" };
-    triples.push({
-      subject: pEnt.Entity,
-      subject_type: pEnt.Type,
-      relation: "studied_at",
-      object: oEnt.Entity,
-      object_type: oEnt.Type,
-      sentence: sentText,
-      syntaxPattern: "Prepositional Education"
-    });
-  }
+          if (!subj) {
+            // Inherit subject from coordinated preceding clause
+            subj = activeSubject;
+            subjType = activeSubjectType || vp.subjType;
+          } else {
+            activeSubject = subj;
+            activeSubjectType = inferEntityType(subj, vp.subjType);
+            subjType = activeSubjectType;
+          }
 
-  const wonRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+(?:and\s+)?won\s+(?:the\s+)?([A-Za-z0-9_\s&'-]+?)(?:\.|$)/i;
-  const wonMatch = prepText.match(wonRegex);
-  if (wonMatch) {
-    let pName = cleanEntityText(wonMatch[1]);
-    if (studiedMatch) pName = cleanEntityText(studiedMatch[1]);
-    const awardName = cleanEntityText(wonMatch[2]);
-    const pEnt = resolveEntity(pName, entityMap) || { Entity: pName, Type: "PERSON" };
-    const aEnt = resolveEntity(awardName, entityMap) || { Entity: awardName, Type: "CONCEPT" };
-    triples.push({
-      subject: pEnt.Entity,
-      subject_type: pEnt.Type,
-      relation: "won",
-      object: aEnt.Entity,
-      object_type: aEnt.Type,
-      sentence: sentText,
-      syntaxPattern: "Predicate Direct Object"
+          let obj = cleanEntityText(rawObj);
+          if (vp.rel === "partner_with") {
+            const spaceXMatch = rawObj.match(/^([a-zA-Z0-9_-]+)/);
+            if (spaceXMatch) obj = spaceXMatch[1];
+          }
+
+          let appositiveTarget = null;
+          if (vp.rel === "headquartered_in" && obj.includes(",")) {
+            const parts = obj.split(",").map(cleanEntityText);
+            obj = parts[0];
+            appositiveTarget = parts[1];
+          }
+
+          if (subj && obj && subj.toLowerCase() !== obj.toLowerCase()) {
+            lastObject = obj;
+            triples.push({
+              subject: subj,
+              subject_type: subjType,
+              relation: vp.rel,
+              object: obj,
+              object_type: inferEntityType(obj, vp.objType),
+              sentence: sentText,
+              syntaxPattern: vp.pattern
+            });
+
+            if (appositiveTarget) {
+              triples.push({
+                subject: obj,
+                subject_type: "GPE",
+                relation: "located_in",
+                object: appositiveTarget,
+                object_type: "GPE",
+                sentence: sentText,
+                syntaxPattern: "Appositive Location"
+              });
+            }
+
+            matched = true;
+            break;
+          }
+        }
+      }
+
+      // General fallback for arbitrary custom verbs
+      if (!matched && !roleMatch && !copulaMatch) {
+        const generalVerbMatch = cText.match(/\b([a-zA-Z]+(?:ed|ing|s))\s+(?:(in|at|for|with|by|from|to|into|on|about|of)\s+)?([a-zA-Z0-9_\s&'-]+)$/i);
+        if (generalVerbMatch) {
+          const vWord = generalVerbMatch[1];
+          const vPrep = generalVerbMatch[2] || "";
+          const rawObj = generalVerbMatch[3];
+          const verbStart = generalVerbMatch.index;
+
+          let rawSubj = cText.substring(0, verbStart).trim();
+          let subj = cleanEntityText(rawSubj) || activeSubject;
+          let obj = cleanEntityText(rawObj);
+
+          if (subj && obj && subj.toLowerCase() !== obj.toLowerCase()) {
+            const rel = normalizeRelation(vPrep ? `${vWord}_${vPrep}` : vWord);
+            triples.push({
+              subject: subj,
+              subject_type: inferEntityType(subj),
+              relation: rel,
+              object: obj,
+              object_type: inferEntityType(obj),
+              sentence: sentText,
+              syntaxPattern: vPrep ? "Prepositional Attachment" : "Active Voice nsubj-dobj"
+            });
+          }
+        }
+      }
     });
   }
 
-  // Pattern F: Active Voice Foundation / Co-Founding:
-  // "Steve Wozniak co_founded Apple." / "Elon Musk founded SpaceX in 2002."
-  const foundRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+(co_founded|co-founded|cofounded|founded)\s+([A-Z][a-zA-Z0-9_\s&'-]+?)(?:\s+in\s+\d{4})?(?:\.|$)/i;
-  const foundMatch = prepText.match(foundRegex);
-  if (foundMatch && !passiveMatch) {
-    const subjName = cleanEntityText(foundMatch[1]);
-    const relWord = foundMatch[2];
-    const objName = cleanEntityText(foundMatch[3]);
-
-    const sEnt = resolveEntity(subjName, entityMap) || { Entity: subjName, Type: "PERSON" };
-    const oEnt = resolveEntity(objName, entityMap) || { Entity: objName, Type: "ORG" };
-
-    if (sEnt.Entity.toLowerCase() !== oEnt.Entity.toLowerCase()) {
-      triples.push({
-        subject: sEnt.Entity,
-        subject_type: sEnt.Type,
-        relation: normalizeRelation(relWord),
-        object: oEnt.Entity,
-        object_type: oEnt.Type,
-        sentence: sentText,
-        syntaxPattern: "Active Voice nsubj-dobj"
-      });
-    }
-  }
-
-  // Pattern G: Acquisition:
-  // "Apple acquired Beats Electronics in 2014." / "Microsoft acquired GitHub in 2018."
-  const acquireRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+acquired\s+([A-Z][a-zA-Z0-9_\s&'-]+?)(?:\s+in\s+\d{4})?(?:\.|$)/i;
-  const acquireMatch = prepText.match(acquireRegex);
-  if (acquireMatch && !passiveMatch) {
-    const subjName = cleanEntityText(acquireMatch[1]);
-    const objName = cleanEntityText(acquireMatch[2]);
-
-    const sEnt = resolveEntity(subjName, entityMap) || { Entity: subjName, Type: "ORG" };
-    const oEnt = resolveEntity(objName, entityMap) || { Entity: objName, Type: "ORG" };
-
-    triples.push({
-      subject: sEnt.Entity,
-      subject_type: sEnt.Type,
-      relation: "acquired",
-      object: oEnt.Entity,
-      object_type: oEnt.Type,
-      sentence: sentText,
-      syntaxPattern: "Direct Object Acquisition"
-    });
-  }
-
-  // Pattern H: Partnership:
-  // "NASA partnered with SpaceX for space missions."
-  const partnerRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+partnered\s+with\s+([A-Z][a-zA-Z0-9_\s&'-]+)/i;
-  const partnerMatch = prepText.match(partnerRegex);
-  if (partnerMatch) {
-    const sName = cleanEntityText(partnerMatch[1]);
-    const oName = cleanEntityText(partnerMatch[2]);
-    const sEnt = resolveEntity(sName, entityMap) || { Entity: sName, Type: "ORG" };
-    const oEnt = resolveEntity(oName, entityMap) || { Entity: oName, Type: "ORG" };
-    triples.push({
-      subject: sEnt.Entity,
-      subject_type: sEnt.Type,
-      relation: "partner_with",
-      object: oEnt.Entity,
-      object_type: oEnt.Type,
-      sentence: sentText,
-      syntaxPattern: "Prepositional Partner Attachment"
-    });
-  }
-
-  // Pattern I: Leadership / Leads:
-  // "Elon Musk also leads Tesla, which manufactures electric vehicles."
-  const leadsRegex = /([A-Z][a-zA-Z0-9_\s&'-]+?)\s+(?:also\s+)?leads\s+([A-Z][a-zA-Z0-9_\s&'-]+)/i;
-  const leadsMatch = prepText.match(leadsRegex);
-  if (leadsMatch) {
-    const sName = cleanEntityText(leadsMatch[1]);
-    const oName = cleanEntityText(leadsMatch[2]);
-    const sEnt = resolveEntity(sName, entityMap) || { Entity: sName, Type: "PERSON" };
-    const oEnt = resolveEntity(oName, entityMap) || { Entity: oName, Type: "ORG" };
-    triples.push({
-      subject: sEnt.Entity,
-      subject_type: sEnt.Type,
-      relation: "leads",
-      object: oEnt.Entity,
-      object_type: oEnt.Type,
-      sentence: sentText,
-      syntaxPattern: "Leadership Predicate"
-    });
-  }
-
-  // Pattern J: Relative Clause / Manufactures:
-  // "which manufactures electric vehicles" / "Tesla manufactures electric vehicles"
-  const manufRegex = /(?:([A-Z][a-zA-Z0-9_\s&'-]+?)(?:,\s*which|\s+)|\bwhich\s+)manufactures\s+([a-zA-Z0-9_\s&'-]+?)(?:\.|$)/i;
-  const manufMatch = prepText.match(manufRegex);
-  if (manufMatch) {
-    let sName = cleanEntityText(manufMatch[1]);
-    if (!sName && leadsMatch) {
-      sName = cleanEntityText(leadsMatch[2]); // Antecedent resolution: "leads Tesla, which manufactures..." -> Tesla
-    }
-    const oName = cleanEntityText(manufMatch[2]);
-    if (sName && oName) {
-      const sEnt = resolveEntity(sName, entityMap) || { Entity: sName, Type: "ORG" };
-      const oEnt = resolveEntity(oName, entityMap) || { Entity: oName, Type: "PRODUCT" };
-      triples.push({
-        subject: sEnt.Entity,
-        subject_type: sEnt.Type,
-        relation: "manufactures",
-        object: oEnt.Entity,
-        object_type: oEnt.Type,
-        sentence: sentText,
-        syntaxPattern: "Relative Clause Extraction"
-      });
-    }
-  }
-
-  // Pattern K: Appositive Location:
-  // "Cupertino, California" (only if not already captured)
-  const apposRegex = /([A-Z][a-zA-Z0-9_]+),\s+([A-Z][a-zA-Z0-9_]+)/g;
+  // Appositive Location: "Cupertino, California"
+  const apposRegex = /\b([A-Z][a-zA-Z0-9_]+),\s+([A-Z][a-zA-Z0-9_]+)\b/g;
   let apposMatch;
-  while ((apposMatch = apposRegex.exec(prepText)) !== null) {
+  while ((apposMatch = apposRegex.exec(sentText)) !== null) {
     const headText = cleanEntityText(apposMatch[1]);
     const apposText = cleanEntityText(apposMatch[2]);
-    if (headText && apposText && headText.toLowerCase() !== apposText.toLowerCase()) {
-      const hEnt = resolveEntity(headText, entityMap) || { Entity: headText, Type: "GPE" };
-      const aEnt = resolveEntity(apposText, entityMap) || { Entity: apposText, Type: "GPE" };
-      if (!triples.some(t => t.subject === hEnt.Entity && t.object === aEnt.Entity && t.relation === "located_in")) {
+    const headType = inferEntityType(headText);
+    const apposType = inferEntityType(apposText);
+
+    if (
+      headText &&
+      apposText &&
+      headText.toLowerCase() !== apposText.toLowerCase() &&
+      (headType === "GPE" || headType === "LOC") &&
+      (apposType === "GPE" || apposType === "LOC")
+    ) {
+      if (!triples.some(t => t.subject === headText && t.object === apposText && t.relation === "located_in")) {
         triples.push({
-          subject: hEnt.Entity,
-          subject_type: hEnt.Type,
+          subject: headText,
+          subject_type: "GPE",
           relation: "located_in",
-          object: aEnt.Entity,
-          object_type: aEnt.Type,
+          object: apposText,
+          object_type: "GPE",
           sentence: sentText,
           syntaxPattern: "Appositive Location"
         });
@@ -919,7 +998,7 @@ export function extractRelationshipsFromSentence(sentText, entityList) {
     }
   }
 
-  // Deduplicate triples and clean
+  // Deduplicate triples
   const seen = new Set();
   const unique = [];
   triples.forEach(t => {
@@ -961,11 +1040,10 @@ export function runExtractionPipeline(rawText) {
   }
 
   const sentences = splitSentences(cleanText);
-  const entities = extractEntities(cleanText);
-
   const allTriples = [];
+
   sentences.forEach(sent => {
-    const sentTriples = extractRelationshipsFromSentence(sent, entities);
+    const sentTriples = extractRelationshipsFromSentence(sent);
     allTriples.push(...sentTriples);
   });
 
@@ -979,6 +1057,8 @@ export function runExtractionPipeline(rawText) {
       uniqueTriples.push(t);
     }
   });
+
+  const entities = extractEntities(cleanText, uniqueTriples);
 
   return {
     text: cleanText,
