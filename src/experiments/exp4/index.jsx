@@ -83,7 +83,7 @@ export default function Experiment4({ onBack, onOpenProfile }) {
       recordCertificate(4, {
         studentName: studentInfo.name,
         studentId: studentInfo.studentId,
-        score: quizScore ?? 8,
+        score: quizScore ?? 0,
         total: 10,
         issuedAt: new Date().toISOString()
       });

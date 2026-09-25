@@ -14,7 +14,7 @@ import {
   Play,
   RotateCcw
 } from 'lucide-react';
-import { ExperimentNavbar } from '../components/common';
+import { ExperimentNavbar, UnifiedQuizSection } from '../components/common';
 import { EXPERIMENTS_LIST } from '../data/experimentsData';
 import { useAuth } from '../context/AuthContext';
 
@@ -285,26 +285,79 @@ export default function ExperimentTemplate({ expNumber, onBack, children, onOpen
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <HelpCircle className="w-5 h-5 text-rose-600" />
-                  <h3 className="text-base font-bold text-slate-900">
-                    Concept Assessment: Experiment {expNumber}
-                  </h3>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Verify theoretical comprehension for {experiment.title}. Questions can be defined in{' '}
-                  <code className="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-indigo-600">
-                    src/experiments/exp{expNumber}/
-                  </code>
-                  .
-                </p>
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
-                  <p className="font-semibold text-slate-800 mb-1">Sample Quiz Assessment Template</p>
-                  <p>1. What are the primary trade-offs addressed in {experiment.shortTitle}?</p>
-                  <p className="text-slate-400 mt-2 italic">Assessment questions configured and ready for authoring.</p>
-                </div>
+                <UnifiedQuizSection
+                  expNumber={expNumber}
+                  expTitle={experiment.title}
+                  rawQuestions={experiment.quizQuestions || [
+                    {
+                      id: 1,
+                      question: 'What is Named Entity Recognition (NER) primarily used for in Knowledge Graph construction?',
+                      options: [
+                        'Detecting and classifying mentions of rigid designators (people, places, organizations) in text',
+                        'Compressing inverted indexes into bitmap vectors',
+                        'Calculating Cosine Similarity between documents',
+                        'Tokenizing audio waveforms into acoustic spectrograms'
+                      ],
+                      answer: 0,
+                      explanation: 'NER locates spans of unstructured text and classifies them into predefined semantic categories, serving as candidate entity nodes in a Knowledge Graph.'
+                    },
+                    {
+                      id: 2,
+                      question: 'In BIO tagging schemes used for Sequence Tagging, what does the "I" prefix designate?',
+                      options: [
+                        'Initial token of an entity',
+                        'Inside an ongoing entity mention',
+                        'Ignored word not part of an entity',
+                        'Inverse document frequency'
+                      ],
+                      answer: 1,
+                      explanation: 'In BIO format, B stands for Beginning of an entity, I stands for Inside (continuation) of the entity, and O stands for Outside.'
+                    },
+                    {
+                      id: 3,
+                      question: 'Why is Entity Linking (Disambiguation) essential after Entity Recognition?',
+                      options: [
+                        'To format entities into JSON files',
+                        'To map ambiguous textual mentions (e.g. "Apple" the company vs "apple" the fruit) to canonical KG node IDs',
+                        'To delete all entities longer than 10 characters',
+                        'To perform stem truncation via the Porter stemmer'
+                      ],
+                      answer: 1,
+                      explanation: 'Entity Linking resolves polysemy and homonyms by anchoring surface mentions to unambiguous canonical entries in the knowledge base.'
+                    },
+                    {
+                      id: 4,
+                      question: 'Which neural architecture is commonly used for contextual sequence tagging in modern NER pipelines?',
+                      options: [
+                        'Bidirectional LSTM-CRF or Transformer-based token classifiers (e.g. BERT)',
+                        'K-Means Clustering',
+                        'Naive Bayes Classifier',
+                        'Inverted Block Postings Lists'
+                      ],
+                      answer: 0,
+                      explanation: 'BiLSTM-CRF and Transformer encoders (like BERT) encode bidirectional token context and model tag-to-tag transition probabilities effectively.'
+                    },
+                    {
+                      id: 5,
+                      question: 'What is the key evaluation metric for Named Entity Recognition models?',
+                      options: [
+                        'Micro/Macro-averaged Span-level F1-score (Precision & Recall)',
+                        'Mean Reciprocal Rank (MRR)',
+                        'Lossless LZW compression ratio',
+                        'PageRank eigenvalue'
+                      ],
+                      answer: 0,
+                      explanation: 'NER models are evaluated on strict span-level boundary and type matching using Precision, Recall, and the harmonic mean F1-score.'
+                    }
+                  ]}
+                  onNext={() => setActiveTab('report')}
+                  onScoreUpdate={(correct, total) => {
+                    if (recordExpCompleted) {
+                      recordExpCompleted(expNumber, { quizScore: correct, quizTotal: total });
+                    }
+                  }}
+                />
               </motion.div>
             )}
 
