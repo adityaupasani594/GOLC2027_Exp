@@ -298,6 +298,89 @@ RETURN path, [n IN nodes(path) | n.label] AS ChainOfWork;`,
 // -------------------------------------------------------------
 // Dynamic openCypher Query Parsing & Execution Engine
 // -------------------------------------------------------------
+function matchEdgeType(edge, queryType) {
+  if (!queryType) return true;
+  const q = queryType.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const eType = edge.type.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const eLabel = (edge.label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  if (eType === q || eLabel === q) return true;
+
+  // Collaborated with / Co-auth
+  if (['coauth', 'coauthor', 'coauthors', 'collaboratedwith', 'collaborated_with', 'collaborates', 'collab', 'coauthored'].includes(q)) {
+    return eType.includes('collab') || eLabel.includes('coauth');
+  }
+
+  // Authored
+  if (['auth', 'author', 'authored', 'writes', 'writtenby', 'wrote'].includes(q)) {
+    return eType.includes('auth') || eLabel.includes('auth');
+  }
+
+  // Cites
+  if (['cite', 'cites', 'cited', 'citation', 'citations', 'references'].includes(q)) {
+    return eType.includes('cite') || eLabel.includes('cite');
+  }
+
+  // Published in / Venue
+  if (['venue', 'publishedin', 'published_in', 'published', 'publishes', 'invenue'].includes(q)) {
+    return eType.includes('publish') || eLabel.includes('venue');
+  }
+
+  // Works with
+  if (['workswith', 'works_with', 'works', 'colleague', 'collaborator'].includes(q)) {
+    return eType.includes('work') || eLabel.includes('work');
+  }
+
+  // Assigned to / Contributes / Leads
+  if (['assignedto', 'assigned_to', 'contributes', 'leads', 'assigned', 'project'].includes(q)) {
+    return eType.includes('assign') || eLabel.includes('contrib') || eLabel.includes('lead');
+  }
+
+  // Has Skill
+  if (['hasskill', 'has_skill', 'skill', 'skills', 'knows'].includes(q)) {
+    return eType.includes('skill') || eLabel.includes('skill') || eType.includes('know');
+  }
+
+  return eType.includes(q) || eLabel.includes(q) || q.includes(eType) || q.includes(eLabel);
+}
+
+function matchNodeType(node, queryType) {
+  if (!queryType) return true;
+  const q = queryType.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const nType = node.type.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  if (nType === q) return true;
+
+  if (['author', 'researcher', 'scientist', 'prof', 'person', 'engineer', 'user'].includes(q)) {
+    return nType === 'author' || nType === 'person';
+  }
+
+  if (['paper', 'publication', 'article', 'doc', 'document'].includes(q)) {
+    return nType === 'paper';
+  }
+
+  if (['venue', 'conf', 'conference', 'journal'].includes(q)) {
+    return nType === 'venue';
+  }
+
+  if (['project', 'proj', 'initiative', 'team'].includes(q)) {
+    return nType === 'project';
+  }
+
+  if (['skill', 'technology', 'tech', 'stack'].includes(q)) {
+    return nType === 'skill';
+  }
+
+  return nType.includes(q) || q.includes(nType);
+}
+
+function isSymmetricRel(edge, relType) {
+  const q = (relType || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const eType = edge.type.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const eLabel = (edge.label || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return eType.includes('collab') || eLabel.includes('coauth') || eType.includes('work') || eType.includes('know') || q.includes('collab') || q.includes('coauth') || q.includes('work') || q.includes('know');
+}
+
 function extractReturnColumns(returnClause, sampleRow) {
   if (!returnClause || returnClause.trim() === '*' || returnClause.trim() === '') {
     return sampleRow ? Object.keys(sampleRow) : ['Result'];
@@ -319,8 +402,10 @@ function projectReturnRow(returnClause, aliases, context = {}) {
   const row = {};
   if (!returnClause || returnClause.trim() === '*' || returnClause.trim() === '') {
     Object.entries(aliases).forEach(([k, v]) => {
-      if (v && v.label) {
-        row[k] = v.label;
+      if (v && typeof v === 'object') {
+        row[k] = v.label || v.name || v.id;
+      } else if (v !== undefined) {
+        row[k] = v;
       }
     });
     return Object.keys(row).length > 0 ? row : { Match: 'Found' };
@@ -379,7 +464,7 @@ function projectReturnRow(returnClause, aliases, context = {}) {
     const obj = aliases[expr] || aliases[expr.toLowerCase()];
     if (obj) {
       if (typeof obj === 'object') {
-        row[colName] = obj.label || obj.name || obj.type || obj.id || JSON.stringify(obj);
+        row[colName] = obj.label || obj.name || obj.title || obj.type || obj.id || JSON.stringify(obj);
       } else {
         row[colName] = obj;
       }
@@ -390,6 +475,44 @@ function projectReturnRow(returnClause, aliases, context = {}) {
   });
 
   return row;
+}
+
+function evaluateCondition(nodeOrPair, conditionStr, aliases = {}, graph = { edges: [] }) {
+  if (!conditionStr) return true;
+  
+  // Special check for NOT (a)-...-(b)
+  const notPatternMatch = conditionStr.match(/NOT\s*[\(\[]\s*([a-zA-Z0-9_]+)\s*[\)\]]\s*-\s*\[.*?\]\s*-\s*[\(\[]\s*([a-zA-Z0-9_]+)\s*[\)\]]/i);
+  if (notPatternMatch) {
+    const v1 = notPatternMatch[1];
+    const v2 = notPatternMatch[2];
+    const obj1 = aliases[v1] || aliases[v1.toLowerCase()];
+    const obj2 = aliases[v2] || aliases[v2.toLowerCase()];
+    if (obj1 && obj2 && graph.edges) {
+      const hasDirectEdge = graph.edges.some(e => 
+        (e.source === obj1.id && e.target === obj2.id) || 
+        (e.source === obj2.id && e.target === obj1.id)
+      );
+      if (hasDirectEdge) return false;
+    }
+  }
+
+  const cleanCond = conditionStr.replace(/NOT\s*[\(\[][^)]*?[\)\]]\s*-\s*\[.*?\]\s*-\s*[\(\[][^)]*?[\)\]]/gi, 'true');
+
+  const evalStr = cleanCond.replace(/([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/g, (m, varName, propName) => {
+    const obj = aliases[varName] || aliases[varName.toLowerCase()] || (nodeOrPair && nodeOrPair.id ? nodeOrPair : null);
+    if (obj && obj[propName] !== undefined) {
+      const val = obj[propName];
+      return typeof val === 'string' ? JSON.stringify(val) : val;
+    }
+    return 'null';
+  }).replace(/<>/g, '!==').replace(/=(?!=)/g, '===').replace(/AND/gi, '&&').replace(/OR/gi, '||');
+
+  try {
+    const fn = new Function(...Object.keys(aliases), `return Boolean(${evalStr});`);
+    return fn(...Object.values(aliases));
+  } catch {
+    return true;
+  }
 }
 
 function handleAggregation(rawRows, returnClause, withClause) {
@@ -407,15 +530,33 @@ function handleAggregation(rawRows, returnClause, withClause) {
     const count = rows.length;
     const firstRow = rows[0];
     const item = { ...firstRow };
+
+    // count() handling
     if (returnClause.toLowerCase().includes('count(') || withClause?.toLowerCase().includes('count(')) {
       item.paperCount = count;
       item.count = count;
+      const countAsMatch = returnClause.match(/count\(.*?\)\s+AS\s+([a-zA-Z0-9_]+)/i) || (withClause && withClause.match(/count\(.*?\)\s+AS\s+([a-zA-Z0-9_]+)/i));
+      if (countAsMatch) {
+        item[countAsMatch[1]] = count;
+      }
     }
+
+    // collect() handling
     if (returnClause.toLowerCase().includes('collect(') || withClause?.toLowerCase().includes('collect(')) {
-      const colValues = rows.map(r => r[Object.keys(r)[1]] || Object.values(r)[1]).filter(Boolean);
+      const collectExprMatch = returnClause.match(/collect\((?:[a-zA-Z0-9_]+\.)?([a-zA-Z0-9_]+)\)/i) || (withClause && withClause.match(/collect\((?:[a-zA-Z0-9_]+\.)?([a-zA-Z0-9_]+)\)/i));
+      const targetProp = collectExprMatch ? collectExprMatch[1] : null;
+      const colValues = rows.map(r => {
+        if (targetProp && r[targetProp] !== undefined) return r[targetProp];
+        return r[Object.keys(r)[1]] || Object.values(r)[1];
+      }).filter(Boolean);
       item.publishedPapers = JSON.stringify(colValues);
       item.collected = JSON.stringify(colValues);
+      const collectAsMatch = returnClause.match(/collect\(.*?\)\s+AS\s+([a-zA-Z0-9_]+)/i) || (withClause && withClause.match(/collect\(.*?\)\s+AS\s+([a-zA-Z0-9_]+)/i));
+      if (collectAsMatch) {
+        item[collectAsMatch[1]] = JSON.stringify(colValues);
+      }
     }
+
     aggRows.push(item);
   });
 
@@ -514,30 +655,9 @@ function executeCypherQuery(queryStr, graph, presets = []) {
     // Strip leading path variable assignments like "path = ..."
     matchClause = matchClause.replace(/^[a-zA-Z0-9_]+\s*=\s*/i, '').trim();
 
-    const evaluateCondition = (nodeOrPair, conditionStr, aliases = {}) => {
-      if (!conditionStr) return true;
-      if (conditionStr.toUpperCase().includes('NOT') && conditionStr.includes('-[')) {
-        return true; 
-      }
-      
-      const evalStr = conditionStr.replace(/([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/g, (m, varName, propName) => {
-        const obj = aliases[varName] || aliases[varName.toLowerCase()] || (nodeOrPair.id ? nodeOrPair : null);
-        if (obj && obj[propName] !== undefined) {
-          const val = obj[propName];
-          return typeof val === 'string' ? JSON.stringify(val) : val;
-        }
-        return 'null';
-      }).replace(/<>/g, '!==').replace(/=(?!=)/g, '===').replace(/AND/gi, '&&').replace(/OR/gi, '||');
-
-      try {
-        const fn = new Function(...Object.keys(aliases), `return Boolean(${evalStr});`);
-        return fn(...Object.values(aliases));
-      } catch {
-        return true;
-      }
-    };
-
+    // ---------------------------------------------------------
     // Case A: ShortestPath query
+    // ---------------------------------------------------------
     if (/shortestPath/i.test(matchClause)) {
       const allIds = [...matchClause.matchAll(/id\s*:\s*['"]([^'"]+)['"]/gi)].map(m => m[1]);
       const startId = allIds[0] || (graph.id === 'academic' ? 'A4' : 'E1');
@@ -589,14 +709,25 @@ function executeCypherQuery(queryStr, graph, presets = []) {
         const targetNode = pathNodes[pathNodes.length - 1];
         const bridgeStr = pathNodes.map(n => n.label).join(' ➔ ');
 
+        const sampleAliases = {
+          start: startNode,
+          target: targetNode,
+          p: { length: foundPath.length - 1, nodes: pathNodes }
+        };
+
+        const row = projectReturnRow(returnClause, sampleAliases, { pathNodes, hopCount: foundPath.length - 1 });
+        if (!returnClause || returnClause === '*' || Object.keys(row).length === 0) {
+          row.StartEntity = `${startNode?.label} (${startNode?.id})`;
+          row.TargetEntity = `${targetNode?.label} (${targetNode?.id})`;
+          row.HopDistance = `${foundPath.length - 1} Hops`;
+          row.BridgePathSequence = bridgeStr;
+        }
+
+        const cols = extractReturnColumns(returnClause, row);
+
         return {
-          columns: ['StartEntity', 'TargetEntity', 'HopDistance', 'BridgePathSequence'],
-          results: [{
-            StartEntity: `${startNode?.label} (${startNode?.id})`,
-            TargetEntity: `${targetNode?.label} (${targetNode?.id})`,
-            HopDistance: `${foundPath.length - 1} Hops`,
-            BridgePathSequence: bridgeStr
-          }],
+          columns: cols,
+          results: [row],
           targetNodes: foundPath,
           targetEdges: pathEdges,
           hops,
@@ -606,15 +737,133 @@ function executeCypherQuery(queryStr, graph, presets = []) {
       }
     }
 
-    // Case B & D: Universal 2-Node 1-Edge / Multi-Hop Matcher
-    // Supports:
-    // (p1:Paper) - [r:Cites] -> [p2:Paper]
-    // (p1:Paper)-[:CITES*1..3]->(p2:Paper)
-    // [a:Author] - [:AUTHORED] -> [p:Paper]
-    // (a) - [r] -> (b)
-    // (a) --> (b)
-    // (a) - (b)
-    const relRegex = /[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\s*[\)\]]\s*(<)?\s*-\s*(?:\[\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\*(\d+)?(?:\.\.(\d+)?)?)?\s*(?:\{[^}]*\})?\s*\])?\s*-\s*(>)?\s*[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\s*[\)\]]/i;
+    // ---------------------------------------------------------
+    // Case B: 3-Node / 2-Hop Motif Matcher (e.g. Triads, Chains)
+    // IMPORTANT: Evaluated BEFORE 2-Node Matcher to avoid partial prefix matching!
+    // ---------------------------------------------------------
+    const threeNodeRegex = /[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\s*[\)\]]\s*(<)?\s*-+\s*(?:\[\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{[^}]*\})?\s*\])?\s*-+\s*(>)?\s*[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\s*[\)\]]\s*(<)?\s*-+\s*(?:\[\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{[^}]*\})?\s*\])?\s*-+\s*(>)?\s*[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\s*[\)\]]/i;
+    const threeNodeMatch = matchClause.match(threeNodeRegex);
+
+    if (threeNodeMatch) {
+      const n1Var = threeNodeMatch[1] || 'a1';
+      const n1Type = threeNodeMatch[2];
+      const e1Left = threeNodeMatch[4];
+      const e1Var = threeNodeMatch[5] || 'r1';
+      const e1Type = threeNodeMatch[6];
+      const e1Right = threeNodeMatch[7];
+      const n2Var = threeNodeMatch[8] || 'a2';
+      const n2Type = threeNodeMatch[9];
+      const e2Left = threeNodeMatch[11];
+      const e2Var = threeNodeMatch[12] || 'r2';
+      const e2Type = threeNodeMatch[13];
+      const e2Right = threeNodeMatch[14];
+      const n3Var = threeNodeMatch[15] || 'a3';
+      const n3Type = threeNodeMatch[16];
+
+      const e1Dir = (e1Right === '>' && !e1Left) ? 'forward' : (e1Left === '<' && !e1Right) ? 'backward' : 'undirected';
+      const e2Dir = (e2Right === '>' && !e2Left) ? 'forward' : (e2Left === '<' && !e2Right) ? 'backward' : 'undirected';
+
+      const matchedRows = [];
+      const targetNodes = new Set();
+      const targetEdges = new Set();
+      const hiddenLinks = [];
+      const hops = [];
+
+      const n1Candidates = graph.nodes.filter(n => !n1Type || matchNodeType(n, n1Type));
+
+      n1Candidates.forEach(n1 => {
+        const e1Candidates = graph.edges.filter(e => {
+          if (!matchEdgeType(e, e1Type)) return false;
+          const isSym = isSymmetricRel(e, e1Type);
+          if (e1Dir === 'forward' && !isSym) return e.source === n1.id;
+          if (e1Dir === 'backward' && !isSym) return e.target === n1.id;
+          return e.source === n1.id || e.target === n1.id;
+        });
+
+        e1Candidates.forEach(e1 => {
+          const n2Id = e1.source === n1.id ? e1.target : e1.source;
+          const n2 = graph.nodes.find(n => n.id === n2Id);
+          if (!n2 || (n2Type && !matchNodeType(n2, n2Type))) return;
+
+          const e2Candidates = graph.edges.filter(e => {
+            if (e.id === e1.id) return false;
+            if (!matchEdgeType(e, e2Type)) return false;
+            const isSym = isSymmetricRel(e, e2Type);
+            if (e2Dir === 'forward' && !isSym) return e.source === n2.id;
+            if (e2Dir === 'backward' && !isSym) return e.target === n2.id;
+            return e.source === n2.id || e.target === n2.id;
+          });
+
+          e2Candidates.forEach(e2 => {
+            const n3Id = e2.source === n2.id ? e2.target : e2.source;
+            if (n3Id === n1.id) return;
+            const n3 = graph.nodes.find(n => n.id === n3Id);
+            if (!n3 || (n3Type && !matchNodeType(n3, n3Type))) return;
+
+            const aliases = {
+              [n1Var]: n1,
+              [n1Var.toLowerCase()]: n1,
+              [e1Var]: e1,
+              [e1Var.toLowerCase()]: e1,
+              [n2Var]: n2,
+              [n2Var.toLowerCase()]: n2,
+              [e2Var]: e2,
+              [e2Var.toLowerCase()]: e2,
+              [n3Var]: n3,
+              [n3Var.toLowerCase()]: n3
+            };
+
+            if (whereClause && !evaluateCondition(null, whereClause, aliases, graph)) return;
+
+            targetNodes.add(n1.id);
+            targetNodes.add(n2.id);
+            targetNodes.add(n3.id);
+            targetEdges.add(e1.id);
+            targetEdges.add(e2.id);
+
+            const directLink = graph.edges.find(e => (e.source === n1.id && e.target === n3.id) || (e.source === n3.id && e.target === n1.id));
+            if (!directLink) {
+              hiddenLinks.push({
+                source: n1.id,
+                target: n3.id,
+                label: `Hidden Triad Link (via ${n2.id})`,
+                reason: `Shared contact: ${n2.label}`
+              });
+            }
+
+            const row = projectReturnRow(returnClause, aliases, { pathNodes: [n1, n2, n3], hopCount: 2 });
+            matchedRows.push(row);
+
+            if (hops.length < 5) {
+              hops.push({
+                step: hops.length + 1,
+                activeNodes: [n1.id, n2.id, n3.id],
+                activeEdges: [e1.id, e2.id],
+                label: `Motif ${hops.length + 1}: ${n1.label} ➔ ${n2.label} ➔ ${n3.label}`
+              });
+            }
+          });
+        });
+      });
+
+      const cols = extractReturnColumns(returnClause, matchedRows[0]);
+      const sortedRows = applySortingAndLimit(matchedRows, orderByClause, limitVal);
+
+      return {
+        columns: cols,
+        results: sortedRows,
+        targetNodes: Array.from(targetNodes),
+        targetEdges: Array.from(targetEdges),
+        hops,
+        hiddenLinks,
+        error: null
+      };
+    }
+
+    // ---------------------------------------------------------
+    // Case C: Universal 2-Node 1-Edge / Multi-Hop Matcher
+    // ---------------------------------------------------------
+    const relRegex = /[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\s*[\)\]]\s*(<)?\s*-+\s*(?:\[\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\*(\d+)?(?:\.\.(\d+)?)?)?\s*(?:\{[^}]*\})?\s*\])?\s*-+\s*(>)?\s*[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\s*[\)\]]/i;
     const relMatch = matchClause.match(relRegex);
 
     if (relMatch) {
@@ -651,7 +900,7 @@ function executeCypherQuery(queryStr, graph, presets = []) {
 
         const startCandidates = graph.nodes.filter(n => {
           if (startId && n.id !== startId) return false;
-          if (srcType && n.type.toLowerCase() !== srcType.toLowerCase()) return false;
+          if (srcType && !matchNodeType(n, srcType)) return false;
           return true;
         });
 
@@ -669,9 +918,10 @@ function executeCypherQuery(queryStr, graph, presets = []) {
             if (depth >= actualMaxHop) continue;
 
             const candidateEdges = graph.edges.filter(e => {
-              if (relType && e.type.toLowerCase() !== relType.toLowerCase()) return false;
-              if (isDirected === 'forward') return e.source === curr.id;
-              if (isDirected === 'backward') return e.target === curr.id;
+              if (!matchEdgeType(e, relType)) return false;
+              const isSym = isSymmetricRel(e, relType);
+              if (isDirected === 'forward' && !isSym) return e.source === curr.id;
+              if (isDirected === 'backward' && !isSym) return e.target === curr.id;
               return e.source === curr.id || e.target === curr.id;
             });
 
@@ -688,7 +938,7 @@ function executeCypherQuery(queryStr, graph, presets = []) {
               allTargetNodes.add(nextNode.id);
               allTargetEdges.add(edge.id);
 
-              if (nextDepth >= actualMinHop && (!targetId || nextNode.id === targetId) && (!tgtType || nextNode.type.toLowerCase() === tgtType.toLowerCase())) {
+              if (nextDepth >= actualMinHop && (!targetId || nextNode.id === targetId) && (!tgtType || matchNodeType(nextNode, tgtType))) {
                 const aliases = {
                   [srcVar]: startNode,
                   [srcVar.toLowerCase()]: startNode,
@@ -699,7 +949,6 @@ function executeCypherQuery(queryStr, graph, presets = []) {
                 };
 
                 const row = projectReturnRow(returnClause, aliases, { pathNodes: newPath, hopCount: nextDepth, edge });
-                // Fallback default properties if returnClause was general
                 if (!returnClause || returnClause === '*') {
                   row.Source = startNode.label;
                   row.HopDistance = `${nextDepth} Hop${nextDepth > 1 ? 's' : ''}`;
@@ -744,13 +993,21 @@ function executeCypherQuery(queryStr, graph, presets = []) {
       const hops = [];
 
       for (const edge of graph.edges) {
-        if (relType && edge.type.toLowerCase() !== relType.toLowerCase()) continue;
+        if (!matchEdgeType(edge, relType)) continue;
 
+        const isSym = isSymmetricRel(edge, relType);
         let srcCandidates = [];
+
         if (isDirected === 'forward') {
           srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.source), tgt: graph.nodes.find(n => n.id === edge.target) });
+          if (isSym) {
+            srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.target), tgt: graph.nodes.find(n => n.id === edge.source) });
+          }
         } else if (isDirected === 'backward') {
           srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.target), tgt: graph.nodes.find(n => n.id === edge.source) });
+          if (isSym) {
+            srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.source), tgt: graph.nodes.find(n => n.id === edge.target) });
+          }
         } else {
           srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.source), tgt: graph.nodes.find(n => n.id === edge.target) });
           srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.target), tgt: graph.nodes.find(n => n.id === edge.source) });
@@ -758,8 +1015,8 @@ function executeCypherQuery(queryStr, graph, presets = []) {
 
         for (const { src, tgt } of srcCandidates) {
           if (!src || !tgt) continue;
-          if (srcType && src.type.toLowerCase() !== srcType.toLowerCase()) continue;
-          if (tgtType && tgt.type.toLowerCase() !== tgtType.toLowerCase()) continue;
+          if (srcType && !matchNodeType(src, srcType)) continue;
+          if (tgtType && !matchNodeType(tgt, tgtType)) continue;
           if (startId && src.id !== startId) continue;
           if (targetId && tgt.id !== targetId) continue;
 
@@ -772,7 +1029,7 @@ function executeCypherQuery(queryStr, graph, presets = []) {
             [relVar.toLowerCase()]: edge
           };
 
-          if (whereClause && !evaluateCondition(src, whereClause, aliases)) continue;
+          if (whereClause && !evaluateCondition(src, whereClause, aliases, graph)) continue;
 
           targetNodes.add(src.id);
           targetNodes.add(tgt.id);
@@ -794,9 +1051,14 @@ function executeCypherQuery(queryStr, graph, presets = []) {
 
       if (withClause || returnClause.toLowerCase().includes('count(') || returnClause.toLowerCase().includes('collect(')) {
         const aggregated = handleAggregation(matchedRows, returnClause, withClause);
+        let finalResults = aggregated.results;
+        if (whereClause) {
+          finalResults = finalResults.filter(row => evaluateCondition(row, whereClause, row, graph));
+        }
+        finalResults = applySortingAndLimit(finalResults, orderByClause, limitVal);
         return {
           columns: aggregated.columns,
-          results: aggregated.results,
+          results: finalResults,
           targetNodes: Array.from(targetNodes),
           targetEdges: Array.from(targetEdges),
           hops,
@@ -819,97 +1081,26 @@ function executeCypherQuery(queryStr, graph, presets = []) {
       };
     }
 
-    // Case C: Triadic Closure / 2-hop motif pattern
-    // (a1:Author)-[:COLLABORATED_WITH]-(a2:Author)-[:COLLABORATED_WITH]-(a3:Author)
-    const triadRegex = /[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?\s*[\)\]]\s*-\s*\[:?([a-zA-Z0-9_]*)\]\s*-\s*[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?\s*[\)\]]\s*-\s*\[:?([a-zA-Z0-9_]*)\]\s*-\s*[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?\s*[\)\]]/i;
-    const triadMatch = matchClause.match(triadRegex);
-    if (triadMatch) {
-      const type1 = triadMatch[2] || '';
-      const type2 = triadMatch[5] || '';
-      const type3 = triadMatch[8] || '';
-      const rel1 = triadMatch[3] || '';
-      const rel2 = triadMatch[6] || '';
-
-      const matchedRows = [];
-      const targetNodes = new Set();
-      const targetEdges = new Set();
-      const hiddenLinks = [];
-      const hops = [];
-
-      const authors = graph.nodes.filter(n => !type1 || n.type.toLowerCase() === type1.toLowerCase());
-
-      authors.forEach(a1 => {
-        const a1Edges = graph.edges.filter(e => (!rel1 || e.type.toLowerCase() === rel1.toLowerCase()) && (e.source === a1.id || e.target === a1.id));
-        a1Edges.forEach(e1 => {
-          const a2Id = e1.source === a1.id ? e1.target : e1.source;
-          const a2 = graph.nodes.find(n => n.id === a2Id);
-          if (!a2 || (type2 && a2.type.toLowerCase() !== type2.toLowerCase())) return;
-
-          const a2Edges = graph.edges.filter(e => (!rel2 || e.type.toLowerCase() === rel2.toLowerCase()) && (e.source === a2.id || e.target === a2.id) && e.id !== e1.id);
-          a2Edges.forEach(e2 => {
-            const a3Id = e2.source === a2.id ? e2.target : e2.source;
-            if (a3Id === a1.id || a1.id >= a3Id) return;
-            const a3 = graph.nodes.find(n => n.id === a3Id);
-            if (!a3 || (type3 && a3.type.toLowerCase() !== type3.toLowerCase())) return;
-
-            const directLink = graph.edges.find(e => (e.source === a1.id && e.target === a3.id) || (e.source === a3.id && e.target === a1.id));
-            if (!directLink) {
-              targetNodes.add(a1.id);
-              targetNodes.add(a2.id);
-              targetNodes.add(a3.id);
-              targetEdges.add(e1.id);
-              targetEdges.add(e2.id);
-
-              matchedRows.push({
-                Researcher_A: `${a1.label} (${a1.domain || a1.dept || a1.id})`,
-                BridgeAuthor: `${a2.label} (${a2.domain || a2.dept || a2.id})`,
-                PotentialPartner: `${a3.label} (${a3.domain || a3.dept || a3.id})`,
-                AffinityScore: `${Math.round(75 + (a1.hIndex || 20) % 20)}% High`,
-                PatternType: 'Open Triadic Closure'
-              });
-
-              hiddenLinks.push({
-                source: a1.id,
-                target: a3.id,
-                label: `Hidden Triad Link (via ${a2.id})`,
-                reason: `Shared contact: ${a2.label}`
-              });
-
-              if (hops.length < 5) {
-                hops.push({
-                  step: hops.length + 1,
-                  activeNodes: [a1.id, a2.id, a3.id],
-                  activeEdges: [e1.id, e2.id],
-                  label: `Triad ${hops.length + 1}: ${a1.label} ➔ ${a2.label} ➔ ${a3.label}`
-                });
-              }
-            }
-          });
-        });
-      });
-
-      const cols = extractReturnColumns(returnClause, matchedRows[0]) || ['Researcher_A', 'BridgeAuthor', 'PotentialPartner', 'AffinityScore', 'PatternType'];
-      return {
-        columns: cols,
-        results: matchedRows,
-        targetNodes: Array.from(targetNodes),
-        targetEdges: Array.from(targetEdges),
-        hops,
-        hiddenLinks,
-        error: null
-      };
-    }
-
-    // Case E: Single Node Scans MATCH (n:Type) or MATCH (n)
+    // ---------------------------------------------------------
+    // Case D: Single Node Scans MATCH (n:Type) or MATCH (n)
+    // ---------------------------------------------------------
     const singleNodeMatch = matchClause.match(/[\(\[]\s*([a-zA-Z0-9_]*)(?:\s*:\s*([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\s*[\)\]]/i);
     if (singleNodeMatch) {
       const varName = singleNodeMatch[1] || 'n';
       const nodeType = singleNodeMatch[2];
+      const nodeProps = singleNodeMatch[3];
+
+      let targetId = null;
+      if (nodeProps) {
+        const idM = nodeProps.match(/id\s*:\s*['"]([^'"]+)['"]/i);
+        if (idM) targetId = idM[1];
+      }
 
       const matchingNodes = graph.nodes.filter(n => {
-        if (nodeType && n.type.toLowerCase() !== nodeType.toLowerCase()) return false;
+        if (nodeType && !matchNodeType(n, nodeType)) return false;
+        if (targetId && n.id !== targetId) return false;
         const aliases = { [varName]: n, [varName.toLowerCase()]: n, n };
-        if (whereClause && !evaluateCondition(n, whereClause, aliases)) return false;
+        if (whereClause && !evaluateCondition(n, whereClause, aliases, graph)) return false;
         return true;
       });
 
