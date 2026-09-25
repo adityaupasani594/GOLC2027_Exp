@@ -7,5 +7,6 @@ export { default as ExperimentLikeButton } from './ExperimentLikeButton';
 export { default as UnifiedQuizSection } from './UnifiedQuizSection';
 export { default as UnifiedCertificateSection } from './UnifiedCertificateSection';
 export { default as UnifiedReportSection } from './UnifiedReportSection';
+export { default as ExperimentContributors } from './ExperimentContributors';
 export { useMathJax, MathJaxDiv, MathJaxSpan } from './useMathJax';
 

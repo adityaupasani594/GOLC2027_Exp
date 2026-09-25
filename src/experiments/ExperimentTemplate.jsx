@@ -14,7 +14,7 @@ import {
   Play,
   RotateCcw
 } from 'lucide-react';
-import { ExperimentNavbar, UnifiedQuizSection } from '../components/common';
+import { ExperimentNavbar, UnifiedQuizSection, ExperimentContributors } from '../components/common';
 import { EXPERIMENTS_LIST } from '../data/experimentsData';
 import { useAuth } from '../context/AuthContext';
 
@@ -183,6 +183,9 @@ export default function ExperimentTemplate({ expNumber, onBack, children, onOpen
                     ))}
                   </div>
                 </div>
+
+                {/* Contributors */}
+                <ExperimentContributors expNumber={expNumber} />
 
                 {/* CTA to start lab */}
                 <div className="text-center pt-2">

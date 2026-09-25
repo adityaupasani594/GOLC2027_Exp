@@ -1,3 +1,4 @@
+import { ExperimentContributors } from '../../../components/common';
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -431,6 +432,9 @@ export default function TheorySection({ onGoToLab, onNext }) {
           ))}
         </div>
       </div>
+    
+      {/* ── Experiment Contributors ── */}
+      <ExperimentContributors expNumber={15} />
     </div>
   );
 }

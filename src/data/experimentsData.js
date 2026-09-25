@@ -1,3 +1,5 @@
+import { CONTRIBUTORS_MAP } from './contributorsData';
+
 // ─── Experiments Master Dataset (15 Labs - Logically Sequenced) ────────────
 
 export const EXPERIMENT_TRACKS = [
@@ -381,4 +383,7 @@ export const EXPERIMENTS_LIST = [
       'Generate an official verified laboratory certificate and comprehensive laboratory report.',
     ],
   },
-];
+].map(exp => ({
+  ...exp,
+  contributors: CONTRIBUTORS_MAP[exp.number] || []
+}));

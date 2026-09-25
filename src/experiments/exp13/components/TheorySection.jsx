@@ -1,3 +1,4 @@
+import { ExperimentContributors } from '../../../components/common';
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -254,6 +255,9 @@ ORDER BY paperCount DESC;`}
           ))}
         </div>
       </div>
+    
+      {/* ── Experiment Contributors ── */}
+      <ExperimentContributors expNumber={13} />
     </div>
   );
 }

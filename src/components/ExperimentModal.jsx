@@ -11,7 +11,8 @@ import {
   Sparkles,
   ArrowRight,
   GitFork,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Users
 } from 'lucide-react';
 import { EXPERIMENTS_LIST } from '../data/experimentsData';
 import { ExperimentLikeButton } from './common';
@@ -198,6 +199,28 @@ export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchE
                 ))}
               </div>
             </div>
+
+            {/* Experiment Contributors */}
+            {experiment.contributors && experiment.contributors.length > 0 && (
+              <div className="pt-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-4 h-4 text-indigo-600" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Contributors ({experiment.contributors.length})
+                  </h4>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {experiment.contributors.map((name, i) => (
+                    <span
+                      key={i}
+                      className="px-2.5 py-1 rounded-lg text-xs font-medium bg-indigo-50/80 text-indigo-700 border border-indigo-100/80"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer Actions */}

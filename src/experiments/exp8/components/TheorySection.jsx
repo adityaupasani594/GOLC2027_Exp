@@ -1,3 +1,4 @@
+import { ExperimentContributors } from '../../../components/common';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -412,6 +413,9 @@ export default function TheorySection({ onProceedToLab }) {
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
+    
+      {/* ── Experiment Contributors ── */}
+      <ExperimentContributors expNumber={8} />
     </div>
   );
 }
