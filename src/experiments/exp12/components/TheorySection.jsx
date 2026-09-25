@@ -1,347 +1,291 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 import {
-  BookOpen, ChevronDown, ChevronUp, FlaskConical,
-  Brain, Target, Layers, GitMerge, Search, Cpu, Zap,
-  CheckCircle2, ArrowRight, Sparkles, Network, Database,
-  ArrowRightLeft, Route, Share2, Compass, HelpCircle
+  BookOpen, Sparkles, CheckCircle2, ArrowRight,
+  Network, Route, Database, Layers, ExternalLink, HelpCircle
 } from 'lucide-react';
-import { EXPERIMENT_CONFIG, THEORY_CONTENT } from '../graphQueryEngine';
-
-const CONCEPT_MODULES = [
-  {
-    step: 1,
-    title: 'The Property Graph Model',
-    short: 'Graph Architecture',
-    desc: 'Information is represented as entities (nodes) connected by typed, directed relationships, both carrying rich key-value properties.',
-    icon: Network,
-    badge: 'Core Model',
-    color: 'from-blue-500 to-indigo-600',
-    details: [
-      { term: 'Nodes (Vertices)', desc: 'Entities representing people, films, studios, cities. Enclosed in parentheses in queries: (n:Person).' },
-      { term: 'Labels', desc: 'Type categories grouping nodes (:Person, :Movie, :Organization, :City). A node can have multiple labels.' },
-      { term: 'Relationships (Edges)', desc: 'Directed, typed semantic assertions connecting a source to target: -[:ACTED_IN]->.' },
-      { term: 'Properties', desc: 'Key-value maps stored directly on nodes (born: 1964) or edges (role: "Neo").' }
-    ]
-  },
-  {
-    step: 2,
-    title: 'Relational Tables vs. Knowledge Graphs',
-    short: 'The JOIN Bottleneck',
-    desc: 'Connecting items in RDBMS requires multiple foreign-key JOINs. In a Knowledge Graph, relationships are first-class citizens traversed in O(1) index-free time.',
-    icon: Database,
-    badge: 'Architecture',
-    color: 'from-emerald-500 to-teal-600',
-    details: [
-      { term: 'The Problem', desc: 'Streaming recommendations like "Films connected to The Matrix through actors and studios" require 4+ relational JOIN tables.' },
-      { term: 'The Solution', desc: 'A declarative graph pattern walks the entire multi-hop chain in one clean traversal query without joining large tables.' }
-    ]
-  },
-  {
-    step: 3,
-    title: 'Declarative Pattern Matching',
-    short: 'ASCII-Art Syntax',
-    desc: 'Instead of procedural traversal instructions, describe the visual pattern or shape of the subgraph you want the engine to find.',
-    icon: Route,
-    badge: 'Query Grammar',
-    color: 'from-purple-500 to-pink-600',
-    details: [
-      { term: 'MATCH', desc: 'Specifies the structural graph pattern (e.g. (p:Person)-[:DIRECTED]->(m:Movie)).' },
-      { term: 'WHERE', desc: 'Applies boolean filters on node or edge properties (e.g. WHERE p.born > 1970).' },
-      { term: 'RETURN', desc: 'Projects specific entity names, attributes, or aggregates (e.g. RETURN p.name, count(r)).' },
-      { term: 'ORDER BY & LIMIT', desc: 'Sorts results and caps returned rows to prevent unbounded traversals.' }
-    ]
-  },
-  {
-    step: 4,
-    title: 'Multi-Hop & Path Traversals',
-    short: 'Multi-Hop Paths',
-    desc: 'Navigate chains of connections across arbitrary distance to uncover hidden or indirect relationships in the graph.',
-    icon: Share2,
-    badge: 'Advanced Querying',
-    color: 'from-amber-500 to-orange-600',
-    details: [
-      { term: '1-Hop Traversal', desc: 'Inspects direct neighbors: outgoing (->), incoming (<-), or undirected (-).' },
-      { term: 'Variable-Length Paths', desc: 'Uses syntax -[*1..3]- to traverse paths of variable hop counts between entities.' },
-      { term: 'Cycle Prevention', desc: 'Pattern matching guarantees no relationship edge is traversed twice in the same path.' }
-    ]
-  }
-];
 
 export default function TheorySection({ onGoToLab }) {
-  const [activeStep, setActiveStep] = useState(1);
-  const [expandedSection, setExpandedSection] = useState('pipeline');
-  const [glossaryFilter, setGlossaryFilter] = useState('');
+  const objectives = [
+    'Model domain entities and relationships using the declarative Property Graph paradigm.',
+    'Formulate structural ASCII-art pattern matching queries using MATCH, WHERE, and RETURN clauses.',
+    'Execute multi-hop path traversals (e.g. (a)-[:REL*1..3]->(b)) to uncover indirect semantic connections.',
+    'Compute graph aggregations, grouped statistics, and node degree centrality measures.'
+  ];
 
-  const currentModule = CONCEPT_MODULES.find(m => m.step === activeStep) || CONCEPT_MODULES[0];
+  const comparison = [
+    {
+      paradigm: 'Declarative Graph Query (Cypher)',
+      dataModel: 'Labeled Property Graph (LPG)',
+      multiHop: 'Linear cost with local degree (O(k · d)) via index-free adjacency',
+      syntax: 'ASCII-art structural patterns: (a)-[:ACTED_IN]->(m)<-[:DIRECTED]-(d)',
+      bestFor: 'Connected data, recommendation engines, fraud rings, knowledge graphs'
+    },
+    {
+      paradigm: 'Relational SQL (RDBMS)',
+      dataModel: 'Tables, Rows, Foreign Keys, Junction Tables',
+      multiHop: 'Degrades exponentially (O(N^k)) through multi-way table JOINs',
+      syntax: 'Complex nested SELECT ... JOIN ... ON clauses with intermediate tables',
+      bestFor: 'Tabular transactions, double-entry accounting, normalized inventory'
+    },
+    {
+      paradigm: 'Procedural Graph Traversal (Gremlin)',
+      dataModel: 'Property Graph step-by-step vertex pipelines',
+      multiHop: 'Linear step traversal cost',
+      syntax: 'Imperative method chaining: g.V().hasLabel("Person").out("ACTED_IN")',
+      bestFor: 'Custom graph algorithm implementations and low-level step optimization'
+    },
+    {
+      paradigm: 'Semantic Web Query (SPARQL)',
+      dataModel: 'W3C RDF Triples (Subject, Predicate, Object URIs)',
+      multiHop: 'Property paths: ?person :actedIn / :directed ?director',
+      syntax: 'Declarative triple patterns over global URI namespaces',
+      bestFor: 'Open-world linked data and cross-institutional ontology federation'
+    }
+  ];
 
-  const filteredKeyTerms = Object.entries(THEORY_CONTENT.key_terms).filter(([term, def]) => {
-    const q = glossaryFilter.toLowerCase();
-    return term.toLowerCase().includes(q) || def.toLowerCase().includes(q);
-  });
+  const procedureSteps = [
+    'Step 1: Review the theoretical fundamentals of declarative graph pattern matching and index-free adjacency.',
+    'Step 2: Navigate to the Simulation Lab tab in the experiment navigation bar.',
+    'Step 3: Select an educational knowledge graph dataset (Entertainment / Movies, University, Social Network, E-Commerce).',
+    'Step 4: Formulate and execute Cypher queries (MATCH, WHERE, RETURN, ORDER BY, LIMIT) in the query editor.',
+    'Step 5: Inspect the visual graph canvas, filter nodes by label, and verify multi-hop traversal paths.',
+    'Step 6: Compute aggregations (count, average) and record experimental execution metrics into your session log book.',
+    'Step 7: Complete the concept assessment Quiz, review feedback, and generate your verified certificate and lab report.'
+  ];
+
+  const keyTerms = [
+    { term: 'Property Graph Model', def: 'A data model where entities (nodes) and connections (relationships) hold arbitrary typed key-value properties.' },
+    { term: 'ASCII-Art Pattern Matching', def: 'The Cypher syntax convention visualizing nodes as parentheses (n) and directed relationships as arrows -[r]->.' },
+    { term: 'Variable-Length Path', def: 'A query pattern matching traversals over arbitrary depth: (a)-[:KNOWS*1..3]->(b) searches 1 to 3 degrees of separation.' },
+    { term: 'Index-Free Adjacency (IFA)', def: 'Direct pointer linkages between adjacent vertices eliminating secondary index lookups during path traversals.' },
+    { term: 'Directed Typed Edge', def: 'A relationship carrying an immutable semantic name (e.g. [:ACTED_IN]) pointing from a source node to a target node.' },
+    { term: 'Degree Centrality', def: 'The count of relationships incident upon a node, identifying focal hubs or influential entities in the network.' }
+  ];
+
+  const references = [
+    {
+      authors: 'Robinson, I., Webber, J., & Eifrem, E. (2015)',
+      title: 'Graph Databases: New Opportunities for Connected Data (2nd ed.)',
+      details: 'O\'Reilly Media. Chapters 3 & 4: Cypher Query Language and Graph Traversal Patterns.',
+      url: 'https://neo4j.com/graph-databases-book/'
+    },
+    {
+      authors: 'Francis, N., Green, A., Guagliardo, P., et al. (2018)',
+      title: 'Cypher: An Evolving Query Language for Property Graphs',
+      details: 'ACM SIGMOD 2018. Formal specification and semantic foundation of openCypher.',
+      url: 'https://doi.org/10.1145/3183713.3190657'
+    },
+    {
+      authors: 'Hogan, A., Blomqvist, E., Cochez, M., et al. (2021)',
+      title: 'Knowledge Graphs',
+      details: 'ACM Computing Surveys (CSUR), 54(4), 1-37. Querying and reasoning over knowledge graphs.',
+      url: 'https://arxiv.org/abs/2003.02320'
+    }
+  ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
-      {/* Header Banner */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 p-6 sm:p-8 text-white shadow-xl border border-indigo-800/40"
-      >
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              Experiment 12 · Knowledge Graphs &amp; IR
-            </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
-              Query Knowledge Graphs with Pattern-Based Queries
-            </h1>
-            <p className="text-indigo-200/80 text-xs sm:text-sm max-w-2xl">
-              Master the property graph model, declarative structural pattern matching, multi-hop traversals, and aggregation queries over interconnected entities.
-            </p>
-          </div>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 text-slate-800">
+      {/* ── 1. Hero Banner ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm relative overflow-hidden space-y-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/60 text-indigo-700 text-xs font-bold tracking-wide uppercase">
+          <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+          Experiment 12 &bull; Knowledge Graph Querying
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          Query Knowledge Graphs with Pattern-Based Queries
+        </h1>
+        <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-3xl">
+          Master the Property Graph model and declarative pattern matching. Express complex multi-hop relationship traversals using intuitive ASCII-art Cypher patterns, evaluate structural subgraph matches, and compute graph aggregations without the exponential latency penalties of relational multi-way SQL table joins.
+        </p>
 
+        <div className="pt-2 flex flex-wrap items-center gap-3">
           <button
             onClick={onGoToLab}
-            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-xs sm:text-sm shadow-lg shadow-teal-500/25 transition-all flex items-center gap-2 cursor-pointer shrink-0"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-indigo-200 cursor-pointer transition active:scale-95"
           >
-            Launch Simulation Lab
-            <ArrowRight className="w-4 h-4" />
+            Launch Simulation Lab <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-      </motion.div>
-
-      {/* Interactive Concept Stepper */}
-      <div className="rounded-3xl bg-white border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div>
-            <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <Brain className="w-5 h-5 text-indigo-600" />
-              Foundational Concepts Stepper
-            </h2>
-            <p className="text-xs text-slate-500">
-              Select a stage to explore the architectural principles of graph databases and pattern queries.
-            </p>
-          </div>
-          <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 self-start sm:self-auto">
-            Module {activeStep} of {CONCEPT_MODULES.length}
-          </span>
-        </div>
-
-        {/* Step Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {CONCEPT_MODULES.map((m) => {
-            const isActive = m.step === activeStep;
-            const Icon = m.icon;
-            return (
-              <button
-                key={m.step}
-                onClick={() => setActiveStep(m.step)}
-                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col gap-1.5 ${
-                  isActive
-                    ? 'bg-gradient-to-br from-indigo-50 to-purple-50/50 border-indigo-300 shadow-sm ring-2 ring-indigo-500/20'
-                    : 'bg-slate-50/60 border-slate-200/70 hover:bg-slate-100/80 text-slate-600'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-white ${
-                    isActive ? 'bg-indigo-600 shadow-sm' : 'bg-slate-400'
-                  }`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                    isActive ? 'text-indigo-600' : 'text-slate-400'
-                  }`}>
-                    Stage {m.step}
-                  </span>
-                </div>
-                <div className={`text-xs font-bold ${isActive ? 'text-indigo-950 font-black' : 'text-slate-700'}`}>
-                  {m.short}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Active Stage Content Card */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentModule.step}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950 text-white space-y-4 shadow-md border border-indigo-900/60"
-          >
-            <div className="flex items-center justify-between border-b border-indigo-800/50 pb-3">
-              <div className="flex items-center gap-3">
-                <span className="px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 text-[11px] font-bold uppercase tracking-wider border border-indigo-400/30">
-                  {currentModule.badge}
-                </span>
-                <h3 className="text-base sm:text-lg font-bold text-white">
-                  {currentModule.title}
-                </h3>
-              </div>
-            </div>
-
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              {currentModule.desc}
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              {currentModule.details.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="p-3.5 rounded-xl bg-slate-800/80 border border-indigo-500/20 space-y-1"
-                >
-                  <div className="text-xs font-bold text-teal-400 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-                    {item.term}
-                  </div>
-                  <div className="text-xs text-slate-300 leading-relaxed">
-                    {item.desc}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        </AnimatePresence>
       </div>
 
-      {/* Case Study Illustration: StreamPick */}
-      <div className="rounded-3xl bg-white border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-5">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-600">
-            <Compass className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-base sm:text-lg font-black text-slate-900">
-              Case Study: The "What Should I Watch Next?" Problem
-            </h2>
-            <p className="text-xs text-slate-500">
-              How streaming recommendation engines leverage graph pattern queries over isolated SQL tables.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-200/80 space-y-2">
-            <span className="px-2 py-0.5 rounded-full bg-rose-200/60 text-rose-800 font-bold text-[10px] uppercase">
-              Relational Approach (Tables &amp; Foreign Keys)
-            </span>
-            <p className="text-slate-700 leading-relaxed">
-              In a relational database, movie data is fragmented across separate tables: <code className="bg-white px-1.5 py-0.5 rounded border border-rose-200">people</code>, <code className="bg-white px-1.5 py-0.5 rounded border border-rose-200">movies</code>, <code className="bg-white px-1.5 py-0.5 rounded border border-rose-200">studios</code>, and <code className="bg-white px-1.5 py-0.5 rounded border border-rose-200">castings</code>. Finding indirect recommendations requires cascading SQL <code className="font-bold text-rose-700">JOIN</code> statements that degrade rapidly in query performance.
-            </p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-200/80 space-y-2">
-            <span className="px-2 py-0.5 rounded-full bg-teal-200/60 text-teal-800 font-bold text-[10px] uppercase">
-              Knowledge Graph Approach (Index-Free Adjacency)
-            </span>
-            <p className="text-slate-700 leading-relaxed">
-              In the knowledge graph, relationships are native pointers in memory. A single pattern query like <code className="bg-white px-1.5 py-0.5 rounded border border-teal-200 text-teal-900 font-mono">(a:Person)-[:ACTED_IN]-&gt;(m)-[:DISTRIBUTED]&lt;-(s)</code> walks the entire recommendation chain in milliseconds without table scans.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Objectives & 8-Step Procedure Collapsible Accordions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Objectives Card */}
-        <div className="rounded-3xl bg-white border border-slate-200/80 p-6 shadow-sm space-y-4">
-          <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
-            <Target className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Educational Objectives
-            </h3>
-          </div>
-          <div className="space-y-2.5">
-            {EXPERIMENT_CONFIG.objectives.map((obj, i) => (
-              <div key={i} className="flex items-start gap-2.5 text-xs text-slate-700 leading-relaxed">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span>{obj}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 8-Step Procedure Card */}
-        <div className="rounded-3xl bg-white border border-slate-200/80 p-6 shadow-sm space-y-4">
-          <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100">
-            <Layers className="w-5 h-5 text-teal-600" />
-            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Experiment Execution Procedure
-            </h3>
-          </div>
-          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-            {THEORY_CONTENT.procedure.map((step, i) => (
-              <div key={i} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-700 flex items-start gap-2">
-                <span className="w-5 h-5 rounded-full bg-teal-100 text-teal-800 font-bold text-[10px] flex items-center justify-center shrink-0">
-                  {i + 1}
-                </span>
-                <span className="leading-relaxed">{step.replace(/^Step \d+:\s*/, '')}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Interactive Glossary Table */}
-      <div className="rounded-3xl bg-white border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <BookOpen className="w-5 h-5 text-indigo-600" />
-            <div>
-              <h3 className="text-base font-bold text-slate-900">
-                Key Terminology &amp; Graph Semantics
-              </h3>
-              <p className="text-xs text-slate-500">
-                Essential vocabulary for property graphs, traversal patterns, and declarative query clauses.
-              </p>
-            </div>
-          </div>
-
-          <div className="relative w-full sm:w-64">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              value={glossaryFilter}
-              onChange={(e) => setGlossaryFilter(e.target.value)}
-              placeholder="Search terminology..."
-              className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {filteredKeyTerms.map(([term, definition]) => (
-            <div
-              key={term}
-              className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all space-y-1.5"
-            >
-              <div className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
-                {term}
-              </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {definition}
-              </p>
+      {/* ── 2. Learning Objectives ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          Learning Objectives
+        </h2>
+        <div className="grid sm:grid-cols-2 gap-3.5 pt-1">
+          {objectives.map((obj, i) => (
+            <div key={i} className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex items-start gap-3">
+              <span className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">
+                {i + 1}
+              </span>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">{obj}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Bottom CTA */}
-      <div className="text-center pt-2">
-        <button
-          onClick={onGoToLab}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
-        >
-          Proceed to Simulation Lab
-          <ArrowRight className="w-4 h-4" />
-        </button>
+      {/* ── 3. Foundational Theoretical Framework ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-6">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          Foundational Theoretical Framework
+        </h2>
+
+        {/* Declarative Query Model */}
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="p-4 rounded-xl border border-indigo-100 bg-indigo-50/40 space-y-1.5">
+            <h3 className="font-bold text-indigo-950 text-xs sm:text-sm">The Property Graph Paradigm</h3>
+            <p className="text-xs text-indigo-900/80 leading-relaxed">
+              Information is represented as discrete entities (nodes) connected by typed, directed relationships, both carrying arbitrary key-value properties. Relationships are stored as direct physical memory pointers (Index-Free Adjacency).
+            </p>
+          </div>
+          <div className="p-4 rounded-xl border border-violet-100 bg-violet-50/40 space-y-1.5">
+            <h3 className="font-bold text-violet-950 text-xs sm:text-sm">The Relational JOIN Bottleneck</h3>
+            <p className="text-xs text-violet-900/80 leading-relaxed">
+              In relational databases, querying multi-hop entity connections requires expensive Cartesian table joins that degrade exponentially with path length. In graph databases, traversal cost depends solely on local node degree (O(k · d)).
+            </p>
+          </div>
+        </div>
+
+        {/* ASCII-Art Cypher Grammar Reference */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Declarative Cypher Clauses &amp; Visual Syntax
+          </h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              {
+                clause: 'MATCH',
+                role: 'Pattern Specification',
+                example: '(p:Person)-[:ACTED_IN]->(m:Movie)',
+                desc: 'Declares the structural subgraph shape to discover.'
+              },
+              {
+                clause: 'WHERE',
+                role: 'Predicate Filtering',
+                example: 'WHERE m.released > 2000 AND p.born < 1980',
+                desc: 'Applies boolean filters on node and edge attributes.'
+              },
+              {
+                clause: 'RETURN',
+                role: 'Result Projection',
+                example: 'RETURN p.name, count(m) AS filmCount',
+                desc: 'Selects properties, node aliases, or aggregations.'
+              },
+              {
+                clause: 'ORDER BY',
+                role: 'Sorting & Pagination',
+                example: 'ORDER BY filmCount DESC LIMIT 10',
+                desc: 'Sorts ranked records and truncates result sets.'
+              }
+            ].map((c, idx) => (
+              <div key={idx} className="p-3.5 rounded-xl border border-slate-200 bg-white space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs font-mono text-indigo-700">{c.clause}</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">{c.role}</span>
+                </div>
+                <div className="p-2 rounded bg-slate-900 text-teal-300 font-mono text-[10px] truncate">
+                  {c.example}
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed font-sans">{c.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 4. Technical Comparison Matrix ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          Technical Comparison Matrix
+        </h2>
+        <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <table className="w-full text-xs text-left border-collapse">
+            <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+              <tr>
+                <th className="p-2.5">Query Paradigm</th>
+                <th className="p-2.5">Underlying Data Model</th>
+                <th className="p-2.5">Multi-Hop Traversal Complexity</th>
+                <th className="p-2.5">Query Expression Syntax</th>
+                <th className="p-2.5">Optimal Production Fit</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-600">
+              {comparison.map(r => (
+                <tr key={r.paradigm} className="hover:bg-slate-50/50">
+                  <td className="p-2.5 font-bold text-slate-900">{r.paradigm}</td>
+                  <td className="p-2.5">{r.dataModel}</td>
+                  <td className="p-2.5 font-semibold text-indigo-800 bg-indigo-50/40">{r.multiHop}</td>
+                  <td className="p-2.5 font-mono text-[11px] text-slate-700">{r.syntax}</td>
+                  <td className="p-2.5 text-slate-700">{r.bestFor}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── 5. Laboratory Procedure ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          Laboratory Procedure
+        </h2>
+        <div className="space-y-2.5 pt-1">
+          {procedureSteps.map((step, idx) => (
+            <div key={idx} className="p-3.5 rounded-2xl bg-white border border-slate-200/80 shadow-2xs flex items-start gap-3">
+              <span className="w-5 h-5 rounded-full bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">
+                {idx + 1}
+              </span>
+              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-sans">{step}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 6. Key Terminology & Definitions ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          Key Terminology &amp; Definitions
+        </h2>
+        <div className="grid sm:grid-cols-2 gap-3.5 pt-1">
+          {keyTerms.map((item, idx) => (
+            <div key={idx} className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+              <h3 className="text-xs sm:text-sm font-bold text-indigo-900">{item.term}</h3>
+              <p className="text-xs text-slate-600 leading-relaxed font-sans">{item.def}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 7. References & Further Reading ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          References &amp; Further Reading
+        </h2>
+        <div className="space-y-3 pt-1">
+          {references.map((ref, idx) => (
+            <div key={idx} className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="text-xs sm:text-sm font-semibold text-slate-800">
+                {ref.authors} &mdash; <span className="font-bold text-indigo-700">{ref.title}</span>
+              </div>
+              <div className="text-xs text-slate-500 italic">{ref.details}</div>
+              {ref.url && (
+                <div className="text-[11px] text-blue-600 font-mono pt-0.5">
+                  <a href={ref.url} target="_blank" rel="noreferrer" className="hover:underline flex items-center gap-1">
+                    {ref.url} <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

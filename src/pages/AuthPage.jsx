@@ -103,7 +103,7 @@ export default function AuthPage({ initialMode = 'login', onBack, onSuccess, can
         ) : (
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/80 border border-indigo-100/90 text-xs font-semibold text-slate-700 shadow-xs backdrop-blur-md">
             <Lock className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Restricted Academic Lab • Student Authentication Required</span>
+            <span>Student Authentication Required</span>
           </div>
         )}
 
@@ -125,16 +125,6 @@ export default function AuthPage({ initialMode = 'login', onBack, onSuccess, can
           <div className="p-6 sm:p-9 lg:p-10 rounded-3xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-xl shadow-slate-200/60">
             {/* Form Header */}
             <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100">
-                  Student & Researcher Access
-                </span>
-                <div className="flex items-center gap-1 text-[11px] text-slate-500">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Secure 256-bit Lab Session</span>
-                </div>
-              </div>
-
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight">
                 {mode === 'login' ? 'Welcome Back to the Lab' : 'Create Student Lab Account'}
               </h2>

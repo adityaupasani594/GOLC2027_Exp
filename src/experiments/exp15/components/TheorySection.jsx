@@ -1,270 +1,436 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, ChevronDown, Lightbulb, FlaskConical, Search, Brain, GitMerge, Network } from 'lucide-react';
-import { METRICS, RETRIEVAL_SYSTEMS } from '../data/labData';
+import React from 'react';
+import { motion } from 'framer-motion';
+import {
+  BookOpen, ArrowRight, Brain, Search, GitMerge,
+  Network, Layers, ExternalLink, Sparkles
+} from 'lucide-react';
 import { MathJaxDiv, useMathJax } from './useMathJax';
 
-const THEORY_SECTIONS = [
-  {
-    id: 'intro',
-    title: 'What is Information Retrieval?',
-    icon: Search,
-    color: 'indigo',
-    content: `Information Retrieval (IR) is the science of obtaining relevant information from large unstructured collections (documents, web pages, passages) in response to a user's query. A retrieval system must rank candidate documents so that the most relevant appear at the top.
-
-The core challenge is that relevance is subjective — a document is relevant if it satisfies the user's information need, not merely if it contains matching keywords. Modern IR systems must handle vocabulary mismatches, ambiguity, and multi-hop reasoning.`,
-    formulas: [],
-  },
-  {
-    id: 'precision',
-    title: 'Precision@k',
-    icon: Search,
-    color: 'blue',
-    content: `Precision@k measures the fraction of the top-k retrieved documents that are relevant to the query. It captures the idea: "Of all the results I showed the user, how many were actually useful?"
-
-A high Precision@k means the system is accurate — most of what it returns is on-topic. However, it does not account for how many relevant documents were missed.`,
-    formulas: [
-      '$$P@k = \\frac{|\\mathcal{R} \\cap \\mathcal{L}_k|}{k}$$',
-      'where $\\mathcal{R}$ = set of all relevant documents, $\\mathcal{L}_k$ = top-k retrieved list.',
-    ],
-  },
-  {
-    id: 'recall',
-    title: 'Recall@k',
-    icon: Brain,
-    color: 'emerald',
-    content: `Recall@k measures the fraction of all relevant documents in the corpus that appear within the top-k results. It answers: "Of everything relevant that exists, how much did the system find?"
-
-High recall is critical in applications like medical literature search or legal discovery, where missing a relevant document can have serious consequences. Recall often trades off against precision: retrieving more documents increases recall but risks polluting the results with irrelevant ones.`,
-    formulas: [
-      '$$R@k = \\frac{|\\mathcal{R} \\cap \\mathcal{L}_k|}{|\\mathcal{R}|}$$',
-    ],
-  },
-  {
-    id: 'f1',
-    title: 'F1-Score',
-    icon: GitMerge,
-    color: 'violet',
-    content: `The F1-Score is the harmonic mean of Precision and Recall. Because it is a harmonic mean (not arithmetic), it heavily penalises extreme imbalances — a system with P=1 and R=0 yields F1=0, not 0.5.
-
-F1 provides a single summary number for system comparison when both precision and recall matter equally. The generalised $F_\\beta$ version allows weighting recall $\\beta$ times more than precision.`,
-    formulas: [
-      '$$F_1 = 2 \\cdot \\frac{P \\cdot R}{P + R} = \\frac{2 \\cdot TP}{2 \\cdot TP + FP + FN}$$',
-      '$$F_\\beta = (1+\\beta^2) \\cdot \\frac{P \\cdot R}{\\beta^2 \\cdot P + R}$$',
-    ],
-  },
-  {
-    id: 'mrr',
-    title: 'Mean Reciprocal Rank (MRR)',
-    icon: Network,
-    color: 'rose',
-    content: `MRR evaluates where in a ranked list the first relevant document appears. For each query, we compute the reciprocal of the rank of the first relevant hit, then average across all queries.
-
-MRR rewards systems that place a relevant result at the very top. If the first relevant document is at rank 1, score = 1. At rank 2, score = 0.5. At rank 5, score = 0.2. MRR is particularly popular for evaluating QA and navigational search tasks.`,
-    formulas: [
-      '$$\\text{MRR} = \\frac{1}{|Q|}\\sum_{i=1}^{|Q|} \\frac{1}{\\text{rank}_i}$$',
-      'where $\\text{rank}_i$ = position of first relevant document for query $i$.',
-    ],
-  },
-  {
-    id: 'bm25',
-    title: 'BM25 Scoring Function',
-    icon: Search,
-    color: 'amber',
-    content: `BM25 (Best Match 25) is the standard term-frequency-based scoring function. It extends TF-IDF with saturation and document-length normalisation. The parameter k₁ controls TF saturation (typically 1.2–2.0), and b controls length normalisation (typically 0.75).
-
-BM25 is extremely fast and interpretable but cannot handle vocabulary mismatch — querying "automobile" will not match documents about "car".`,
-    formulas: [
-      '$$\\text{BM25}(d,q) = \\sum_{t \\in q} \\text{IDF}(t) \\cdot \\frac{f(t,d)\\cdot(k_1+1)}{f(t,d)+k_1\\cdot(1-b+b\\cdot\\frac{|d|}{\\text{avgdl}})}$$',
-    ],
-  },
-  {
-    id: 'cosine',
-    title: 'Cosine Similarity (Dense Retrieval)',
-    icon: Brain,
-    color: 'cyan',
-    content: `Dense retrieval encodes both queries and documents as dense vectors using a bi-encoder neural network. At query time, the nearest document vectors are retrieved via approximate nearest-neighbour (ANN) search.
-
-The similarity score is the cosine similarity between the query vector $\\mathbf{q}$ and document vector $\\mathbf{d}$, which measures the cosine of the angle between them (range: -1 to 1).`,
-    formulas: [
-      '$$\\cos(\\mathbf{q}, \\mathbf{d}) = \\frac{\\mathbf{q} \\cdot \\mathbf{d}}{\\|\\mathbf{q}\\| \\cdot \\|\\mathbf{d}\\|}$$',
-    ],
-  },
-  {
-    id: 'rrf',
-    title: 'Reciprocal Rank Fusion (Hybrid)',
-    icon: GitMerge,
-    color: 'indigo',
-    content: `Reciprocal Rank Fusion combines the ranked lists from multiple retrieval systems without needing to normalise scores across systems. For each document, it sums the reciprocal ranks from each system (with a constant k=60 to dampen high-rank sensitivity). Documents appearing in top positions across multiple systems get the highest combined scores.`,
-    formulas: [
-      '$$\\text{RRF}(d) = \\sum_{r \\in R} \\frac{1}{k + r(d)}$$',
-      'where $R$ = set of rankers, $r(d)$ = rank of $d$ in ranker $r$, $k = 60$.',
-    ],
-  },
-];
-
-const colorMap = {
-  indigo: { bg: 'bg-indigo-50', border: 'border-indigo-200', badge: 'bg-indigo-100 text-indigo-700', icon: 'text-indigo-500' },
-  blue:   { bg: 'bg-blue-50',   border: 'border-blue-200',   badge: 'bg-blue-100 text-blue-700',   icon: 'text-blue-500'   },
-  emerald:{ bg: 'bg-emerald-50',border: 'border-emerald-200',badge: 'bg-emerald-100 text-emerald-700',icon:'text-emerald-500'},
-  violet: { bg: 'bg-violet-50', border: 'border-violet-200', badge: 'bg-violet-100 text-violet-700', icon: 'text-violet-500' },
-  rose:   { bg: 'bg-rose-50',   border: 'border-rose-200',   badge: 'bg-rose-100 text-rose-700',   icon: 'text-rose-500'   },
-  amber:  { bg: 'bg-amber-50',  border: 'border-amber-200',  badge: 'bg-amber-100 text-amber-700',  icon: 'text-amber-500'  },
-  cyan:   { bg: 'bg-cyan-50',   border: 'border-cyan-200',   badge: 'bg-cyan-100 text-cyan-700',   icon: 'text-cyan-500'   },
-};
-
-function AccordionItem({ section, isOpen, onToggle, index }) {
-  const colors = colorMap[section.color] || colorMap.indigo;
-  useMathJax([isOpen]);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.35, ease: [0.16,1,0.3,1] }}
-      className={`rounded-2xl border ${colors.border} overflow-hidden shadow-sm`}
-    >
-      <button
-        onClick={onToggle}
-        className={`w-full flex items-center gap-3 p-4 sm:p-5 text-left transition-colors hover:bg-white/60 ${isOpen ? 'bg-white/80' : colors.bg}`}
-      >
-        <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${colors.badge} shrink-0`}>
-          <section.icon className={`w-4 h-4 ${colors.icon}`} />
-        </span>
-        <span className="flex-1 font-semibold text-slate-800 text-sm sm:text-base">{section.title}</span>
-        <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <ChevronDown className="w-4 h-4 text-slate-400" />
-        </motion.span>
-      </button>
-
-      <AnimatePresence initial={false}>
-        {isOpen && (
-          <motion.div
-            key="content"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.16,1,0.3,1] }}
-            className="overflow-hidden"
-          >
-            <div className="px-5 pb-5 pt-1 bg-white/70 space-y-4">
-              <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{section.content}</p>
-              {section.formulas.length > 0 && (
-                <div className={`rounded-xl p-4 ${colors.bg} border ${colors.border} space-y-2`}>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">Formula</p>
-                  {section.formulas.map((f, i) => (
-                    <MathJaxDiv key={i} className="text-slate-800 text-sm overflow-x-auto">{f}</MathJaxDiv>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-}
-
-export default function TheorySection({ onNext }) {
-  const [openId, setOpenId] = useState('intro');
-  useMathJax([openId]);
-
-  const toggle = (id) => setOpenId(prev => prev === id ? null : id);
+export default function TheorySection({ onGoToLab, onNext }) {
+  const handleLaunch = onGoToLab || onNext;
+  useMathJax([]);
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
-      {/* Header */}
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 text-slate-800">
+      {/* ── 1. HERO BANNER ── */}
       <motion.div
-        initial={{ opacity: 0, y: -12 }}
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="text-center space-y-2"
+        className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm relative overflow-hidden space-y-4"
       >
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold uppercase tracking-wider">
-          <BookOpen className="w-3.5 h-3.5" />
-          Section 1 — Theory
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-3 max-w-3xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/60 text-indigo-700 text-xs font-bold tracking-wide uppercase">
+              <Sparkles className="w-3.5 h-3.5" />
+              Experiment 15 • IR Metrics & System Evaluation
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Information Retrieval Metrics and Evaluation Systems
+            </h1>
+            <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+              Master the mathematical and statistical foundations of Information Retrieval evaluation. 
+              Quantify relevance, precision, recall, harmonic balance, and ranking efficacy across lexical, 
+              semantic dense vector, and reciprocal rank fusion architectures.
+            </p>
+          </div>
+
+          {handleLaunch && (
+            <button
+              onClick={handleLaunch}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-500/20 hover:shadow-lg transition-all shrink-0 cursor-pointer self-start md:self-auto"
+            >
+              Launch Simulation Lab
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
-          IR Metrics & Retrieval Systems
-        </h2>
-        <p className="text-slate-500 text-sm max-w-xl mx-auto">
-          Click each topic to expand. All mathematical definitions are rendered with MathJax.
-        </p>
       </motion.div>
 
-      {/* Metric Quick Reference Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {METRICS.map((m, i) => (
-          <motion.div
-            key={m.id}
-            initial={{ opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 + i * 0.07, duration: 0.3 }}
-            className="glass rounded-2xl p-4 text-center border border-white/70 shadow-sm hover:shadow-md transition-shadow cursor-default"
-          >
-            <MathJaxDiv className={`text-lg font-bold text-${m.color}-600 mb-1`}>{m.inline}</MathJaxDiv>
-            <p className="text-xs text-slate-500 font-medium">{m.label}</p>
-            <p className="text-[11px] text-slate-400 mt-1 leading-snug">{m.tip}</p>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Retrieval System Pills */}
-      <div className="glass rounded-2xl p-4 border border-white/80 shadow-sm">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Retrieval Architectures Compared</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {RETRIEVAL_SYSTEMS.map(sys => (
-            <div key={sys.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-white/70 border border-slate-100">
-              <span className="text-lg">{sys.icon}</span>
+      {/* ── 2. LEARNING OBJECTIVES ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          Learning Objectives
+        </h2>
+        <div className="grid sm:grid-cols-2 gap-3.5 pt-1">
+          {[
+            {
+              num: '01',
+              title: 'Set-Based Retrieval Metrics',
+              desc: 'Formulate, compute, and interpret Precision@k, Recall@k, and the Harmonic F1-Score across variable rank cutoffs.',
+            },
+            {
+              num: '02',
+              title: 'Ranked Positional Metrics',
+              desc: 'Calculate Mean Reciprocal Rank (MRR) and understand how rank position penalty impacts user satisfaction in QA and web search.',
+            },
+            {
+              num: '03',
+              title: 'Architectural Paradigm Comparison',
+              desc: 'Contrast exact lexical matching (BM25), bi-encoder neural dense retrieval (Cosine Similarity), and multi-ranker Reciprocal Rank Fusion (RRF).',
+            },
+            {
+              num: '04',
+              title: 'Empirical Evaluation Benchmarking',
+              desc: 'Analyze trade-offs between precision and recall across differing query types, vocabulary mismatches, and multi-system rank fusions.',
+            },
+          ].map((obj, i) => (
+            <div key={i} className="p-4 rounded-2xl bg-white/70 border border-slate-200/80 flex items-start gap-3.5">
+              <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">
+                {obj.num}
+              </span>
               <div>
-                <p className="text-xs font-semibold text-slate-800">{sys.label}</p>
-                <p className="text-[10px] text-slate-400">{sys.latency}ms avg</p>
+                <h3 className="text-xs font-bold text-slate-900 mb-0.5">{obj.title}</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">{obj.desc}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Accordion Theory Sections */}
-      <div className="space-y-3">
-        {THEORY_SECTIONS.map((section, i) => (
-          <AccordionItem
-            key={section.id}
-            section={section}
-            isOpen={openId === section.id}
-            onToggle={() => toggle(section.id)}
-            index={i}
-          />
-        ))}
+      {/* ── 3. FOUNDATIONAL THEORETICAL FRAMEWORK ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-6">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          Foundational Theoretical Framework
+        </h2>
+
+        {/* Section 1: The Core IR Evaluation Problem */}
+        <div className="p-5 rounded-2xl bg-white/80 border border-slate-200/90 space-y-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs">
+              <Search className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-900">1. The Information Retrieval Evaluation Problem</h3>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+            In Information Retrieval (IR), a system returns a ranked subset of documents <MathJaxDiv className="inline font-mono">{'\\mathcal{L}_k'}</MathJaxDiv> from an indexed corpus <MathJaxDiv className="inline font-mono">{'\\mathcal{D}'}</MathJaxDiv> in response to an information need query <MathJaxDiv className="inline font-mono">{'q'}</MathJaxDiv>.
+            Relevance is evaluated against a ground-truth set of known relevant documents <MathJaxDiv className="inline font-mono">{'\\mathcal{R}'}</MathJaxDiv>.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-3 text-xs pt-1">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+              <span className="font-bold text-slate-800 block mb-0.5">True Positives (TP)</span>
+              Retrieved documents that are genuinely relevant: <MathJaxDiv className="inline font-mono">{'|\\mathcal{R} \\cap \\mathcal{L}_k|'}</MathJaxDiv>.
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+              <span className="font-bold text-slate-800 block mb-0.5">False Positives (FP)</span>
+              Retrieved documents that are irrelevant: <MathJaxDiv className="inline font-mono">{'|\\mathcal{L}_k \\setminus \\mathcal{R}|'}</MathJaxDiv>.
+            </div>
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
+              <span className="font-bold text-slate-800 block mb-0.5">False Negatives (FN)</span>
+              Relevant documents missed by the system: <MathJaxDiv className="inline font-mono">{'|\\mathcal{R} \\setminus \\mathcal{L}_k|'}</MathJaxDiv>.
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Precision@k and Recall@k */}
+        <div className="p-5 rounded-2xl bg-white/80 border border-slate-200/90 space-y-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs">
+              <Layers className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-900">2. Precision@k and Recall@k Formulations</h3>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+            Because web search users rarely examine beyond the first few results, evaluation is measured at fixed cutoff rank <MathJaxDiv className="inline font-mono">{'k'}</MathJaxDiv>:
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-200/60 space-y-1.5">
+              <div className="text-xs font-bold text-blue-800 uppercase tracking-wide">Precision at rank k (P@k)</div>
+              <MathJaxDiv className="text-sm font-mono text-slate-900">
+                {'$$P@k = \\frac{|\\mathcal{R} \\cap \\mathcal{L}_k|}{k}$$'}
+              </MathJaxDiv>
+              <p className="text-xs text-slate-600">
+                Measures accuracy: &ldquo;Of all the top-k results presented to the user, what proportion was relevant?&rdquo;
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200/60 space-y-1.5">
+              <div className="text-xs font-bold text-emerald-800 uppercase tracking-wide">Recall at rank k (R@k)</div>
+              <MathJaxDiv className="text-sm font-mono text-slate-900">
+                {'$$R@k = \\frac{|\\mathcal{R} \\cap \\mathcal{L}_k|}{|\\mathcal{R}|}$$'}
+              </MathJaxDiv>
+              <p className="text-xs text-slate-600">
+                Measures coverage: &ldquo;Of all relevant documents existing in the entire corpus, what fraction did the system retrieve?&rdquo;
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: F1 and Positional MRR */}
+        <div className="p-5 rounded-2xl bg-white/80 border border-slate-200/90 space-y-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-violet-50 text-violet-700 flex items-center justify-center font-bold text-xs">
+              <Brain className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-900">3. F1-Score &amp; Mean Reciprocal Rank (MRR)</h3>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl bg-violet-50/60 border border-violet-200/60 space-y-1.5">
+              <div className="text-xs font-bold text-violet-800 uppercase tracking-wide">Harmonic F1-Score</div>
+              <MathJaxDiv className="text-sm font-mono text-slate-900">
+                {'$$F_1 = 2 \\cdot \\frac{P@k \\cdot R@k}{P@k + R@k}$$'}
+              </MathJaxDiv>
+              <p className="text-xs text-slate-600">
+                The harmonic mean heavily penalizes extreme imbalances (e.g., retrieving everything to artificially inflate recall at the cost of precision).
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-rose-50/60 border border-rose-200/60 space-y-1.5">
+              <div className="text-xs font-bold text-rose-800 uppercase tracking-wide">Mean Reciprocal Rank (MRR)</div>
+              <MathJaxDiv className="text-sm font-mono text-slate-900">
+                {'$$\\text{MRR} = \\frac{1}{|Q|}\\sum_{i=1}^{|Q|} \\frac{1}{\\text{rank}_i}$$'}
+              </MathJaxDiv>
+              <p className="text-xs text-slate-600">
+                Evaluates positional rank of the <em>first</em> relevant hit. A top-1 hit yields 1.0; top-2 yields 0.5; top-5 yields 0.2. Crucial for question answering.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Retrieval Architectures */}
+        <div className="p-5 rounded-2xl bg-white/80 border border-slate-200/90 space-y-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs">
+              <GitMerge className="w-4 h-4" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-900">4. Retrieval System Scoring Functions Compared</h3>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+            Modern search infrastructures deploy complementary retrieval architectures to balance speed and semantic generalization:
+          </p>
+          <div className="space-y-3 text-xs">
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+              <div className="font-bold text-slate-900">BM25 (Best Match 25 Lexical Ranking):</div>
+              <MathJaxDiv className="overflow-x-auto text-xs py-1">
+                {'$$\\text{BM25}(d, q) = \\sum_{t \\in q} \\text{IDF}(t) \\cdot \\frac{f(t,d) \\cdot (k_1+1)}{f(t,d) + k_1 \\cdot (1 - b + b \\cdot \\frac{|d|}{\\text{avgdl}})}$$'}
+              </MathJaxDiv>
+              <p className="text-slate-600">Incorporate term frequency saturation (<MathJaxDiv className="inline">k_1 \approx 1.2</MathJaxDiv>) and document length normalization (<MathJaxDiv className="inline">b \approx 0.75</MathJaxDiv>).</p>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+              <div className="font-bold text-slate-900">Dense Neural Retrieval (Cosine Similarity):</div>
+              <MathJaxDiv className="overflow-x-auto text-xs py-1">
+                {'$$\\text{Sim}_{\\text{dense}}(\\mathbf{q}, \\mathbf{d}) = \\frac{\\mathbf{q} \\cdot \\mathbf{d}}{\\|\\mathbf{q}\\| \\cdot \\|\\mathbf{d}\\|}$$'}
+              </MathJaxDiv>
+              <p className="text-slate-600">Encodes queries and passages into continuous embedding vectors to match semantic meaning despite vocabulary mismatches.</p>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+              <div className="font-bold text-slate-900">Reciprocal Rank Fusion (RRF Multi-Ranker Hybrid):</div>
+              <MathJaxDiv className="overflow-x-auto text-xs py-1">
+                {'$$\\text{RRF}(d) = \\sum_{m \\in M} \\frac{1}{k_0 + r_m(d)}, \\quad k_0 = 60$$'}
+              </MathJaxDiv>
+              <p className="text-slate-600">Merges disparate ranking models without needing uncalibrated score normalization by summing inverted positional ranks.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Insight callout */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="flex gap-3 items-start p-4 rounded-2xl bg-indigo-50 border border-indigo-200"
-      >
-        <Lightbulb className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-semibold text-indigo-800 mb-0.5">Key Insight: Precision–Recall Trade-off</p>
-          <p className="text-xs text-indigo-700 leading-relaxed">
-            Precision and Recall are inversely related. Retrieving more documents increases recall but reduces precision. F1 finds the sweet spot, while MRR focuses specifically on where the <em>first</em> relevant result appears.
-          </p>
+      {/* ── 4. TECHNICAL COMPARISON MATRIX ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          Technical Comparison Matrix
+        </h2>
+        <div className="overflow-x-auto rounded-2xl border border-slate-200">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 font-bold">
+                <th className="p-3 sm:p-3.5">Architecture</th>
+                <th className="p-3 sm:p-3.5">Matching Principle</th>
+                <th className="p-3 sm:p-3.5">Vocab Mismatch Robustness</th>
+                <th className="p-3 sm:p-3.5">Latency &amp; Index Size</th>
+                <th className="p-3 sm:p-3.5">Tuning Overhead</th>
+                <th className="p-3 sm:p-3.5">Best Application</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-600">
+              <tr className="hover:bg-slate-50/50">
+                <td className="p-3 sm:p-3.5 font-bold text-slate-800">Lexical BM25</td>
+                <td className="p-3 sm:p-3.5">Exact term inverted index</td>
+                <td className="p-3 sm:p-3.5 text-rose-600 font-semibold">Low (synonym failure)</td>
+                <td className="p-3 sm:p-3.5 text-emerald-600 font-semibold">Ultra-fast (&lt;5ms), compact</td>
+                <td className="p-3 sm:p-3.5">Minimal (k1=1.2, b=0.75)</td>
+                <td className="p-3 sm:p-3.5">Product codes, names, exact terms</td>
+              </tr>
+              <tr className="hover:bg-slate-50/50">
+                <td className="p-3 sm:p-3.5 font-bold text-slate-800">Cosine TF-IDF</td>
+                <td className="p-3 sm:p-3.5">Sparse vector dot-product</td>
+                <td className="p-3 sm:p-3.5 text-rose-600 font-semibold">Low (exact orthogonal vocab)</td>
+                <td className="p-3 sm:p-3.5 text-emerald-600 font-semibold">Fast (&lt;10ms), sparse CSR</td>
+                <td className="p-3 sm:p-3.5">None</td>
+                <td className="p-3 sm:p-3.5">Lightweight keyword baselines</td>
+              </tr>
+              <tr className="hover:bg-slate-50/50">
+                <td className="p-3 sm:p-3.5 font-bold text-slate-800">Dense Bi-Encoder</td>
+                <td className="p-3 sm:p-3.5">768-d latent dot-product (HNSW)</td>
+                <td className="p-3 sm:p-3.5 text-emerald-600 font-semibold">High (semantic paraphrase)</td>
+                <td className="p-3 sm:p-3.5 text-amber-600 font-semibold">Moderate (&lt;25ms), RAM heavy</td>
+                <td className="p-3 sm:p-3.5">High (fine-tuning embeddings)</td>
+                <td className="p-3 sm:p-3.5">Conceptual QA, conversational search</td>
+              </tr>
+              <tr className="hover:bg-slate-50/50 bg-indigo-50/30">
+                <td className="p-3 sm:p-3.5 font-bold text-indigo-900">RRF Hybrid</td>
+                <td className="p-3 sm:p-3.5 font-semibold text-slate-800">Positional reciprocal rank fusion</td>
+                <td className="p-3 sm:p-3.5 text-emerald-600 font-semibold">Maximum (combines both)</td>
+                <td className="p-3 sm:p-3.5 text-indigo-700 font-semibold">Moderate (&lt;30ms), dual index</td>
+                <td className="p-3 sm:p-3.5 text-emerald-700 font-semibold">Zero-tuning robust (k=60)</td>
+                <td className="p-3 sm:p-3.5 font-semibold text-indigo-900">Production web search &amp; RAG</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </motion.div>
+      </div>
 
-      {/* Next CTA */}
-      <motion.div className="flex justify-center pt-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
-        <motion.button
-          onClick={onNext}
-          whileHover={{ scale: 1.03, y: -1 }}
-          whileTap={{ scale: 0.97 }}
-          className="flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm shadow-lg shadow-indigo-200 cursor-pointer"
-        >
-          <FlaskConical className="w-4 h-4" />
-          Proceed to Visual Lab
-        </motion.button>
-      </motion.div>
+      {/* ── 5. LABORATORY PROCEDURE ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          Laboratory Procedure
+        </h2>
+        <div className="space-y-3 pt-1">
+          {[
+            {
+              step: 'Step 1: Select Information Need Query',
+              detail: 'Choose from standardized evaluation queries (e.g., Information Retrieval, Deep Learning, Cloud Computing, Database Systems) or input a custom search query.',
+            },
+            {
+              step: 'Step 2: Calibrate Cutoff Rank (k)',
+              detail: 'Select the evaluation rank cutoff (k = 3, 5, or 10) to simulate different real-world search interface constraints (e.g., mobile viewport vs full page).',
+            },
+            {
+              step: 'Step 3: Execute Multi-System Retrieval',
+              detail: 'Run the indexed corpus against all 4 retrieval engines simultaneously: BM25, Cosine TF-IDF, Dense Bi-Encoder, and Reciprocal Rank Fusion.',
+            },
+            {
+              step: 'Step 4: Audit Retrieved Documents Against Ground Truth',
+              detail: 'Inspect the resulting ranked document lists. Green tags indicate True Positives (ground-truth relevant), while gray tags denote False Positives.',
+            },
+            {
+              step: 'Step 5: Compute Evaluation Metrics',
+              detail: 'Observe the mathematical computation of Precision@k, Recall@k, F1-Score, and Reciprocal Rank (RR) for each individual system.',
+            },
+            {
+              step: 'Step 6: Comparative Radar and Metric Analysis',
+              detail: 'Compare the metric radar plots across all 4 systems to identify which engine achieved superior recall coverage without sacrificing precision.',
+            },
+            {
+              step: 'Step 7: Log Trials & Complete Verification Quiz',
+              detail: 'Record your evaluation findings into the trial logger, proceed to the assessment quiz to test your mastery, and print your verified completion certificate.',
+            },
+          ].map((item, idx) => (
+            <div key={idx} className="p-3.5 rounded-2xl bg-white/70 border border-slate-200/80 flex items-start gap-3.5">
+              <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                {idx + 1}
+              </span>
+              <div>
+                <h3 className="text-xs font-bold text-slate-900 mb-0.5">{item.step}</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">{item.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 6. KEY TERMINOLOGY & DEFINITIONS ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          Key Terminology &amp; Definitions
+        </h2>
+        <div className="grid sm:grid-cols-2 gap-3.5 pt-1">
+          {[
+            {
+              term: 'Precision@k',
+              def: 'The fraction of the top-k retrieved documents that are relevant to the user query. Measures system purity and precision.',
+            },
+            {
+              term: 'Recall@k',
+              def: 'The fraction of all relevant documents in the corpus that successfully appear within the top-k retrieved results. Measures system coverage.',
+            },
+            {
+              term: 'F1-Score',
+              def: 'The harmonic mean of precision and recall. Punishes severe imbalance between high precision and low recall (or vice-versa).',
+            },
+            {
+              term: 'Mean Reciprocal Rank (MRR)',
+              def: 'The average of reciprocal ranks (1/rank) of the first relevant document returned across a benchmark test set of queries.',
+            },
+            {
+              term: 'BM25 (Best Match 25)',
+              def: 'A non-linear probabilistic term-frequency ranking function incorporating term frequency saturation and document length normalization.',
+            },
+            {
+              term: 'Dense Bi-Encoder Retrieval',
+              def: 'A neural retrieval paradigm where queries and documents are independently embedded into dense semantic vectors and matched via cosine similarity.',
+            },
+            {
+              term: 'Reciprocal Rank Fusion (RRF)',
+              def: 'An unsupervised rank aggregation method that combines multiple sorted ranking lists by summing reciprocal ranks with a smoothing constant k=60.',
+            },
+            {
+              term: 'Ground Truth Relevance (R)',
+              def: 'The verified set of documents in a collection judged by human assessors or domain annotations to satisfy a given information query.',
+            },
+          ].map((item, idx) => (
+            <div key={idx} className="p-4 rounded-2xl bg-white/70 border border-slate-200/80">
+              <h3 className="text-xs font-bold text-slate-900 mb-1">{item.term}</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">{item.def}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── 7. REFERENCES & FURTHER READING ── */}
+      <div className="glass rounded-3xl p-6 sm:p-8 border border-white/80 shadow-sm space-y-4">
+        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span className="w-2 h-5 bg-indigo-600 rounded-full" />
+          References &amp; Further Reading
+        </h2>
+        <div className="space-y-3 pt-1">
+          {[
+            {
+              title: 'The Probabilistic Relevance Framework: BM25 and Beyond',
+              authors: 'Robertson, S., & Zaragoza, H.',
+              publication: 'Foundations and Trends in Information Retrieval, 3(4), 333-389, 2009.',
+              link: 'https://www.nowpublishers.com/article/Details/INR-019',
+            },
+            {
+              title: 'Reciprocal Rank Fusion Outperforms Condorcet and Individual Machine Learning Methods for Web Search',
+              authors: 'Cormack, G. V., Clarke, C. L., & Buettcher, S.',
+              publication: 'Proceedings of the 32nd International ACM SIGIR Conference, 2009.',
+              link: 'https://dl.acm.org/doi/10.1145/1571941.1572114',
+            },
+            {
+              title: 'Dense Passage Retrieval for Open-Domain Question Answering',
+              authors: 'Karpukhin, V., Oğuz, B., Min, S., Lewis, P., et al.',
+              publication: 'Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP), 2020.',
+              link: 'https://aclanthology.org/2020.emnlp-main.550/',
+            },
+            {
+              title: 'Introduction to Information Retrieval',
+              authors: 'Manning, C. D., Raghavan, P., & Schütze, H.',
+              publication: 'Cambridge University Press, 2008.',
+              link: 'https://nlp.stanford.edu/IR-book/',
+            },
+          ].map((ref, idx) => (
+            <div key={idx} className="p-3.5 rounded-2xl bg-white/70 border border-slate-200/80 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-slate-900">{ref.title}</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">{ref.authors} &bull; <span className="italic">{ref.publication}</span></p>
+              </div>
+              <a
+                href={ref.link}
+                target="_blank"
+                rel="noreferrer"
+                className="text-indigo-600 hover:text-indigo-700 p-1.5 rounded-lg hover:bg-indigo-50 transition-colors shrink-0"
+                title="View Source"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
