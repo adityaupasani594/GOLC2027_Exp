@@ -295,11 +295,629 @@ RETURN path, [n IN nodes(path) | n.label] AS ChainOfWork;`,
   }
 ];
 
+// -------------------------------------------------------------
+// Dynamic openCypher Query Parsing & Execution Engine
+// -------------------------------------------------------------
+function extractReturnColumns(returnClause, sampleRow) {
+  if (!returnClause || returnClause.trim() === '*') {
+    return sampleRow ? Object.keys(sampleRow) : ['Result'];
+  }
+  const parts = returnClause.split(',').map(p => p.trim());
+  return parts.map(part => {
+    const asMatch = part.match(/\s+AS\s+([a-zA-Z0-9_]+)/i);
+    if (asMatch) return asMatch[1];
+    const dotMatch = part.match(/([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/);
+    if (dotMatch) return dotMatch[2];
+    const cleanCol = part.replace(/[^a-zA-Z0-9_]/g, '');
+    return cleanCol || 'Column';
+  }).filter(Boolean);
+}
+
+function projectReturnRow(returnClause, aliases) {
+  const row = {};
+  if (!returnClause || returnClause.trim() === '*') {
+    const mainObj = Object.values(aliases)[0] || {};
+    return { ...mainObj };
+  }
+
+  const parts = returnClause.split(',').map(p => p.trim());
+  parts.forEach(part => {
+    const asMatch = part.match(/(.+?)\s+AS\s+([a-zA-Z0-9_]+)/i);
+    const expr = asMatch ? asMatch[1].trim() : part;
+    const colName = asMatch ? asMatch[2].trim() : expr.replace(/^[a-zA-Z0-9_]+\./, '');
+
+    // String literal e.g. 'Hidden Triad Motif'
+    const strLiteral = expr.match(/^['"]([^'"]+)['"]$/);
+    if (strLiteral) {
+      row[colName] = strLiteral[1];
+      return;
+    }
+
+    // Number literal
+    if (/^\d+(\.\d+)?$/.test(expr)) {
+      row[colName] = Number(expr);
+      return;
+    }
+
+    // length(path)
+    if (/length\(/i.test(expr)) {
+      row[colName] = '1 Hop';
+      return;
+    }
+
+    // Property access e.g. a.label, p.citations
+    const propMatch = expr.match(/([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/);
+    if (propMatch) {
+      const varName = propMatch[1];
+      const prop = propMatch[2];
+      const obj = aliases[varName] || aliases[varName.toLowerCase()];
+      row[colName] = obj && obj[prop] !== undefined ? obj[prop] : '-';
+      return;
+    }
+
+    // Direct object e.g. a
+    if (aliases[expr] || aliases[expr.toLowerCase()]) {
+      const obj = aliases[expr] || aliases[expr.toLowerCase()];
+      row[colName] = obj.label || obj.id || JSON.stringify(obj);
+      return;
+    }
+
+    row[colName] = expr;
+  });
+
+  return row;
+}
+
+function handleAggregation(rawRows, returnClause, withClause) {
+  const groups = new Map();
+  rawRows.forEach(row => {
+    const key = row[Object.keys(row)[0]] || JSON.stringify(row);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+    groups.get(key).push(row);
+  });
+
+  const aggRows = [];
+  groups.forEach((rows) => {
+    const count = rows.length;
+    const firstRow = rows[0];
+    const item = { ...firstRow };
+    if (returnClause.toLowerCase().includes('count(') || withClause?.toLowerCase().includes('count(')) {
+      item.paperCount = count;
+      item.count = count;
+    }
+    if (returnClause.toLowerCase().includes('collect(') || withClause?.toLowerCase().includes('collect(')) {
+      const colValues = rows.map(r => r[Object.keys(r)[1]] || Object.values(r)[1]).filter(Boolean);
+      item.publishedPapers = JSON.stringify(colValues);
+      item.collected = JSON.stringify(colValues);
+    }
+    aggRows.push(item);
+  });
+
+  const columns = extractReturnColumns(returnClause, aggRows[0]);
+  return { columns, results: aggRows };
+}
+
+function applySortingAndLimit(rows, orderByClause, limitVal) {
+  let result = [...rows];
+  if (orderByClause) {
+    const isDesc = /DESC/i.test(orderByClause);
+    const colMatch = orderByClause.replace(/DESC|ASC/gi, '').trim().split(',')[0].trim();
+    const cleanCol = colMatch.replace(/^[a-zA-Z0-9_]+\./, '');
+    result.sort((a, b) => {
+      const valA = a[cleanCol] !== undefined ? a[cleanCol] : 0;
+      const valB = b[cleanCol] !== undefined ? b[cleanCol] : 0;
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return isDesc ? valB - valA : valA - valB;
+      }
+      return isDesc ? String(valB).localeCompare(String(valA)) : String(valA).localeCompare(String(valB));
+    });
+  }
+  if (limitVal && limitVal > 0) {
+    result = result.slice(0, limitVal);
+  }
+  return result;
+}
+
+function executeCypherQuery(queryStr, graph, presets = []) {
+  const clean = (str) => str.replace(/\/\/.*/g, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  const cleanedQuery = clean(queryStr);
+
+  if (!cleanedQuery) {
+    return {
+      columns: ['Status', 'Message'],
+      results: [{ Status: 'Empty Query', Message: 'Please enter an openCypher query to execute.' }],
+      targetNodes: [],
+      targetEdges: [],
+      hops: [],
+      hiddenLinks: [],
+      error: null
+    };
+  }
+
+  // 1. Check exact or whitespace-normalized match with Presets
+  const normalize = (s) => s.replace(/\s+/g, ' ').trim().toLowerCase();
+  const matchedPreset = presets.find(p => {
+    return normalize(clean(p.query)) === normalize(cleanedQuery);
+  });
+  if (matchedPreset) {
+    return {
+      columns: matchedPreset.columns,
+      results: matchedPreset.results,
+      targetNodes: matchedPreset.targetNodes || [],
+      targetEdges: matchedPreset.targetEdges || [],
+      hops: matchedPreset.hops || [],
+      hiddenLinks: matchedPreset.hiddenLinks || [],
+      error: null
+    };
+  }
+
+  try {
+    const matchRegex = /MATCH\s+(.+?)(?=\s+WHERE|\s+WITH|\s+RETURN|$)/i;
+    const whereRegex = /WHERE\s+(.+?)(?=\s+WITH|\s+RETURN|\s+ORDER|\s+LIMIT|$)/i;
+    const withRegex = /WITH\s+(.+?)(?=\s+WHERE|\s+RETURN|\s+ORDER|\s+LIMIT|$)/i;
+    const returnRegex = /RETURN\s+(.+?)(?=\s+ORDER|\s+LIMIT|;|$)/i;
+    const orderByRegex = /ORDER\s+BY\s+(.+?)(?=\s+LIMIT|;|$)/i;
+    const limitRegex = /LIMIT\s+(\d+)/i;
+
+    const matchMatch = cleanedQuery.match(matchRegex);
+    const returnMatch = cleanedQuery.match(returnRegex);
+
+    if (!matchMatch) {
+      return {
+        columns: ['Status', 'Message'],
+        results: [{ Status: 'Syntax Notice', Message: 'Expected MATCH clause. Example: MATCH (n:Author) RETURN n.label, n.hIndex' }],
+        targetNodes: [],
+        targetEdges: [],
+        hops: [],
+        hiddenLinks: [],
+        error: null
+      };
+    }
+
+    const matchClause = matchMatch[1].trim();
+    const returnClause = returnMatch ? returnMatch[1].trim() : '*';
+    const whereMatch = cleanedQuery.match(whereRegex);
+    const whereClause = whereMatch ? whereMatch[1].trim() : null;
+    const withMatch = cleanedQuery.match(withRegex);
+    const withClause = withMatch ? withMatch[1].trim() : null;
+    const orderByMatch = cleanedQuery.match(orderByRegex);
+    const orderByClause = orderByMatch ? orderByMatch[1].trim() : null;
+    const limitMatch = cleanedQuery.match(limitRegex);
+    const limitVal = limitMatch ? parseInt(limitMatch[1], 10) : null;
+
+    const evaluateCondition = (nodeOrPair, conditionStr, aliases = {}) => {
+      if (!conditionStr) return true;
+      if (conditionStr.toUpperCase().includes('NOT') && conditionStr.includes('-[')) {
+        return true; 
+      }
+      
+      const evalStr = conditionStr.replace(/([a-zA-Z0-9_]+)\.([a-zA-Z0-9_]+)/g, (m, varName, propName) => {
+        const obj = aliases[varName] || (nodeOrPair.id ? nodeOrPair : null);
+        if (obj && obj[propName] !== undefined) {
+          const val = obj[propName];
+          return typeof val === 'string' ? JSON.stringify(val) : val;
+        }
+        return 'null';
+      }).replace(/<>/g, '!==').replace(/=(?!=)/g, '===').replace(/AND/gi, '&&').replace(/OR/gi, '||');
+
+      try {
+        const fn = new Function(...Object.keys(aliases), `return Boolean(${evalStr});`);
+        return fn(...Object.values(aliases));
+      } catch {
+        return true;
+      }
+    };
+
+    // Case A: ShortestPath query
+    if (/shortestPath/i.test(matchClause)) {
+      const allIds = [...matchClause.matchAll(/id\s*:\s*['"]([^'"]+)['"]/gi)].map(m => m[1]);
+      const startId = allIds[0] || (graph.id === 'academic' ? 'A4' : 'E1');
+      const targetId = allIds[1] || (graph.id === 'academic' ? 'A8' : 'E6');
+
+      const queue = [[startId]];
+      const visited = new Set([startId]);
+      let foundPath = null;
+
+      while (queue.length > 0) {
+        const path = queue.shift();
+        const curr = path[path.length - 1];
+        if (curr === targetId) {
+          foundPath = path;
+          break;
+        }
+        const neighbors = [];
+        graph.edges.forEach(e => {
+          if (e.source === curr && !visited.has(e.target)) {
+            neighbors.push(e.target);
+          } else if (e.target === curr && !visited.has(e.source)) {
+            neighbors.push(e.source);
+          }
+        });
+        for (const nxt of neighbors) {
+          visited.add(nxt);
+          queue.push([...path, nxt]);
+        }
+      }
+
+      if (foundPath) {
+        const pathNodes = foundPath.map(nid => graph.nodes.find(n => n.id === nid)).filter(Boolean);
+        const pathEdges = [];
+        const hops = [];
+        for (let i = 0; i < foundPath.length - 1; i++) {
+          const u = foundPath[i];
+          const v = foundPath[i + 1];
+          const edge = graph.edges.find(e => (e.source === u && e.target === v) || (e.source === v && e.target === u));
+          if (edge) pathEdges.push(edge.id);
+          hops.push({
+            step: i + 1,
+            activeNodes: [u, v],
+            activeEdges: edge ? [edge.id] : [],
+            label: `Hop ${i + 1}: ${pathNodes[i]?.label} ➔ ${pathNodes[i + 1]?.label}`
+          });
+        }
+
+        const startNode = pathNodes[0];
+        const targetNode = pathNodes[pathNodes.length - 1];
+        const bridgeStr = pathNodes.map(n => n.label).join(' ➔ ');
+
+        return {
+          columns: ['StartEntity', 'TargetEntity', 'HopDistance', 'BridgePathSequence'],
+          results: [{
+            StartEntity: `${startNode?.label} (${startNode?.id})`,
+            TargetEntity: `${targetNode?.label} (${targetNode?.id})`,
+            HopDistance: `${foundPath.length - 1} Hops`,
+            BridgePathSequence: bridgeStr
+          }],
+          targetNodes: foundPath,
+          targetEdges: pathEdges,
+          hops,
+          hiddenLinks: [],
+          error: null
+        };
+      }
+    }
+
+    // Case B: Variable-length path expansion [:REL*1..k] or [*1..k]
+    const varLengthMatch = matchClause.match(/(?:\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\))?\s*-\s*\[:?([a-zA-Z0-9_]*)\*(\d+)?\.\.(\d+)?\]\s*(->|-)\s*\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\)/i);
+    if (varLengthMatch) {
+      const srcType = varLengthMatch[2];
+      const srcProps = varLengthMatch[3];
+      const relType = varLengthMatch[4];
+      const minHop = parseInt(varLengthMatch[5] || '1', 10);
+      const maxHop = parseInt(varLengthMatch[6] || '3', 10);
+      const isDirected = varLengthMatch[7] === '->';
+      const tgtType = varLengthMatch[9];
+      const tgtProps = varLengthMatch[10];
+
+      let startId = null;
+      if (srcProps) {
+        const idM = srcProps.match(/id\s*:\s*['"]([^'"]+)['"]/i);
+        if (idM) startId = idM[1];
+      }
+      let targetId = null;
+      if (tgtProps) {
+        const idM = tgtProps.match(/id\s*:\s*['"]([^'"]+)['"]/i);
+        if (idM) targetId = idM[1];
+      }
+
+      const startCandidates = graph.nodes.filter(n => {
+        if (startId && n.id !== startId) return false;
+        if (srcType && n.type.toLowerCase() !== srcType.toLowerCase()) return false;
+        return true;
+      });
+
+      const matchedRows = [];
+      const allTargetNodes = new Set();
+      const allTargetEdges = new Set();
+      const hopSteps = [];
+
+      for (const startNode of startCandidates) {
+        allTargetNodes.add(startNode.id);
+        const queue = [{ node: startNode, depth: 0, path: [startNode], edgePath: [] }];
+
+        while (queue.length > 0) {
+          const { node: curr, depth, path, edgePath } = queue.shift();
+          if (depth >= maxHop) continue;
+
+          const candidateEdges = graph.edges.filter(e => {
+            if (relType && e.type.toLowerCase() !== relType.toLowerCase()) return false;
+            if (isDirected) return e.source === curr.id;
+            return e.source === curr.id || e.target === curr.id;
+          });
+
+          for (const edge of candidateEdges) {
+            const nextId = edge.source === curr.id ? edge.target : edge.source;
+            if (path.some(p => p.id === nextId)) continue;
+            const nextNode = graph.nodes.find(n => n.id === nextId);
+            if (!nextNode) continue;
+
+            const nextDepth = depth + 1;
+            const newPath = [...path, nextNode];
+            const newEdgePath = [...edgePath, edge.id];
+
+            allTargetNodes.add(nextNode.id);
+            allTargetEdges.add(edge.id);
+
+            if (nextDepth >= minHop && (!targetId || nextNode.id === targetId) && (!tgtType || nextNode.type.toLowerCase() === tgtType.toLowerCase())) {
+              matchedRows.push({
+                Source: startNode.label,
+                HopDistance: `${nextDepth} Hop${nextDepth > 1 ? 's' : ''}`,
+                CitedPaper: nextNode.label,
+                Target: nextNode.label,
+                Venue: nextNode.venue || nextNode.dept || nextNode.category || '-',
+                Citations: nextNode.citations !== undefined ? nextNode.citations : (nextNode.hIndex || '-'),
+                ChainOfWork: newPath.map(p => p.label).join(' ➔ ')
+              });
+
+              if (hopSteps.length < 5) {
+                hopSteps.push({
+                  step: hopSteps.length + 1,
+                  activeNodes: [curr.id, nextNode.id],
+                  activeEdges: [edge.id],
+                  label: `Hop ${nextDepth}: ${curr.label} ➔ ${nextNode.label}`
+                });
+              }
+            }
+
+            queue.push({ node: nextNode, depth: nextDepth, path: newPath, edgePath: newEdgePath });
+          }
+        }
+      }
+
+      const cols = extractReturnColumns(returnClause, matchedRows[0]);
+      const sortedRows = applySortingAndLimit(matchedRows, orderByClause, limitVal);
+
+      return {
+        columns: cols,
+        results: sortedRows,
+        targetNodes: Array.from(allTargetNodes),
+        targetEdges: Array.from(allTargetEdges),
+        hops: hopSteps,
+        hiddenLinks: [],
+        error: null
+      };
+    }
+
+    // Case C: Triadic Closure / 2-hop motif pattern
+    const triadMatch = matchClause.match(/\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?\)\s*-\s*\[:?([a-zA-Z0-9_]*)\]\s*-\s*\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?\)\s*-\s*\[:?([a-zA-Z0-9_]*)\]\s*-\s*\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?\)/i);
+    if (triadMatch) {
+      const type1 = triadMatch[2] || '';
+      const type2 = triadMatch[5] || '';
+      const type3 = triadMatch[8] || '';
+      const rel1 = triadMatch[3] || '';
+      const rel2 = triadMatch[6] || '';
+
+      const matchedRows = [];
+      const targetNodes = new Set();
+      const targetEdges = new Set();
+      const hiddenLinks = [];
+      const hops = [];
+
+      const authors = graph.nodes.filter(n => !type1 || n.type.toLowerCase() === type1.toLowerCase());
+
+      authors.forEach(a1 => {
+        const a1Edges = graph.edges.filter(e => (!rel1 || e.type.toLowerCase() === rel1.toLowerCase()) && (e.source === a1.id || e.target === a1.id));
+        a1Edges.forEach(e1 => {
+          const a2Id = e1.source === a1.id ? e1.target : e1.source;
+          const a2 = graph.nodes.find(n => n.id === a2Id);
+          if (!a2 || (type2 && a2.type.toLowerCase() !== type2.toLowerCase())) return;
+
+          const a2Edges = graph.edges.filter(e => (!rel2 || e.type.toLowerCase() === rel2.toLowerCase()) && (e.source === a2.id || e.target === a2.id) && e.id !== e1.id);
+          a2Edges.forEach(e2 => {
+            const a3Id = e2.source === a2.id ? e2.target : e2.source;
+            if (a3Id === a1.id || a1.id >= a3Id) return;
+            const a3 = graph.nodes.find(n => n.id === a3Id);
+            if (!a3 || (type3 && a3.type.toLowerCase() !== type3.toLowerCase())) return;
+
+            const directLink = graph.edges.find(e => (e.source === a1.id && e.target === a3.id) || (e.source === a3.id && e.target === a1.id));
+            if (!directLink) {
+              targetNodes.add(a1.id);
+              targetNodes.add(a2.id);
+              targetNodes.add(a3.id);
+              targetEdges.add(e1.id);
+              targetEdges.add(e2.id);
+
+              matchedRows.push({
+                Researcher_A: `${a1.label} (${a1.domain || a1.dept || a1.id})`,
+                BridgeAuthor: `${a2.label} (${a2.domain || a2.dept || a2.id})`,
+                PotentialPartner: `${a3.label} (${a3.domain || a3.dept || a3.id})`,
+                AffinityScore: `${Math.round(75 + (a1.hIndex || 20) % 20)}% High`,
+                PatternType: 'Open Triadic Closure'
+              });
+
+              hiddenLinks.push({
+                source: a1.id,
+                target: a3.id,
+                label: `Hidden Triad Link (via ${a2.id})`,
+                reason: `Shared contact: ${a2.label}`
+              });
+
+              if (hops.length < 5) {
+                hops.push({
+                  step: hops.length + 1,
+                  activeNodes: [a1.id, a2.id, a3.id],
+                  activeEdges: [e1.id, e2.id],
+                  label: `Triad ${hops.length + 1}: ${a1.label} ➔ ${a2.label} ➔ ${a3.label}`
+                });
+              }
+            }
+          });
+        });
+      });
+
+      const cols = extractReturnColumns(returnClause, matchedRows[0]) || ['Researcher_A', 'BridgeAuthor', 'PotentialPartner', 'AffinityScore', 'PatternType'];
+      return {
+        columns: cols,
+        results: matchedRows,
+        targetNodes: Array.from(targetNodes),
+        targetEdges: Array.from(targetEdges),
+        hops,
+        hiddenLinks,
+        error: null
+      };
+    }
+
+    // Case D: Single Relationship 1-hop Pattern (Directed or Undirected)
+    const singleRelMatch = matchClause.match(/\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\)\s*-\s*\[:?([a-zA-Z0-9_]*)\]\s*(->|-|<-)\s*\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\)/i);
+    if (singleRelMatch) {
+      const srcVar = singleRelMatch[1] || 'a';
+      const srcType = singleRelMatch[2];
+      const relType = singleRelMatch[4];
+      const dir = singleRelMatch[5];
+      const tgtVar = singleRelMatch[6] || 'b';
+      const tgtType = singleRelMatch[7];
+
+      const targetNodes = new Set();
+      const targetEdges = new Set();
+      const matchedRows = [];
+      const hops = [];
+
+      for (const edge of graph.edges) {
+        if (relType && edge.type.toLowerCase() !== relType.toLowerCase()) continue;
+
+        let srcCandidates = [];
+        if (dir === '->') {
+          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.source), tgt: graph.nodes.find(n => n.id === edge.target) });
+        } else if (dir === '<-') {
+          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.target), tgt: graph.nodes.find(n => n.id === edge.source) });
+        } else {
+          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.source), tgt: graph.nodes.find(n => n.id === edge.target) });
+          srcCandidates.push({ src: graph.nodes.find(n => n.id === edge.target), tgt: graph.nodes.find(n => n.id === edge.source) });
+        }
+
+        for (const { src, tgt } of srcCandidates) {
+          if (!src || !tgt) continue;
+          if (srcType && src.type.toLowerCase() !== srcType.toLowerCase()) continue;
+          if (tgtType && tgt.type.toLowerCase() !== tgtType.toLowerCase()) continue;
+
+          const aliases = { [srcVar]: src, [tgtVar]: tgt, [srcVar.toLowerCase()]: src, [tgtVar.toLowerCase()]: tgt };
+          if (whereClause && !evaluateCondition(src, whereClause, aliases)) continue;
+
+          targetNodes.add(src.id);
+          targetNodes.add(tgt.id);
+          targetEdges.add(edge.id);
+
+          const row = projectReturnRow(returnClause, aliases);
+          matchedRows.push(row);
+
+          if (hops.length < 6) {
+            hops.push({
+              step: hops.length + 1,
+              activeNodes: [src.id, tgt.id],
+              activeEdges: [edge.id],
+              label: `${src.label} ➔ ${tgt.label}`
+            });
+          }
+        }
+      }
+
+      if (withClause || returnClause.toLowerCase().includes('count(') || returnClause.toLowerCase().includes('collect(')) {
+        const aggregated = handleAggregation(matchedRows, returnClause, withClause);
+        return {
+          columns: aggregated.columns,
+          results: aggregated.results,
+          targetNodes: Array.from(targetNodes),
+          targetEdges: Array.from(targetEdges),
+          hops,
+          hiddenLinks: [],
+          error: null
+        };
+      }
+
+      const columns = extractReturnColumns(returnClause, matchedRows[0]);
+      const sortedRows = applySortingAndLimit(matchedRows, orderByClause, limitVal);
+
+      return {
+        columns: columns.length > 0 ? columns : Object.keys(matchedRows[0] || { Match: 'None' }),
+        results: sortedRows,
+        targetNodes: Array.from(targetNodes),
+        targetEdges: Array.from(targetEdges),
+        hops,
+        hiddenLinks: [],
+        error: null
+      };
+    }
+
+    // Case E: Single Node Scans MATCH (n:Type) or MATCH (n)
+    const singleNodeMatch = matchClause.match(/\(([a-zA-Z0-9_]*)(?::([a-zA-Z0-9_]+))?(?:\s*\{([^}]+)\})?\)/i);
+    if (singleNodeMatch) {
+      const varName = singleNodeMatch[1] || 'n';
+      const nodeType = singleNodeMatch[2];
+
+      const matchingNodes = graph.nodes.filter(n => {
+        if (nodeType && n.type.toLowerCase() !== nodeType.toLowerCase()) return false;
+        const aliases = { [varName]: n, [varName.toLowerCase()]: n, n };
+        if (whereClause && !evaluateCondition(n, whereClause, aliases)) return false;
+        return true;
+      });
+
+      const targetNodes = matchingNodes.map(n => n.id);
+      const matchedRows = matchingNodes.map(n => {
+        const aliases = { [varName]: n, [varName.toLowerCase()]: n, n };
+        return projectReturnRow(returnClause, aliases);
+      });
+
+      const columns = extractReturnColumns(returnClause, matchedRows[0]);
+      const sortedRows = applySortingAndLimit(matchedRows, orderByClause, limitVal);
+
+      const hops = matchingNodes.slice(0, 6).map((node, i) => ({
+        step: i + 1,
+        activeNodes: [node.id],
+        activeEdges: [],
+        label: `Matched ${node.type}: ${node.label}`
+      }));
+
+      return {
+        columns: columns.length > 0 ? columns : Object.keys(matchedRows[0] || { Label: '', Type: '' }),
+        results: sortedRows,
+        targetNodes,
+        targetEdges: [],
+        hops,
+        hiddenLinks: [],
+        error: null
+      };
+    }
+
+    // Fallback if no specific pattern matched
+    return {
+      columns: ['Result', 'Status'],
+      results: [{ Result: 'Pattern Evaluated', Status: '0 matches found for pattern against current graph' }],
+      targetNodes: [],
+      targetEdges: [],
+      hops: [],
+      hiddenLinks: [],
+      error: null
+    };
+
+  } catch (err) {
+    return {
+      columns: ['Error', 'Message'],
+      results: [{ Error: 'Execution Error', Message: err.message || 'Unable to execute Cypher query.' }],
+      targetNodes: [],
+      targetEdges: [],
+      hops: [],
+      hiddenLinks: [],
+      error: err.message
+    };
+  }
+}
+
 export default function LabSection() {
   const [selectedDomain, setSelectedDomain] = useState('academic');
   const [selectedPreset, setSelectedPreset] = useState(PRESETS[0]);
   const [customQuery, setCustomQuery] = useState(PRESETS[0].query);
   
+  // Dynamic Query Execution & Traversal States
+  const [queryResults, setQueryResults] = useState(PRESETS[0].results);
+  const [queryColumns, setQueryColumns] = useState(PRESETS[0].columns);
+  const [activeTargetNodes, setActiveTargetNodes] = useState(PRESETS[0].targetNodes || []);
+  const [activeTargetEdges, setActiveTargetEdges] = useState(PRESETS[0].targetEdges || []);
+  const [activeHops, setActiveHops] = useState(PRESETS[0].hops || []);
+  const [activeHiddenLinks, setActiveHiddenLinks] = useState(PRESETS[0].hiddenLinks || []);
+  const [queryError, setQueryError] = useState(null);
+
   // Animation & Execution States
   const [animationSpeed, setAnimationSpeed] = useState(1.0); // 0.5x to 3.0x
   const [isPlaying, setIsPlaying] = useState(false);
@@ -322,8 +940,6 @@ export default function LabSection() {
     matchedPathsCount: 6,
     memoryKb: 42
   });
-  
-  const [showPlanBreakdown, setShowPlanBreakdown] = useState(false);
 
   // Active dataset
   const currentGraph = useMemo(() => {
@@ -339,6 +955,21 @@ export default function LabSection() {
     const matchingPreset = PRESETS.find(p => p.domain === domainKey) || PRESETS[0];
     setSelectedPreset(matchingPreset);
     setCustomQuery(matchingPreset.query);
+    setQueryResults(matchingPreset.results);
+    setQueryColumns(matchingPreset.columns);
+    setActiveTargetNodes(matchingPreset.targetNodes || []);
+    setActiveTargetEdges(matchingPreset.targetEdges || []);
+    setActiveHops(matchingPreset.hops || []);
+    setActiveHiddenLinks(matchingPreset.hiddenLinks || []);
+    setQueryError(null);
+    setExecStatus('completed');
+    setMetrics({
+      latencyMs: 1.25,
+      nodesTraversed: matchingPreset.targetNodes?.length || 0,
+      edgesTraversed: matchingPreset.targetEdges?.length || 0,
+      matchedPathsCount: matchingPreset.results?.length || 0,
+      memoryKb: 38
+    });
   };
 
   // Handle Preset Select
@@ -348,18 +979,33 @@ export default function LabSection() {
     }
     setSelectedPreset(preset);
     setCustomQuery(preset.query);
+    setQueryResults(preset.results);
+    setQueryColumns(preset.columns);
+    setActiveTargetNodes(preset.targetNodes || []);
+    setActiveTargetEdges(preset.targetEdges || []);
+    setActiveHops(preset.hops || []);
+    setActiveHiddenLinks(preset.hiddenLinks || []);
+    setQueryError(null);
     setIsPlaying(false);
     setCurrentHopIndex(-1);
     setSelectedNode(null);
+    setExecStatus('completed');
+    setMetrics({
+      latencyMs: (1.1 + Math.random() * 0.7).toFixed(2),
+      nodesTraversed: preset.targetNodes?.length || 0,
+      edgesTraversed: preset.targetEdges?.length || 0,
+      matchedPathsCount: preset.results?.length || 0,
+      memoryKb: Math.round(30 + Math.random() * 20)
+    });
   };
 
   // Traversal Timer Loop
   useEffect(() => {
     let timer;
-    if (isPlaying && selectedPreset.hops && selectedPreset.hops.length > 0) {
+    if (isPlaying && activeHops && activeHops.length > 0) {
       const stepDuration = Math.max(300, Math.round(1800 / animationSpeed));
       timer = setTimeout(() => {
-        if (currentHopIndex < selectedPreset.hops.length - 1) {
+        if (currentHopIndex < activeHops.length - 1) {
           setCurrentHopIndex(prev => prev + 1);
         } else {
           setIsPlaying(false);
@@ -368,11 +1014,11 @@ export default function LabSection() {
       }, stepDuration);
     }
     return () => clearTimeout(timer);
-  }, [isPlaying, currentHopIndex, animationSpeed, selectedPreset]);
+  }, [isPlaying, currentHopIndex, animationSpeed, activeHops]);
 
   // Play / Pause / Step Controls
   const handlePlay = () => {
-    if (currentHopIndex >= (selectedPreset.hops?.length || 0) - 1) {
+    if (currentHopIndex >= (activeHops?.length || 0) - 1) {
       setCurrentHopIndex(0);
     } else if (currentHopIndex === -1) {
       setCurrentHopIndex(0);
@@ -394,7 +1040,7 @@ export default function LabSection() {
 
   const handleStepForward = () => {
     setIsPlaying(false);
-    if (currentHopIndex < (selectedPreset.hops?.length || 0) - 1) {
+    if (currentHopIndex < (activeHops?.length || 0) - 1) {
       setCurrentHopIndex(prev => prev + 1);
     }
   };
@@ -408,29 +1054,42 @@ export default function LabSection() {
     }
   };
 
-  // Execute Query Simulation
+  // Execute Query dynamically
   const handleExecuteQuery = () => {
     setExecStatus('running');
     setIsPlaying(false);
-    setCurrentHopIndex(0);
+    setCurrentHopIndex(-1);
     
-    // Simulate query parsing latency
     const startT = performance.now();
-    setTimeout(() => {
-      const elapsed = (performance.now() - startT + Math.random() * 1.5).toFixed(2);
-      setMetrics({
-        latencyMs: elapsed,
-        nodesTraversed: selectedPreset.targetNodes.length,
-        edgesTraversed: selectedPreset.targetEdges.length,
-        matchedPathsCount: selectedPreset.results ? selectedPreset.results.length : 4,
-        memoryKb: Math.round(28 + Math.random() * 30)
-      });
+    const res = executeCypherQuery(customQuery, currentGraph, PRESETS);
+    const elapsed = (performance.now() - startT + 0.8 + Math.random() * 0.9).toFixed(2);
+
+    setQueryResults(res.results);
+    setQueryColumns(res.columns);
+    setActiveTargetNodes(res.targetNodes);
+    setActiveTargetEdges(res.targetEdges);
+    setActiveHops(res.hops);
+    setActiveHiddenLinks(res.hiddenLinks);
+    setQueryError(res.error);
+
+    setMetrics({
+      latencyMs: elapsed,
+      nodesTraversed: res.targetNodes.length,
+      edgesTraversed: res.targetEdges.length,
+      matchedPathsCount: res.results.length,
+      memoryKb: Math.round(24 + res.results.length * 3.5 + Math.random() * 12)
+    });
+
+    setExecStatus('completed');
+
+    if (res.hops && res.hops.length > 0) {
+      setCurrentHopIndex(0);
       setIsPlaying(true);
-    }, Math.round(200 / animationSpeed));
+    }
   };
 
   const handleCopyResults = () => {
-    const jsonStr = JSON.stringify(selectedPreset.results, null, 2);
+    const jsonStr = JSON.stringify(queryResults, null, 2);
     navigator.clipboard.writeText(jsonStr);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -450,41 +1109,41 @@ export default function LabSection() {
 
   // Current active traversal elements
   const activeHopData = useMemo(() => {
-    if (currentHopIndex < 0 || !selectedPreset.hops || !selectedPreset.hops[currentHopIndex]) {
+    if (currentHopIndex < 0 || !activeHops || !activeHops[currentHopIndex]) {
       return null;
     }
-    return selectedPreset.hops[currentHopIndex];
-  }, [currentHopIndex, selectedPreset]);
+    return activeHops[currentHopIndex];
+  }, [currentHopIndex, activeHops]);
 
   // All active nodes up to current step
   const activeNodesSet = useMemo(() => {
-    if (currentHopIndex < 0 || !selectedPreset.hops) {
-      if (execStatus === 'completed') return new Set(selectedPreset.targetNodes);
-      return new Set();
+    if (currentHopIndex < 0 || !activeHops || activeHops.length === 0) {
+      if (execStatus === 'completed') return new Set(activeTargetNodes);
+      return new Set(activeTargetNodes);
     }
     const set = new Set();
     for (let i = 0; i <= currentHopIndex; i++) {
-      if (selectedPreset.hops[i]) {
-        selectedPreset.hops[i].activeNodes.forEach(nid => set.add(nid));
+      if (activeHops[i]) {
+        activeHops[i].activeNodes.forEach(nid => set.add(nid));
       }
     }
     return set;
-  }, [currentHopIndex, selectedPreset, execStatus]);
+  }, [currentHopIndex, activeHops, activeTargetNodes, execStatus]);
 
   // All active edges up to current step
   const activeEdgesSet = useMemo(() => {
-    if (currentHopIndex < 0 || !selectedPreset.hops) {
-      if (execStatus === 'completed') return new Set(selectedPreset.targetEdges);
-      return new Set();
+    if (currentHopIndex < 0 || !activeHops || activeHops.length === 0) {
+      if (execStatus === 'completed') return new Set(activeTargetEdges);
+      return new Set(activeTargetEdges);
     }
     const set = new Set();
     for (let i = 0; i <= currentHopIndex; i++) {
-      if (selectedPreset.hops[i]) {
-        selectedPreset.hops[i].activeEdges.forEach(eid => set.add(eid));
+      if (activeHops[i]) {
+        activeHops[i].activeEdges.forEach(eid => set.add(eid));
       }
     }
     return set;
-  }, [currentHopIndex, selectedPreset, execStatus]);
+  }, [currentHopIndex, activeHops, activeTargetEdges, execStatus]);
 
   return (
     <div className="space-y-6 bg-slate-50 min-h-screen pb-16">
@@ -508,7 +1167,7 @@ export default function LabSection() {
                 Advanced Cypher Queries &amp; Multi-Hop Pattern Matching
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-3xl">
-                Execute variable-length path expressions (<code className="text-blue-700 font-mono bg-blue-50 px-1 py-0.5 rounded text-xs">[:REL*1..k]</code>), discover hidden triadic closures, evaluate sub-query aggregations with <code className="text-blue-700 font-mono bg-blue-50 px-1 py-0.5 rounded text-xs">WITH</code>, and inspect live Cypher query results.
+                Execute variable-length path expressions (<code className="text-blue-700 font-mono bg-blue-50 px-1 py-0.5 rounded text-xs">[:REL*1..k]</code>), write custom Cypher queries, discover hidden triadic closures, evaluate sub-query aggregations with <code className="text-blue-700 font-mono bg-blue-50 px-1 py-0.5 rounded text-xs">WITH</code>, and inspect live Cypher query results.
               </p>
             </div>
 
@@ -637,7 +1296,7 @@ export default function LabSection() {
                             {preset.description}
                           </p>
                         </div>
-                        {preset.hiddenLinks.length > 0 && (
+                        {preset.hiddenLinks && preset.hiddenLinks.length > 0 && (
                           <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-700 border border-rose-200">
                             Hidden Links
                           </span>
@@ -658,13 +1317,13 @@ export default function LabSection() {
                   </div>
                   <div>
                     <h3 className="text-xs sm:text-sm font-bold text-slate-900">Cypher Query Terminal</h3>
-                    <p className="text-[10px] text-slate-500">Live openCypher AST &amp; Pattern Matcher</p>
+                    <p className="text-[10px] text-slate-500">Live openCypher AST &amp; Custom Pattern Matcher</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setCustomQuery(selectedPreset.query)}
                   title="Reset Query to Preset Default"
-                  className="text-[11px] text-slate-500 hover:text-slate-800 flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200"
+                  className="text-[11px] text-slate-500 hover:text-slate-800 flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 cursor-pointer"
                 >
                   <RefreshCw className="w-3 h-3" />
                   Reset
@@ -677,7 +1336,7 @@ export default function LabSection() {
                   <span>query.cyp</span>
                   <span className="text-emerald-400 text-[10px] font-sans font-semibold flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                    Syntax Valid
+                    Editable Cypher Editor
                   </span>
                 </div>
                 <textarea
@@ -686,55 +1345,21 @@ export default function LabSection() {
                   onChange={(e) => setCustomQuery(e.target.value)}
                   className="w-full p-2.5 bg-slate-950 text-slate-200 font-mono text-[11px] resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 leading-relaxed"
                   spellCheck={false}
+                  placeholder="// Type custom Cypher query here (e.g., MATCH (a:Author) RETURN a.label, a.hIndex)..."
                 />
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              {/* Action Button - Full Width Execute */}
+              <div className="pt-0.5">
                 <button
                   onClick={handleExecuteQuery}
                   disabled={isPlaying}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/20 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5 fill-white" />
                   Execute Cypher Query
                 </button>
-                <button
-                  onClick={() => setShowPlanBreakdown(!showPlanBreakdown)}
-                  className="flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all"
-                >
-                  <Cpu className="w-3.5 h-3.5 text-slate-600" />
-                  {showPlanBreakdown ? 'Hide Plan' : 'Explain Plan'}
-                </button>
               </div>
-
-              {/* Cypher Execution Plan Breakdown (Collapsible) */}
-              {showPlanBreakdown && (
-                <div className="mt-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5">
-                  <div className="font-bold text-slate-800 flex items-center gap-1 text-[11px]">
-                    <GitBranch className="w-3.5 h-3.5 text-blue-600" />
-                    Query Execution Pipeline (AST Breakdown)
-                  </div>
-                  <div className="space-y-1 font-mono text-[10px] text-slate-700">
-                    <div className="flex items-center gap-1.5 p-1 bg-white rounded border border-slate-200">
-                      <span className="text-blue-600 font-bold">1. Operator:</span>
-                      <span>NodeIndexSeek / NodeByLabelScan</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 p-1 bg-white rounded border border-slate-200">
-                      <span className="text-blue-600 font-bold">2. Operator:</span>
-                      <span>VarLengthExpand(All) [CITES*1..3]</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 p-1 bg-white rounded border border-slate-200">
-                      <span className="text-blue-600 font-bold">3. Operator:</span>
-                      <span>Filter &amp; Triadic Motif Deduction</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 p-1 bg-white rounded border border-slate-200">
-                      <span className="text-blue-600 font-bold">4. Operator:</span>
-                      <span>EagerAggregation(WITH) &amp; ProduceResults</span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Traversal Telemetry & Metrics Card */}
@@ -821,7 +1446,7 @@ export default function LabSection() {
                   {isPlaying ? (
                     <button
                       onClick={handlePause}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 shadow-sm cursor-pointer"
                     >
                       <Pause className="w-3 h-3 fill-white" />
                       Pause
@@ -829,7 +1454,7 @@ export default function LabSection() {
                   ) : (
                     <button
                       onClick={handlePlay}
-                      className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                      className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 shadow-sm cursor-pointer"
                     >
                       <Play className="w-3 h-3 fill-white" />
                       Play Traversal
@@ -840,22 +1465,22 @@ export default function LabSection() {
                     onClick={handleStepBackward}
                     title="Step Backward"
                     disabled={currentHopIndex <= 0}
-                    className="p-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+                    className="p-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
                   >
                     <ChevronRight className="w-3.5 h-3.5 rotate-180" />
                   </button>
                   <button
                     onClick={handleStepForward}
                     title="Step Forward"
-                    disabled={currentHopIndex >= (selectedPreset.hops?.length || 0) - 1}
-                    className="p-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+                    disabled={currentHopIndex >= (activeHops?.length || 0) - 1}
+                    className="p-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
                   >
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={handleReset}
                     title="Reset Traversal"
-                    className="p-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
+                    className="p-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
@@ -874,7 +1499,7 @@ export default function LabSection() {
                   </label>
 
                   <div className="text-[11px] font-mono font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-slate-200">
-                    Step: {currentHopIndex >= 0 ? `${currentHopIndex + 1} / ${selectedPreset.hops?.length || 1}` : 'Ready'}
+                    Step: {currentHopIndex >= 0 ? `${currentHopIndex + 1} / ${activeHops?.length || 1}` : 'Ready'}
                   </div>
                 </div>
               </div>
@@ -946,14 +1571,14 @@ export default function LabSection() {
                     </marker>
                   </defs>
 
-                  {/* Render Regular Edges (Using non-overlapping straight lines & bezier curves) */}
+                  {/* Render Regular Edges */}
                   {currentGraph.edges.map((edge) => {
                     const srcNode = currentGraph.nodes.find(n => n.id === edge.source);
                     const tgtNode = currentGraph.nodes.find(n => n.id === edge.target);
                     if (!srcNode || !tgtNode) return null;
 
                     const isActive = activeEdgesSet.has(edge.id);
-                    const isTargetEdge = selectedPreset.targetEdges?.includes(edge.id);
+                    const isTargetEdge = activeTargetEdges.includes(edge.id);
 
                     const midX = (srcNode.x + tgtNode.x) / 2;
                     const midY = (srcNode.y + tgtNode.y) / 2;
@@ -1001,7 +1626,7 @@ export default function LabSection() {
                   })}
 
                   {/* Render Hidden Triadic Closures / Inferred Links */}
-                  {showHiddenLinks && selectedPreset.hiddenLinks && selectedPreset.hiddenLinks.map((hlink, idx) => {
+                  {showHiddenLinks && activeHiddenLinks && activeHiddenLinks.map((hlink, idx) => {
                     const srcNode = currentGraph.nodes.find(n => n.id === hlink.source);
                     const tgtNode = currentGraph.nodes.find(n => n.id === hlink.target);
                     if (!srcNode || !tgtNode) return null;
@@ -1186,7 +1811,7 @@ export default function LabSection() {
                     <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
                       Cypher Query Execution Results
                       <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        {selectedPreset.results?.length || 0} Records
+                        {queryResults?.length || 0} Records
                       </span>
                     </h3>
                   </div>
@@ -1197,7 +1822,7 @@ export default function LabSection() {
                   <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
                     <button
                       onClick={() => setResultsViewMode('table')}
-                      className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                      className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer ${
                         resultsViewMode === 'table'
                           ? 'bg-white text-blue-700 shadow-sm font-bold'
                           : 'text-slate-600 hover:text-slate-900'
@@ -1207,7 +1832,7 @@ export default function LabSection() {
                     </button>
                     <button
                       onClick={() => setResultsViewMode('json')}
-                      className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                      className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all cursor-pointer ${
                         resultsViewMode === 'json'
                           ? 'bg-white text-blue-700 shadow-sm font-bold'
                           : 'text-slate-600 hover:text-slate-900'
@@ -1219,13 +1844,21 @@ export default function LabSection() {
 
                   <button
                     onClick={handleCopyResults}
-                    className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 transition-all"
+                    className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 transition-all cursor-pointer"
                     title="Copy Results JSON"
                   >
                     {copied ? <CheckCheck className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-600" />}
                   </button>
                 </div>
               </div>
+
+              {/* Error Notice if any */}
+              {queryError && (
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>{queryError}</span>
+                </div>
+              )}
 
               {/* Table View */}
               {resultsViewMode === 'table' ? (
@@ -1234,7 +1867,7 @@ export default function LabSection() {
                     <thead className="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200">
                       <tr>
                         <th className="p-2.5 w-10 text-slate-400 font-mono text-[10px]">#</th>
-                        {selectedPreset.columns?.map((col) => (
+                        {queryColumns?.map((col) => (
                           <th key={col} className="p-2.5 whitespace-nowrap text-slate-800 text-[11px]">
                             {col}
                           </th>
@@ -1242,15 +1875,15 @@ export default function LabSection() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
-                      {selectedPreset.results && selectedPreset.results.length > 0 ? (
-                        selectedPreset.results.map((row, idx) => (
+                      {queryResults && queryResults.length > 0 ? (
+                        queryResults.map((row, idx) => (
                           <tr key={idx} className="hover:bg-blue-50/40 transition-colors">
                             <td className="p-2.5 font-mono text-[10px] text-slate-400 font-semibold">{idx + 1}</td>
-                            {selectedPreset.columns?.map((col) => {
+                            {queryColumns?.map((col) => {
                               const val = row[col];
                               const isHop = col === 'HopDistance';
                               const isScore = col === 'AffinityScore' || col === 'Citations';
-                              const isArray = typeof val === 'string' && val.startsWith('[');
+                              const isArray = typeof val === 'string' && (val.startsWith('[') || val.startsWith('{'));
 
                               return (
                                 <td key={col} className="p-2.5">
@@ -1267,7 +1900,9 @@ export default function LabSection() {
                                       {val}
                                     </code>
                                   ) : (
-                                    <span className="font-medium text-slate-800 text-[11px]">{val}</span>
+                                    <span className="font-medium text-slate-800 text-[11px]">
+                                      {val !== undefined && val !== null ? String(val) : '-'}
+                                    </span>
                                   )}
                                 </td>
                               );
@@ -1276,8 +1911,8 @@ export default function LabSection() {
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={(selectedPreset.columns?.length || 1) + 1} className="p-4 text-center text-slate-400 italic text-[11px]">
-                            No records returned. Click "Execute Cypher Query" or "Play Traversal" to run pattern evaluation.
+                          <td colSpan={(queryColumns?.length || 1) + 1} className="p-4 text-center text-slate-400 italic text-[11px]">
+                            No records returned. Click &quot;Execute Cypher Query&quot; to run pattern evaluation.
                           </td>
                         </tr>
                       )}
@@ -1287,7 +1922,7 @@ export default function LabSection() {
               ) : (
                 /* Raw JSON View */
                 <div className="rounded-xl border border-slate-300 bg-slate-950 p-3 font-mono text-[11px] text-emerald-400 overflow-x-auto shadow-inner max-h-56">
-                  <pre>{JSON.stringify(selectedPreset.results, null, 2)}</pre>
+                  <pre>{JSON.stringify(queryResults, null, 2)}</pre>
                 </div>
               )}
 
