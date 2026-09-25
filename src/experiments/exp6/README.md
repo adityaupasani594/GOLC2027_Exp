@@ -1,7 +1,7 @@
-# Experiment 6
+# Experiment 12
 
 ## Overview
-This folder contains the modular implementation of **Experiment 6** for the Information Retrieval & Knowledge Graphs Virtual Laboratory (VESIT, Department of Computer Engineering).
+This folder contains the modular implementation of **Experiment 12** for the Information Retrieval & Knowledge Graphs Virtual Laboratory (VESIT, Department of Computer Engineering).
 
 ## File Structure
 - `index.jsx`: Main entry point and experiment runner component.
@@ -10,4 +10,4 @@ This folder contains the modular implementation of **Experiment 6** for the Info
 
 ## How to Extend
 1. Import and utilize components inside `index.jsx`.
-2. To provide a completely custom workbench, pass custom children into `<ExperimentTemplate expNumber={6} onBack={onBack}> ... </ExperimentTemplate>` or replace the template with your own custom layout.
+2. To provide a completely custom workbench, pass custom children into `<ExperimentTemplate expNumber={12} onBack={onBack}> ... </ExperimentTemplate>` or replace the template with your own custom layout.

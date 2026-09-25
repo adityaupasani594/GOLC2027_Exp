@@ -1,0 +1,11 @@
+# Virtual Lab: Knowledge Graph Schema Design & Data Import
+# Install with:  pip install -r requirements.txt
+
+streamlit>=1.36          # the laboratory interface
+pandas>=2.0              # datasets, CSV import/export, result tables
+numpy>=1.24              # graph layout maths in graph_viz.py
+plotly>=5.18             # schema diagram, graph visualisation, bar charts
+fpdf2>=2.7               # PDF laboratory report
+
+# The knowledge graph is stored and queried by simulation_engine.py, which is
+# part of this project, so no database driver or server is required.

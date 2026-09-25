@@ -1,7 +1,7 @@
 # Experiment 12
 
 ## Overview
-This folder contains the modular implementation of **Experiment 12** for the Information Retrieval & Knowledge Graphs Virtual Laboratory (VESIT, Department of Computer Engineering).
+This folder contains the modular implementation of **Experiment 12: Query Knowledge Graphs using Cypher** for the Information Retrieval & Knowledge Graphs Virtual Laboratory (VESIT, Department of Computer Engineering).
 
 ## File Structure
 - `index.jsx`: Main entry point and experiment runner component.
