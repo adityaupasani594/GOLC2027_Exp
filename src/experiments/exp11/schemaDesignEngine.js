@@ -370,16 +370,20 @@ export function validateKnowledgeGraph(schema, dataset) {
     }
   });
 
+  // Map relationship type to all permitted (source -> target) signatures
   const schemaRelTypes = new Map();
   (schema?.relationships || []).forEach(r => {
-    schemaRelTypes.set(r.type, { source: r.source, target: r.target });
+    if (!schemaRelTypes.has(r.type)) {
+      schemaRelTypes.set(r.type, []);
+    }
+    schemaRelTypes.get(r.type).push({ source: r.source, target: r.target });
   });
 
   const edgesList = dataset?.edges || [];
   edgesList.forEach((edge, idx) => {
     totalEdgesCount++;
-    const rule = schemaRelTypes.get(edge.type);
-    if (!rule) {
+    const allowedSignatures = schemaRelTypes.get(edge.type);
+    if (!allowedSignatures || allowedSignatures.length === 0) {
       summary.unregisteredRelType++;
       issues.push({
         severity: "error",
@@ -401,14 +405,6 @@ export function validateKnowledgeGraph(schema, dataset) {
         record: edge,
         message: `Edge [${idx}] specifies source ID '${edge.source}' which does not exist in any node table.`
       });
-    } else if (srcNode.label !== rule.source) {
-      summary.labelMismatch++;
-      issues.push({
-        severity: "error",
-        type: "LABEL_MISMATCH",
-        record: edge,
-        message: `Edge '${edge.type}' expects source label '${rule.source}', but node '${edge.source}' is labelled '${srcNode.label}'.`
-      });
     }
 
     if (!tgtNode) {
@@ -419,14 +415,26 @@ export function validateKnowledgeGraph(schema, dataset) {
         record: edge,
         message: `Edge [${idx}] specifies target ID '${edge.target}' which does not exist in any node table.`
       });
-    } else if (tgtNode.label !== rule.target) {
-      summary.labelMismatch++;
-      issues.push({
-        severity: "error",
-        type: "LABEL_MISMATCH",
-        record: edge,
-        message: `Edge '${edge.type}' expects target label '${rule.target}', but node '${edge.target}' is labelled '${tgtNode.label}'.`
-      });
+    }
+
+    if (srcNode && tgtNode) {
+      // Validate that the (srcNode.label, tgtNode.label) matches at least one allowed signature
+      const matchedSignature = allowedSignatures.find(
+        (sig) => sig.source === srcNode.label && sig.target === tgtNode.label
+      );
+
+      if (!matchedSignature) {
+        summary.labelMismatch++;
+        const expectedSignatures = allowedSignatures
+          .map((sig) => `(:${sig.source})->(:${sig.target})`)
+          .join(" or ");
+        issues.push({
+          severity: "error",
+          type: "LABEL_MISMATCH",
+          record: edge,
+          message: `Edge '${edge.type}' expects signature ${expectedSignatures}, but found (:${srcNode.label})->(:${tgtNode.label}).`
+        });
+      }
     }
   });
 

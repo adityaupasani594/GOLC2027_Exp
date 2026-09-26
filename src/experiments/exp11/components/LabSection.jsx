@@ -15,7 +15,7 @@ import {
   getDomainGraphData
 } from '../schemaDesignEngine';
 
-// Node label color mapping
+// Node label color mapping with fallback palette
 const LABEL_COLORS = {
   Student: '#4f46e5',      // indigo
   Course: '#059669',       // emerald
@@ -23,9 +23,11 @@ const LABEL_COLORS = {
   Department: '#0284c7',   // sky
   Project: '#7c3aed',      // violet
   User: '#4f46e5',
+  Customer: '#4f46e5',
   Product: '#059669',
   Category: '#0284c7',
-  Order: '#d97706',
+  Brand: '#d97706',
+  Order: '#e11d48',
   Patient: '#4f46e5',
   Doctor: '#d97706',
   Condition: '#dc2626',    // red
@@ -36,10 +38,31 @@ const LABEL_COLORS = {
   Book: '#059669',
   Author: '#d97706',
   Member: '#4f46e5',
-  Loan: '#dc2626'
+  Loan: '#dc2626',
+  Lab: '#ec4899',          // pink
+  Equipment: '#06b6d4',    // cyan
+  Publication: '#8b5cf6',  // purple
+  Grant: '#10b981',        // emerald
+  Researcher: '#f59e0b',   // amber
+  Topic: '#3b82f6'         // blue
 };
 
-const getLabelColor = (label) => LABEL_COLORS[label] || '#64748b';
+const PALETTE = [
+  '#ec4899', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981',
+  '#6366f1', '#14b8a6', '#f43f5e', '#a855f7', '#3b82f6',
+  '#d946ef', '#0ea5e9', '#84cc16', '#e11d48', '#eab308'
+];
+
+const getLabelColor = (label) => {
+  if (!label) return '#64748b';
+  if (LABEL_COLORS[label]) return LABEL_COLORS[label];
+  let hash = 0;
+  for (let i = 0; i < label.length; i++) {
+    hash = label.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % PALETTE.length;
+  return PALETTE[index];
+};
 
 export default function LabSection({ onRecordTrial, trials = [], onGoToQuiz }) {
   // Domain & Dataset selection
@@ -47,11 +70,18 @@ export default function LabSection({ onRecordTrial, trials = [], onGoToQuiz }) {
   const [useErrorDataset, setUseErrorDataset] = useState(false);
   const [activeTab, setActiveTab] = useState('modeler'); // 'modeler' | 'ingestion' | 'visualizer' | 'cypher'
 
-  // Custom schema extension state
+  // Custom schema extension state (Nodes)
   const [customNodeLabel, setCustomNodeLabel] = useState('');
   const [customNodeKey, setCustomNodeKey] = useState('');
   const [customNodeProps, setCustomNodeProps] = useState('');
   const [schemaCustomNodes, setSchemaCustomNodes] = useState([]);
+
+  // Custom schema extension state (Relationships)
+  const [customRelSource, setCustomRelSource] = useState('');
+  const [customRelType, setCustomRelType] = useState('');
+  const [customRelTarget, setCustomRelTarget] = useState('');
+  const [customRelProps, setCustomRelProps] = useState('');
+  const [schemaCustomRelationships, setSchemaCustomRelationships] = useState([]);
 
   // Copied toast state
   const [copiedCode, setCopiedCode] = useState(false);
@@ -76,20 +106,70 @@ export default function LabSection({ onRecordTrial, trials = [], onGoToQuiz }) {
   const currentSchema = useMemo(() => {
     return {
       nodes: [...activeDomain.nodes, ...schemaCustomNodes],
-      relationships: [...activeDomain.relationships]
+      relationships: [...activeDomain.relationships, ...schemaCustomRelationships]
     };
-  }, [activeDomain, schemaCustomNodes]);
+  }, [activeDomain, schemaCustomNodes, schemaCustomRelationships]);
 
   const currentDataset = useMemo(() => {
     if (useErrorDataset && selectedDomainKey === 'University') {
       return ERRORS_DATASET;
     }
-    return {
-      data: activeDomain.data,
-      nodes: activeDomain.data,
-      edges: activeDomain.edges
+
+    // Build custom node data records for any custom entity labels
+    const customData = {};
+    schemaCustomNodes.forEach((cn, i) => {
+      const keyField = cn.key || 'id';
+      const sampleId = `${cn.label.toUpperCase().slice(0, 4)}_${i + 1}`;
+      const rec = {
+        [keyField]: sampleId,
+        name: `${cn.label} Node ${i + 1}`
+      };
+      (cn.properties || []).forEach((prop) => {
+        if (prop !== keyField && !rec[prop]) {
+          rec[prop] = `${prop}_val`;
+        }
+      });
+      customData[cn.label] = [rec];
+    });
+
+    const combinedData = {
+      ...(activeDomain.data || {}),
+      ...customData
     };
-  }, [useErrorDataset, selectedDomainKey, activeDomain]);
+
+    // Build custom edges for any custom relationships
+    const customEdges = [];
+    schemaCustomRelationships.forEach((rel, rIdx) => {
+      const srcList = combinedData[rel.source] || [];
+      const tgtList = combinedData[rel.target] || [];
+      const srcNodeDef = currentSchema.nodes.find((n) => n.label === rel.source);
+      const tgtNodeDef = currentSchema.nodes.find((n) => n.label === rel.target);
+      const srcKey = srcNodeDef?.key || 'id';
+      const tgtKey = tgtNodeDef?.key || 'id';
+
+      if (srcList.length > 0 && tgtList.length > 0) {
+        const srcId = srcList[0][srcKey] || srcList[0].id || `${rel.source.toLowerCase()}_0`;
+        const tgtId = tgtList[0][tgtKey] || tgtList[0].id || `${rel.target.toLowerCase()}_0`;
+        const edgePropsObj = {};
+        (rel.properties || []).forEach((p) => {
+          edgePropsObj[p] = 'Active';
+        });
+        customEdges.push({
+          id: `custom_edge_${rIdx}_${Date.now()}`,
+          type: rel.type,
+          source: String(srcId),
+          target: String(tgtId),
+          properties: edgePropsObj
+        });
+      }
+    });
+
+    return {
+      data: combinedData,
+      nodes: combinedData,
+      edges: [...(activeDomain.edges || []), ...customEdges]
+    };
+  }, [useErrorDataset, selectedDomainKey, activeDomain, schemaCustomNodes, schemaCustomRelationships, currentSchema.nodes]);
 
   // Validation report
   const validationReport = useMemo(() => {
@@ -101,10 +181,38 @@ export default function LabSection({ onRecordTrial, trials = [], onGoToQuiz }) {
     return generateCypherImportScript(currentSchema, selectedDomainKey);
   }, [currentSchema, selectedDomainKey]);
 
-  // Graph data for visualizer and querying
+  // Graph data for visualizer and querying (incorporates custom nodes and edges)
   const graphData = useMemo(() => {
-    return getDomainGraphData(selectedDomainKey, useErrorDataset);
-  }, [selectedDomainKey, useErrorDataset]);
+    const nodes = [];
+    const keyMap = new Map();
+    (currentSchema.nodes || []).forEach((n) => keyMap.set(n.label, n.key));
+
+    if (currentDataset.data) {
+      Object.entries(currentDataset.data).forEach(([label, records]) => {
+        const pKey = keyMap.get(label) || 'id';
+        if (Array.isArray(records)) {
+          records.forEach((rec, idx) => {
+            const rawId = rec[pKey] || rec.id || `${label.toLowerCase()}_${idx}`;
+            nodes.push({
+              id: String(rawId),
+              label,
+              ...rec
+            });
+          });
+        }
+      });
+    }
+
+    const edges = (currentDataset.edges || []).map((e, idx) => ({
+      id: e.id || `e_${idx}`,
+      source: String(e.source),
+      target: String(e.target),
+      type: e.type,
+      properties: e.properties || {}
+    }));
+
+    return { nodes, edges };
+  }, [currentSchema, currentDataset]);
 
   // Node positions calculated using generously spaced multi-label layout
   const [nodePositions, setNodePositions] = useState([]);
@@ -250,20 +358,59 @@ export default function LabSection({ onRecordTrial, trials = [], onGoToQuiz }) {
     e.preventDefault();
     if (!customNodeLabel.trim() || !customNodeKey.trim()) return;
 
+    const cleanLabel = customNodeLabel.trim().replace(/\s+/g, '_');
+    const cleanKey = customNodeKey.trim().replace(/\s+/g, '_');
+
     const props = customNodeProps
       ? customNodeProps.split(',').map((p) => p.trim()).filter(Boolean)
-      : [customNodeKey.trim()];
+      : [cleanKey];
 
     const newNode = {
-      label: customNodeLabel.trim(),
-      key: customNodeKey.trim(),
-      properties: Array.from(new Set([customNodeKey.trim(), ...props]))
+      label: cleanLabel,
+      key: cleanKey,
+      properties: Array.from(new Set([cleanKey, ...props]))
     };
 
     setSchemaCustomNodes((prev) => [...prev, newNode]);
     setCustomNodeLabel('');
     setCustomNodeKey('');
     setCustomNodeProps('');
+  };
+
+  const handleRemoveCustomNode = (labelToRemove) => {
+    setSchemaCustomNodes((prev) => prev.filter((n) => n.label !== labelToRemove));
+    setSchemaCustomRelationships((prev) =>
+      prev.filter((r) => r.source !== labelToRemove && r.target !== labelToRemove)
+    );
+  };
+
+  const handleAddCustomRelationship = (e) => {
+    e.preventDefault();
+    if (!customRelType.trim()) return;
+
+    const availableLabels = currentSchema.nodes.map((n) => n.label);
+    const src = customRelSource || availableLabels[0] || 'Student';
+    const tgt = customRelTarget || availableLabels[1] || availableLabels[0] || 'Course';
+    const cleanType = customRelType.trim().toUpperCase().replace(/\s+/g, '_');
+
+    const props = customRelProps
+      ? customRelProps.split(',').map((p) => p.trim()).filter(Boolean)
+      : [];
+
+    const newRel = {
+      source: src,
+      type: cleanType,
+      target: tgt,
+      properties: props
+    };
+
+    setSchemaCustomRelationships((prev) => [...prev, newRel]);
+    setCustomRelType('');
+    setCustomRelProps('');
+  };
+
+  const handleRemoveCustomRelationship = (idxToRemove) => {
+    setSchemaCustomRelationships((prev) => prev.filter((_, idx) => idx !== idxToRemove));
   };
 
   const handleRecordTrial = () => {
@@ -346,6 +493,7 @@ export default function LabSection({ onRecordTrial, trials = [], onGoToQuiz }) {
               setSelectedDomainKey(e.target.value);
               setUseErrorDataset(false);
               setSchemaCustomNodes([]);
+              setSchemaCustomRelationships([]);
             }}
             className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
           >
@@ -416,48 +564,69 @@ export default function LabSection({ onRecordTrial, trials = [], onGoToQuiz }) {
         <div className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
             {/* Entity Types (Nodes) */}
-            <div className="glass rounded-3xl p-6 border border-white/80 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Database className="w-4 h-4 text-emerald-600" />
-                  Entity Types (Node Labels) &amp; Keys
-                </h3>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                  {currentSchema.nodes.length} Defined
-                </span>
-              </div>
-              <p className="text-xs text-slate-500">
-                Each node carries a unique identity key used in Cypher <code>MERGE</code> statements to guarantee idempotent ingestion.
-              </p>
+            <div className="glass rounded-3xl p-6 border border-white/80 shadow-sm space-y-4 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Database className="w-4 h-4 text-emerald-600" />
+                    Entity Types (Node Labels) &amp; Keys
+                  </h3>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                    {currentSchema.nodes.length} Defined
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Each node carries a unique identity key used in Cypher <code>MERGE</code> statements to guarantee idempotent ingestion.
+                </p>
 
-              <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
-                {currentSchema.nodes.map((node, idx) => (
-                  <div key={idx} className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: getLabelColor(node.label) }}
-                        />
-                        <span className="text-xs font-bold text-slate-900">:{node.label}</span>
+                <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                  {currentSchema.nodes.map((node, idx) => {
+                    const isCustom = schemaCustomNodes.some((cn) => cn.label === node.label);
+                    return (
+                      <div key={idx} className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1.5 transition hover:border-slate-300">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-3 h-3 rounded-full shrink-0"
+                              style={{ backgroundColor: getLabelColor(node.label) }}
+                            />
+                            <span className="text-xs font-bold text-slate-900">:{node.label}</span>
+                            {isCustom && (
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 font-semibold border border-amber-200">
+                                Custom
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/60">
+                              Primary Key: {node.key}
+                            </span>
+                            {isCustom && (
+                              <button
+                                onClick={() => handleRemoveCustomNode(node.label)}
+                                className="p-1 text-slate-400 hover:text-red-600 rounded transition cursor-pointer"
+                                title="Remove entity label"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {node.properties.map((prop, pIdx) => (
+                            <span key={pIdx} className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono">
+                              {prop}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200/60">
-                        Primary Key: {node.key}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {node.properties.map((prop, pIdx) => (
-                        <span key={pIdx} className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-mono">
-                          {prop}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Add Custom Entity Type Form */}
-              <form onSubmit={handleAddCustomNode} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+              <form onSubmit={handleAddCustomNode} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 mt-2">
                 <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                   <Plus className="w-3.5 h-3.5 text-emerald-600" /> Extend Schema with New Entity Label:
                 </span>
@@ -467,26 +636,26 @@ export default function LabSection({ onRecordTrial, trials = [], onGoToQuiz }) {
                     placeholder="Label (e.g. Lab)"
                     value={customNodeLabel}
                     onChange={(e) => setCustomNodeLabel(e.target.value)}
-                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800"
+                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
                   <input
                     type="text"
                     placeholder="Key (e.g. lab_id)"
                     value={customNodeKey}
                     onChange={(e) => setCustomNodeKey(e.target.value)}
-                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800"
+                    className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
                 </div>
                 <input
                   type="text"
-                  placeholder="Extra Properties (comma separated)"
+                  placeholder="Extra Properties (comma separated, e.g. name, capacity)"
                   value={customNodeProps}
                   onChange={(e) => setCustomNodeProps(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
                 <button
                   type="submit"
-                  className="w-full py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition cursor-pointer"
+                  className="w-full py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition cursor-pointer shadow-2xs"
                 >
                   Register Entity Label
                 </button>
@@ -494,51 +663,132 @@ export default function LabSection({ onRecordTrial, trials = [], onGoToQuiz }) {
             </div>
 
             {/* Relationship Signatures */}
-            <div className="glass rounded-3xl p-6 border border-white/80 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Share2 className="w-4 h-4 text-emerald-600" />
-                  Relationship Types &amp; Signatures
-                </h3>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                  {currentSchema.relationships.length} Signatures
-                </span>
-              </div>
-              <p className="text-xs text-slate-500">
-                Relationships connect a source entity to a target entity and can hold edge attributes like grades or roles.
-              </p>
+            <div className="glass rounded-3xl p-6 border border-white/80 shadow-sm space-y-4 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Share2 className="w-4 h-4 text-emerald-600" />
+                    Relationship Types &amp; Signatures
+                  </h3>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                    {currentSchema.relationships.length} Signatures
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Relationships connect a source entity to a target entity and can hold edge attributes like grades or roles.
+                </p>
 
-              <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
-                {currentSchema.relationships.map((rel, idx) => (
-                  <div key={idx} className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-mono">
-                          (:{rel.source})
-                        </span>
-                        <span className="text-slate-400 font-mono">&mdash;[</span>
-                        <span className="text-emerald-700 font-mono font-bold">:{rel.type}</span>
-                        <span className="text-slate-400 font-mono">]&rarr;</span>
-                        <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-mono">
-                          (:{rel.target})
-                        </span>
+                <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                  {currentSchema.relationships.map((rel, idx) => {
+                    const isCustom = idx >= activeDomain.relationships.length;
+                    return (
+                      <div key={idx} className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1.5 transition hover:border-slate-300">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-mono">
+                              (:{rel.source})
+                            </span>
+                            <span className="text-slate-400 font-mono">&mdash;[</span>
+                            <span className="text-emerald-700 font-mono font-bold">:{rel.type}</span>
+                            <span className="text-slate-400 font-mono">]&rarr;</span>
+                            <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-mono">
+                              (:{rel.target})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            {isCustom && (
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 font-semibold border border-amber-200">
+                                Custom
+                              </span>
+                            )}
+                            {isCustom && (
+                              <button
+                                onClick={() => handleRemoveCustomRelationship(idx - activeDomain.relationships.length)}
+                                className="p-1 text-slate-400 hover:text-red-600 rounded transition cursor-pointer"
+                                title="Remove relationship"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        {rel.properties && rel.properties.length > 0 ? (
+                          <div className="text-[10px] text-slate-500 flex items-center gap-1 flex-wrap">
+                            <span>Edge Properties:</span>
+                            {rel.properties.map((p, pIdx) => (
+                              <span key={pIdx} className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                                {p}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-[10px] text-slate-400 italic">No edge properties</div>
+                        )}
                       </div>
-                    </div>
-                    {rel.properties && rel.properties.length > 0 ? (
-                      <div className="text-[10px] text-slate-500 flex items-center gap-1">
-                        <span>Edge Properties:</span>
-                        {rel.properties.map((p, pIdx) => (
-                          <span key={pIdx} className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                            {p}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-[10px] text-slate-400 italic">No edge properties</div>
-                    )}
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Add Custom Relationship Form */}
+              <form onSubmit={handleAddCustomRelationship} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 mt-2">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5 text-emerald-600" /> Extend Schema with New Relationship:
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-500 block mb-0.5">Source Node</label>
+                    <select
+                      value={customRelSource || currentSchema.nodes[0]?.label || ''}
+                      onChange={(e) => setCustomRelSource(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    >
+                      {currentSchema.nodes.map((n) => (
+                        <option key={n.label} value={n.label}>
+                          :{n.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-500 block mb-0.5">Rel Type</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. MENTORS"
+                      value={customRelType}
+                      onChange={(e) => setCustomRelType(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 font-mono uppercase focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-500 block mb-0.5">Target Node</label>
+                    <select
+                      value={customRelTarget || currentSchema.nodes[1]?.label || currentSchema.nodes[0]?.label || ''}
+                      onChange={(e) => setCustomRelTarget(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    >
+                      {currentSchema.nodes.map((n) => (
+                        <option key={n.label} value={n.label}>
+                          :{n.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Edge Properties (comma separated, e.g. role, since, score)"
+                  value={customRelProps}
+                  onChange={(e) => setCustomRelProps(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+                <button
+                  type="submit"
+                  className="w-full py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition cursor-pointer shadow-2xs"
+                >
+                  Register Relationship Type
+                </button>
+              </form>
             </div>
           </div>
         </div>
@@ -627,6 +877,7 @@ export default function LabSection({ onRecordTrial, trials = [], onGoToQuiz }) {
                           {err.type === 'UNREGISTERED_EDGE_TYPE' && 'Declare this relationship type in schema before importing.'}
                           {err.type === 'MISSING_NODE_KEY' && 'Add non-null primary key identifier to entity payload.'}
                           {err.type === 'UNREGISTERED_LABEL' && 'Register label in domain model schema.'}
+                          {err.type === 'LABEL_MISMATCH' && 'Update relationship definition or connect entities matching the declared source & target node labels.'}
                         </td>
                       </tr>
                     ))}
