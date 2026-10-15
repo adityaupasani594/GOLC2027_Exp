@@ -5,7 +5,7 @@ import {
   BookOpen, ArrowRight, Brain, Search, GitMerge,
   Network, Layers, ExternalLink, Sparkles
 } from 'lucide-react';
-import { MathJaxDiv, useMathJax } from './useMathJax';
+import { MathJaxDiv, MathJaxSpan, useMathJax } from './useMathJax';
 
 export default function TheorySection({ onGoToLab, onNext }) {
   const handleLaunch = onGoToLab || onNext;
@@ -105,21 +105,24 @@ export default function TheorySection({ onGoToLab, onNext }) {
             <h3 className="text-sm font-bold text-slate-900">1. The Information Retrieval Evaluation Problem</h3>
           </div>
           <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-            In Information Retrieval (IR), a system returns a ranked subset of documents <MathJaxDiv className="inline font-mono">{'\\mathcal{L}_k'}</MathJaxDiv> from an indexed corpus <MathJaxDiv className="inline font-mono">{'\\mathcal{D}'}</MathJaxDiv> in response to an information need query <MathJaxDiv className="inline font-mono">{'q'}</MathJaxDiv>.
-            Relevance is evaluated against a ground-truth set of known relevant documents <MathJaxDiv className="inline font-mono">{'\\mathcal{R}'}</MathJaxDiv>.
+            In Information Retrieval (IR), a system returns a ranked subset of documents <MathJaxSpan className="font-semibold text-indigo-900">{'$\\mathcal{L}_k$'}</MathJaxSpan> from an indexed corpus <MathJaxSpan className="font-semibold text-indigo-900">{'$\\mathcal{D}$'}</MathJaxSpan> in response to an information need query <MathJaxSpan className="font-semibold text-indigo-900">{'$q$'}</MathJaxSpan>.
+            Relevance is evaluated against a ground-truth set of known relevant documents <MathJaxSpan className="font-semibold text-indigo-900">{'$\\mathcal{R}$'}</MathJaxSpan>.
           </p>
           <div className="grid sm:grid-cols-3 gap-3 text-xs pt-1">
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
               <span className="font-bold text-slate-800 block mb-0.5">True Positives (TP)</span>
-              Retrieved documents that are genuinely relevant: <MathJaxDiv className="inline font-mono">{'|\\mathcal{R} \\cap \\mathcal{L}_k|'}</MathJaxDiv>.
+              Retrieved documents that are genuinely relevant:{' '}
+              <MathJaxSpan className="font-semibold text-indigo-700">{'$\\lvert \\mathcal{R} \\cap \\mathcal{L}_k \\rvert$'}</MathJaxSpan>.
             </div>
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
               <span className="font-bold text-slate-800 block mb-0.5">False Positives (FP)</span>
-              Retrieved documents that are irrelevant: <MathJaxDiv className="inline font-mono">{'|\\mathcal{L}_k \\setminus \\mathcal{R}|'}</MathJaxDiv>.
+              Retrieved documents that are irrelevant:{' '}
+              <MathJaxSpan className="font-semibold text-amber-700">{'$\\lvert \\mathcal{L}_k \\setminus \\mathcal{R} \\rvert$'}</MathJaxSpan>.
             </div>
             <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
               <span className="font-bold text-slate-800 block mb-0.5">False Negatives (FN)</span>
-              Relevant documents missed by the system: <MathJaxDiv className="inline font-mono">{'|\\mathcal{R} \\setminus \\mathcal{L}_k|'}</MathJaxDiv>.
+              Relevant documents missed by the system:{' '}
+              <MathJaxSpan className="font-semibold text-rose-700">{'$\\lvert \\mathcal{R} \\setminus \\mathcal{L}_k \\rvert$'}</MathJaxSpan>.
             </div>
           </div>
         </div>
@@ -133,12 +136,12 @@ export default function TheorySection({ onGoToLab, onNext }) {
             <h3 className="text-sm font-bold text-slate-900">2. Precision@k and Recall@k Formulations</h3>
           </div>
           <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-            Because web search users rarely examine beyond the first few results, evaluation is measured at fixed cutoff rank <MathJaxDiv className="inline font-mono">{'k'}</MathJaxDiv>:
+            Because web search users rarely examine beyond the first few results, evaluation is measured at fixed cutoff rank <MathJaxSpan className="font-semibold text-indigo-900">{'$k$'}</MathJaxSpan>:
           </p>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-200/60 space-y-1.5">
               <div className="text-xs font-bold text-blue-800 uppercase tracking-wide">Precision at rank k (P@k)</div>
-              <MathJaxDiv className="text-sm font-mono text-slate-900">
+              <MathJaxDiv className="text-sm text-slate-900 py-1">
                 {'$$P@k = \\frac{|\\mathcal{R} \\cap \\mathcal{L}_k|}{k}$$'}
               </MathJaxDiv>
               <p className="text-xs text-slate-600">
@@ -147,7 +150,7 @@ export default function TheorySection({ onGoToLab, onNext }) {
             </div>
             <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200/60 space-y-1.5">
               <div className="text-xs font-bold text-emerald-800 uppercase tracking-wide">Recall at rank k (R@k)</div>
-              <MathJaxDiv className="text-sm font-mono text-slate-900">
+              <MathJaxDiv className="text-sm text-slate-900 py-1">
                 {'$$R@k = \\frac{|\\mathcal{R} \\cap \\mathcal{L}_k|}{|\\mathcal{R}|}$$'}
               </MathJaxDiv>
               <p className="text-xs text-slate-600">
@@ -168,7 +171,7 @@ export default function TheorySection({ onGoToLab, onNext }) {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-violet-50/60 border border-violet-200/60 space-y-1.5">
               <div className="text-xs font-bold text-violet-800 uppercase tracking-wide">Harmonic F1-Score</div>
-              <MathJaxDiv className="text-sm font-mono text-slate-900">
+              <MathJaxDiv className="text-sm text-slate-900 py-1">
                 {'$$F_1 = 2 \\cdot \\frac{P@k \\cdot R@k}{P@k + R@k}$$'}
               </MathJaxDiv>
               <p className="text-xs text-slate-600">
@@ -177,7 +180,7 @@ export default function TheorySection({ onGoToLab, onNext }) {
             </div>
             <div className="p-4 rounded-xl bg-rose-50/60 border border-rose-200/60 space-y-1.5">
               <div className="text-xs font-bold text-rose-800 uppercase tracking-wide">Mean Reciprocal Rank (MRR)</div>
-              <MathJaxDiv className="text-sm font-mono text-slate-900">
+              <MathJaxDiv className="text-sm text-slate-900 py-1">
                 {'$$\\text{MRR} = \\frac{1}{|Q|}\\sum_{i=1}^{|Q|} \\frac{1}{\\text{rank}_i}$$'}
               </MathJaxDiv>
               <p className="text-xs text-slate-600">
@@ -204,7 +207,7 @@ export default function TheorySection({ onGoToLab, onNext }) {
               <MathJaxDiv className="overflow-x-auto text-xs py-1">
                 {'$$\\text{BM25}(d, q) = \\sum_{t \\in q} \\text{IDF}(t) \\cdot \\frac{f(t,d) \\cdot (k_1+1)}{f(t,d) + k_1 \\cdot (1 - b + b \\cdot \\frac{|d|}{\\text{avgdl}})}$$'}
               </MathJaxDiv>
-              <p className="text-slate-600">Incorporate term frequency saturation (<MathJaxDiv className="inline">k_1 \approx 1.2</MathJaxDiv>) and document length normalization (<MathJaxDiv className="inline">b \approx 0.75</MathJaxDiv>).</p>
+              <p className="text-slate-600">Incorporate term frequency saturation (<MathJaxSpan className="font-semibold">{'$k_1 \\approx 1.2$'}</MathJaxSpan>) and document length normalization (<MathJaxSpan className="font-semibold">{'$b \\approx 0.75$'}</MathJaxSpan>).</p>
             </div>
 
             <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
