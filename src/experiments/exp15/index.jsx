@@ -10,10 +10,10 @@ import {
 import { ExperimentNavbar } from '../../components/common';
 import TheorySection from './components/TheorySection';
 import LabSection from './components/LabSection';
-import QuizSection from './components/QuizSection';
+import QuizSection, { QUIZ_QUESTIONS } from './components/QuizSection';
 import CertificateSection from './components/CertificateSection';
 import ReportSection from './components/ReportSection';
-import { EXPERIMENT, QUIZ_QUESTIONS } from './data/labData';
+import { EXPERIMENT } from './data/labData';
 import { useAuth } from '../../context/AuthContext';
 
 const TABS = [
@@ -33,24 +33,24 @@ const TAB_ACTIVE = {
 };
 
 export default function Experiment15({ onBack, onOpenProfile }) {
-  const { user, recordQuizScore, recordExpCompleted, recordCertificate, recordReport } = useAuth();
+  const { user, recordQuizScore, recordExpCompleted } = useAuth();
   const [activeTab, setActiveTab] = useState('theory');
   const [quizScore, setQuizScore] = useState(null);
   const [studentInfo, setStudentInfo] = useState({
-    name: user?.displayName || (user ? `${user.firstName} ${user.lastName}`.trim() : ''),
+    name: user?.displayName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '') || 'Student Scholar',
     studentId: user?.studentId || user?.username || user?.email || '',
-    institution: user?.institution || '',
+    institution: user?.institution || 'VESIT – Dept. of Computer Engineering',
     instructor: 'Dr. Sharmila Sengupta / Mrs. Abha Tewari / Mrs. Sunita Suralkar',
   });
 
-  // Update studentInfo if user logs in during the session
+  // Sync student info when user state hydrates from Firebase
   React.useEffect(() => {
     if (user) {
       setStudentInfo(prev => ({
         ...prev,
-        name: prev.name || user.displayName || `${user.firstName} ${user.lastName}`.trim(),
+        name: prev.name && prev.name !== 'Student Scholar' ? prev.name : (user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Student Scholar'),
         studentId: prev.studentId || user.studentId || user.username || user.email || '',
-        institution: user.institution || prev.institution,
+        institution: user.institution || prev.institution || 'VESIT – Dept. of Computer Engineering',
       }));
     }
   }, [user]);
@@ -58,42 +58,22 @@ export default function Experiment15({ onBack, onOpenProfile }) {
   const handleInfoChange = (key, value) =>
     setStudentInfo(prev => ({ ...prev, [key]: value }));
 
-  const handleScoreUpdate = (score) => {
+  const handleScoreUpdate = (score, total) => {
     setQuizScore(score);
-    const totalQ = QUIZ_QUESTIONS?.length || 5;
-    const pct = Math.round((score / totalQ) * 100);
-    const grade = pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B' : pct >= 60 ? 'C' : 'F';
+    const totalQ = total || QUIZ_QUESTIONS?.length || 10;
 
-    if (recordQuizScore) {
-      recordQuizScore(15, score, totalQ);
-    }
-    if (recordExpCompleted) {
-      recordExpCompleted(15, { score });
-    }
-    if (recordCertificate) {
-      recordCertificate({
-        expNumber: 15,
-        title: EXPERIMENT.title,
-        grade,
-        score,
-        total: totalQ,
-        pct,
-        certificateId: `IR-2027-15-${(user?.uid || 'STU').slice(-4).toUpperCase()}`,
-        studentName: studentInfo.name || user?.displayName,
-        institution: studentInfo.institution || user?.institution || ''
-      });
-    }
-    if (recordReport) {
-      recordReport({
-        expNumber: 15,
-        title: `${EXPERIMENT.title} (Retrieval System Benchmarks)`,
-        summary: {
-          mrr: '0.833',
-          avgPrecision: '0.910',
-          avgRecall: '0.880',
-          avgF1: '0.895'
-        }
-      });
+    // Persist Quiz Score & Experiment Completion to Cloud Firestore
+    if (user) {
+      if (recordQuizScore) {
+        recordQuizScore(15, score, totalQ);
+      }
+      if (recordExpCompleted && (score / totalQ) >= 0.7) {
+        recordExpCompleted(15, {
+          score,
+          total: totalQ,
+          completedAt: new Date().toISOString()
+        });
+      }
     }
   };
 
@@ -106,14 +86,14 @@ export default function Experiment15({ onBack, onOpenProfile }) {
     <div className="flex-1 flex flex-col min-h-screen">
       {/* ── Sticky Navbar for Experiment 15 ── */}
       <ExperimentNavbar
-        title="Evaluation of Retrieval Systems"
+        title="Exp 15: Evaluation of Retrieval Systems"
         expId={15}
         tabs={TABS}
         activeTab={activeTab}
         onTabChange={goTo}
         onBack={onBack}
         quizScore={quizScore}
-        totalQuestions={QUIZ_QUESTIONS.length}
+        totalQuestions={QUIZ_QUESTIONS?.length || 10}
         tabActiveStyles={TAB_ACTIVE}
         onOpenProfile={onOpenProfile}
       />
@@ -133,14 +113,21 @@ export default function Experiment15({ onBack, onOpenProfile }) {
           )}
           {activeTab === 'quiz' && (
             <motion.div key="quiz" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
-              <QuizSection onNext={() => goTo('certificate')} onScoreUpdate={handleScoreUpdate} />
+              <QuizSection
+                quizScore={quizScore}
+                onNext={() => goTo('certificate')}
+                onScoreUpdate={handleScoreUpdate}
+                onQuizComplete={(pct) => {
+                  if (pct >= 70) goTo('certificate');
+                }}
+              />
             </motion.div>
           )}
           {activeTab === 'certificate' && (
             <motion.div key="certificate" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
               <CertificateSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS.length}
+                totalQuestions={QUIZ_QUESTIONS?.length || 10}
                 studentInfo={studentInfo}
                 onInfoChange={handleInfoChange}
                 onNext={() => goTo('report')}
@@ -151,8 +138,9 @@ export default function Experiment15({ onBack, onOpenProfile }) {
             <motion.div key="report" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
               <ReportSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS.length}
+                totalQuestions={QUIZ_QUESTIONS?.length || 10}
                 studentInfo={studentInfo}
+                onInfoChange={handleInfoChange}
               />
             </motion.div>
           )}

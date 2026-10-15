@@ -302,11 +302,7 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
                       : 'border-slate-200/90 hover:border-indigo-300 hover:shadow-md'
                   }`}
                 onClick={() => {
-                  if (exp.number === 15) {
-                    onLaunchExp15();
-                  } else {
-                    onSelectExperiment(exp);
-                  }
+                  onSelectExperiment(exp);
                 }}
               >
                 {/* Node Top Row: Number & Status Badges */}
@@ -344,7 +340,7 @@ export default function CurriculumGraph({ onSelectExperiment, onLaunchExp15 }) {
                   </span>
 
                   <span className="text-indigo-600 font-semibold flex items-center gap-0.5 hover:underline shrink-0">
-                    {exp.number === 15 ? 'Launch' : 'Details'}
+                    Details
                     <ChevronRight className="w-3 h-3" />
                   </span>
                 </div>
