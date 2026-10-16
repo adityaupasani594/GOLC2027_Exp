@@ -10,7 +10,6 @@ export const CONTRIBUTORS_MAP = {
   ],
   2: [
     'Shravani Bhosale',
-    'Manav Bodhani',
     'Garv Chandnani',
     'Aadi Singh Chauhan',
     'Mohit Chawla'
@@ -46,7 +45,6 @@ export const CONTRIBUTORS_MAP = {
   ],
   6: [
     'Ushma Sukhwani',
-    'Sahil Tanwani',
     'Kunal Teli',
     'Priya Tolani',
     'Yash Sharma',
@@ -57,7 +55,6 @@ export const CONTRIBUTORS_MAP = {
   7: [
     'Vivan Tulsi',
     'Rithik Chawla',
-    'Ayush Parwani',
     'Vaibhav Thadwani'
   ],
   8: [
@@ -108,10 +105,8 @@ export const CONTRIBUTORS_MAP = {
   ],
   13: [
     'Harshit Sachdev',
-    'Aditya Sarvankar',
     'Rushikesh Shembade',
     'Sudarshan Gopal',
-    'Yash Sukheja'
   ],
   14: [
     'Aliza Khan',
