@@ -1,93 +1,139 @@
 import React from 'react';
 import { Users, LogIn } from 'lucide-react';
-import collegeLogo from '../../image.png';
 import { useAuth } from '../../context/AuthContext';
 import UserDropdown from './UserDropdown';
+import kiraLogo from '../../logo.jpeg';
+import collegeLogo from '../../image.png';
 
-export default function LandingNavbar({ onNavigateToAuth, onNavigateToLab, onOpenProfile }) {
+export default function LandingNavbar({
+  onNavigateToAuth,
+  onNavigateToLab,
+  onOpenProfile,
+  onNavigateToHome,
+  onNavigateToCurriculum,
+  currentView = 'landing'
+}) {
   const { user } = useAuth();
 
   const handleSignInClick = () => {
-    if (onNavigateToAuth) {
-      onNavigateToAuth('login');
+    if (onNavigateToAuth) onNavigateToAuth('login');
+    else window.location.hash = 'login';
+  };
+
+  const handleBrandClick = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (onNavigateToHome) onNavigateToHome();
+    else window.location.hash = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavClick = (e, section) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (currentView === 'landing') {
+      if (onNavigateToCurriculum) onNavigateToCurriculum(section);
+      else window.location.hash = `#${section}`;
     } else {
-      window.location.hash = 'login';
+      const el = document.getElementById(section);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      if (window.history?.replaceState) window.history.replaceState(null, '', `#${section}`);
     }
   };
 
+  const navLink = (label, section) => (
+    <a
+      key={section}
+      href={`#${section}`}
+      onClick={(e) => handleNavClick(e, section)}
+      className={`text-xs font-semibold transition-colors px-3 py-1.5 rounded-lg cursor-pointer ${
+        currentView === 'curriculum' && document?.location?.hash === `#${section}`
+          ? 'text-indigo-600 bg-indigo-50'
+          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+      }`}
+    >
+      {label}
+    </a>
+  );
+
   return (
-    <header className="sticky top-0 z-40 glass border-b border-white/70 shadow-sm backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="relative flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
-          {/* Left: Brand Logo & Title */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 z-10">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-700 to-violet-700 flex items-center justify-center shadow-md shadow-indigo-300/40 text-white font-black text-xs sm:text-sm tracking-wider">
-              KIRA
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-xs sm:text-sm md:text-base font-extrabold text-slate-900 leading-tight truncate max-w-[160px] sm:max-w-[260px] md:max-w-none tracking-tight">
+    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/70 shadow-sm">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14 gap-4">
+
+          {/* Brand: 1) KIRA logo, 2) KIRA name & text, 3) VESIT logo */}
+          <div
+            onClick={handleBrandClick}
+            className="flex items-center gap-2.5 sm:gap-3.5 shrink-0 cursor-pointer group"
+            title="KIRA Lab — Home"
+          >
+            {/* 1. KIRA Logo */}
+            <img
+              src={kiraLogo}
+              alt="KIRA Lab Logo"
+              className="w-8 h-8 rounded-lg object-contain shadow-xs group-hover:scale-105 transition-transform border border-slate-100"
+            />
+
+            {/* 2. KIRA Name and Text */}
+            <div>
+              <p className="text-sm font-extrabold text-slate-900 leading-tight group-hover:text-indigo-700 transition-colors">
                 KIRA Lab
-              </h1>
-              <p className="text-[10px] sm:text-[11px] text-slate-500 hidden md:block">
-                Knowledge Graph & Information Retrieval Analytics Lab • GOLC 2027
+              </p>
+              <p className="text-[10px] text-slate-400 leading-tight hidden sm:block">
+                Knowledge Graph &amp; IR Analytics · GOLC 2027
               </p>
             </div>
+
+            {/* Divider */}
+            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+
+            {/* 3. VESIT Logo */}
+            <img
+              src={collegeLogo}
+              alt="VESIT College Logo"
+              className="h-7 w-auto object-contain opacity-90 hidden sm:block group-hover:opacity-100 transition-opacity"
+            />
           </div>
 
-          {/* Center: College Logo */}
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none px-2">
+          {/* Nav links */}
+          <nav className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={handleBrandClick}
+              className={`text-xs font-semibold transition-colors px-3 py-1.5 rounded-lg cursor-pointer ${
+                currentView === 'landing'
+                  ? 'text-indigo-600 bg-indigo-50'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+              }`}
+            >
+              Home
+            </button>
+            {navLink('Experiments', 'catalog')}
+            {navLink('Tracks', 'tracks')}
             <a
               href="#team"
-              title="Vivekanand Education Society's Institute of Technology (VESIT)"
-              className="pointer-events-auto transition-transform hover:scale-105 inline-block"
-            >
-              <img
-                src={collegeLogo}
-                alt="VESIT College Logo"
-                className="h-9 sm:h-12 md:h-14 w-auto max-w-[130px] sm:max-w-[220px] md:max-w-[280px] object-contain drop-shadow-xs"
-              />
-            </a>
-          </div>
-
-          {/* Right: Navigation links & Auth State */}
-          <div className="flex items-center gap-1.5 sm:gap-3 z-10 shrink-0">
-            <a
-              href="#catalog"
-              className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors px-2 sm:px-3 py-1.5 rounded-lg hover:bg-slate-100/70 hidden lg:inline-block"
-            >
-              Experiments
-            </a>
-            <a
-              href="#tracks"
-              className="text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors px-2 sm:px-3 py-1.5 rounded-lg hover:bg-slate-100/70 hidden sm:inline-block"
-            >
-              Tracks
-            </a>
-            <a
-              href="#team"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50/80 hover:bg-indigo-100/80 border border-indigo-200/70 transition-colors px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1 hidden sm:flex"
+              onClick={(e) => handleNavClick(e, 'team')}
+              className="text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 transition-colors px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5"
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Team</span>
+              Team
             </a>
+          </nav>
 
-            {/* Auth: User Dropdown or Sign In Button */}
-            {user ? (
-              <UserDropdown onNavigateToLab={onNavigateToLab} onOpenProfile={onOpenProfile} />
-            ) : (
-              <button
-                type="button"
-                onClick={handleSignInClick}
-                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-semibold shadow-sm hover:shadow-md shadow-indigo-200/50 transition-all cursor-pointer"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Student Sign In</span>
-              </button>
-            )}
-          </div>
+          {/* Auth */}
+          {user ? (
+            <UserDropdown onNavigateToLab={onNavigateToLab} onOpenProfile={onOpenProfile} />
+          ) : (
+            <button
+              type="button"
+              onClick={handleSignInClick}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-white text-xs font-semibold shadow-sm hover:shadow-md hover:-translate-y-px transition-all cursor-pointer shrink-0"
+              style={{ background: 'linear-gradient(135deg,#4f46e5,#6d28d9)' }}
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              Sign In
+            </button>
+          )}
         </div>
       </div>
     </header>
   );
 }
-

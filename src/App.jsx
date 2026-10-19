@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import LandingPage from './components/LandingPage';
+import CurriculumPage from './pages/CurriculumPage';
 import AuthPage from './pages/AuthPage';
 import StudentProfileModal from './components/profile/StudentProfileModal';
 import { EXPERIMENT_COMPONENTS } from './experiments';
@@ -14,26 +15,41 @@ function MainApp() {
 
   // Helper to inspect hash
   const parseHash = () => {
-    if (typeof window === 'undefined') return { view: 'landing', authMode: 'login', expNum: null };
+    if (typeof window === 'undefined') return { view: 'landing', authMode: 'login', expNum: null, section: null };
     const hash = window.location.hash.toLowerCase();
 
     if (hash === '#profile') {
-      return { view: 'profile', authMode: 'login', expNum: null };
+      return { view: 'profile', authMode: 'login', expNum: null, section: null };
     }
     if (hash === '#register' || hash === '#signup') {
-      return { view: 'auth', authMode: 'register', expNum: null };
+      return { view: 'auth', authMode: 'register', expNum: null, section: null };
     }
     if (hash === '#login' || hash === '#signin' || hash === '#auth') {
-      return { view: 'auth', authMode: 'login', expNum: null };
+      return { view: 'auth', authMode: 'login', expNum: null, section: null };
+    }
+    if (hash === '#curriculum' || hash === '#roadmap') {
+      return { view: 'curriculum', authMode: 'login', expNum: null, section: null };
+    }
+    if (hash === '#tracks') {
+      return { view: 'curriculum', authMode: 'login', expNum: null, section: 'tracks' };
+    }
+    if (hash === '#catalog' || hash === '#experiments') {
+      return { view: 'curriculum', authMode: 'login', expNum: null, section: 'catalog' };
+    }
+    if (hash === '#guidelines') {
+      return { view: 'curriculum', authMode: 'login', expNum: null, section: 'guidelines' };
+    }
+    if (hash === '#team') {
+      return { view: 'curriculum', authMode: 'login', expNum: null, section: 'team' };
     }
     const match = hash.match(/exp-?(\d+)/i);
     if (match) {
       const num = parseInt(match[1], 10);
       if (num >= 1 && num <= 15) {
-        return { view: 'experiment', authMode: 'login', expNum: num };
+        return { view: 'experiment', authMode: 'login', expNum: num, section: null };
       }
     }
-    return { view: 'landing', authMode: 'login', expNum: null };
+    return { view: 'landing', authMode: 'login', expNum: null, section: null };
   };
 
   const [routeState, setRouteState] = useState(parseHash);
@@ -63,19 +79,25 @@ function MainApp() {
 
   const launchExperiment = (num) => {
     const expNum = typeof num === 'number' ? num : 15;
-    setRouteState({ view: 'experiment', authMode: 'login', expNum });
+    setRouteState({ view: 'experiment', authMode: 'login', expNum, section: null });
     window.location.hash = `exp${expNum}`;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const navigateToAuth = (mode = 'login') => {
-    setRouteState({ view: 'auth', authMode: mode, expNum: null });
+    setRouteState({ view: 'auth', authMode: mode, expNum: null, section: null });
     window.location.hash = mode;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const navigateToCurriculum = (section = null) => {
+    setRouteState({ view: 'curriculum', authMode: 'login', expNum: null, section });
+    window.location.hash = section ? `#${section}` : 'curriculum';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const returnToLanding = () => {
-    setRouteState({ view: 'landing', authMode: 'login', expNum: null });
+    setRouteState({ view: 'landing', authMode: 'login', expNum: null, section: null });
     if (typeof window !== 'undefined') {
       window.location.hash = '';
       if (window.history && window.history.replaceState) {
@@ -83,6 +105,10 @@ function MainApp() {
       }
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const returnFromExperiment = () => {
+    navigateToCurriculum('catalog');
   };
 
   const handleAuthSuccess = () => {
@@ -153,7 +179,7 @@ function MainApp() {
     );
   }
 
-  // 3. Authenticated Views: Landing, Experiments, or deliberate Auth switch
+  // 3. Authenticated Views: Landing, Curriculum, Experiments, or deliberate Auth switch
   const ActiveExperiment = routeState.expNum ? EXPERIMENT_COMPONENTS[routeState.expNum] : null;
 
   return (
@@ -190,7 +216,25 @@ function MainApp() {
             className="flex-1 flex flex-col"
           >
             <ActiveExperiment
-              onBack={returnToLanding}
+              onBack={returnFromExperiment}
+              onOpenProfile={openProfile}
+            />
+          </motion.div>
+        ) : routeState.view === 'curriculum' ? (
+          <motion.div
+            key="curriculum-view"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+            className="flex-1"
+          >
+            <CurriculumPage
+              initialSection={routeState.section}
+              onNavigateToHome={returnToLanding}
+              onLaunchExperiment={launchExperiment}
+              onLaunchExp15={() => launchExperiment(15)}
+              onNavigateToAuth={navigateToAuth}
               onOpenProfile={openProfile}
             />
           </motion.div>
@@ -204,6 +248,7 @@ function MainApp() {
             className="flex-1"
           >
             <LandingPage
+              onNavigateToCurriculum={navigateToCurriculum}
               onLaunchExperiment={launchExperiment}
               onLaunchExp15={() => launchExperiment(15)}
               onNavigateToAuth={navigateToAuth}

@@ -18,7 +18,6 @@ export const CONTRIBUTORS_MAP = {
     'Jai Desar',
     'Ryan Dsouza',
     'Vedika Dhamale',
-    'Soham Dharmik'
   ],
   4: [
     'Vedant Shashikant Gawali',
@@ -39,7 +38,6 @@ export const CONTRIBUTORS_MAP = {
     'Sahil Kachre',
     'Soham Kamathi',
     'Nikhil Janyani',
-    'Yash Katiyara',
     'Harshavardhan Khamkar',
     'Bhavishya Shadani'
   ],

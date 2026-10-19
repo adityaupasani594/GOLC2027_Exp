@@ -1,27 +1,38 @@
 import React from 'react';
 import collegeLogo from '../../image.png';
+import kiraLogo from '../../logo.jpeg';
 
 export default function Footer() {
   return (
-    <footer className="glass border-t border-white/80 py-10 text-center text-xs text-slate-500">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
-        <div className="flex items-center justify-center">
-          <img
-            src={collegeLogo}
-            alt="VESIT College Logo"
-            className="h-10 sm:h-12 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity"
-          />
+    <footer className="border-t border-slate-200/60 bg-white/60 backdrop-blur-sm py-7">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Left: brand */}
+          <div className="flex items-center gap-3">
+            <img src={kiraLogo} alt="KIRA" className="w-7 h-7 object-contain rounded-md shadow-xs" />
+
+            <div>
+              <p className="text-xs font-bold text-slate-800 leading-tight">KIRA Lab</p>
+              <p className="text-[10px] text-slate-400 leading-tight">
+                Knowledge Graph &amp; Information Retrieval Analytics Lab
+              </p>
+            </div>
+          </div>
+
+          {/* Center: institution */}
+          <div className="flex items-center gap-2.5 order-3 sm:order-2">
+            <img src={collegeLogo} alt="VESIT" className="h-7 w-auto object-contain opacity-80" />
+            <div className="text-[10px] text-slate-500 leading-snug text-left hidden sm:block">
+              <p className="font-semibold text-slate-700">Dept. of Computer Engineering, VESIT</p>
+              <p>GOLC 2027 Curriculum • 2027 Batch</p>
+            </div>
+          </div>
+
+          {/* Right: copyright */}
+          <p className="text-[10px] text-slate-400 order-2 sm:order-3">
+            Academic Year 2026–27
+          </p>
         </div>
-        <div className="flex items-center justify-center gap-2 font-bold text-slate-800 text-sm">
-          <span className="w-2 h-2 rounded-full bg-indigo-600" />
-          <span>KIRA Lab — Knowledge Graph & Information Retrieval Analytics Lab</span>
-        </div>
-        <p className="text-slate-600 font-medium">
-          Department of Computer Engineering • Vivekanand Education Society's Institute of Technology (VESIT)
-        </p>
-        <p className="text-slate-400 text-[11px]">
-          GOLC 2027 Curriculum Standards • Prescribed Practical Modules • Contributed by the 2027 Batch
-        </p>
       </div>
     </footer>
   );
