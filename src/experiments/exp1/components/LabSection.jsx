@@ -614,23 +614,42 @@ export default function LabSection({ onRecordTrial, onGoToQuiz }) {
                   1. Image & Spatial Grid Partitions
                 </div>
                 <div className="relative w-56 h-56 mx-auto rounded-xl overflow-hidden border border-slate-300 shadow-sm bg-slate-900">
-                  {imageSourceMode === 'synthetic' ? (
-                    <div
-                      className="w-full h-full relative"
-                      style={{
-                        backgroundImage: `
-                          linear-gradient(to right, rgba(168, 85, 247, 0.5) 1px, transparent 1px),
-                          linear-gradient(to bottom, rgba(168, 85, 247, 0.5) 1px, transparent 1px),
-                          linear-gradient(135deg, #1e3a8a 0%, #059669 60%, #0f172a 100%)
-                        `,
-                        backgroundSize: `${imagePatchSize * (224 / 128)}px ${imagePatchSize * (224 / 128)}px, ${imagePatchSize * (224 / 128)}px ${imagePatchSize * (224 / 128)}px, 100% 100%`,
-                      }}
-                    >
-                      <div className="absolute top-6 left-20 w-10 h-10 rounded-full bg-amber-400 border border-amber-200 shadow-md" />
-                      <div className="absolute bottom-4 left-6 w-14 h-14 rounded-full bg-pink-500 opacity-90" />
-                    </div>
+                  {imageResult?.imageDataUrl || uploadedImageSrc ? (
+                    <img
+                      src={imageResult?.imageDataUrl || uploadedImageSrc}
+                      alt="Source preview"
+                      className="w-full h-full object-fill"
+                    />
                   ) : (
-                    <img src={uploadedImageSrc} alt="Uploaded preview" className="w-full h-full object-cover" />
+                    <div
+                      className="w-full h-full"
+                      style={{
+                        background: 'linear-gradient(135deg, #1e3a8a 0%, #059669 60%, #0f172a 100%)',
+                      }}
+                    />
+                  )}
+                  {/* Grid Partition Overlay */}
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      backgroundImage: `
+                        linear-gradient(to right, rgba(168, 85, 247, 0.45) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(168, 85, 247, 0.45) 1px, transparent 1px)
+                      `,
+                      backgroundSize: `${100 / (imageResult?.cols || 8)}% ${100 / (imageResult?.rows || 8)}%`,
+                    }}
+                  />
+                  {/* Selected patch highlight box */}
+                  {selectedPatchToken && (
+                    <div
+                      className="absolute border-2 border-amber-400 bg-amber-400/25 pointer-events-none transition-all duration-200 shadow-[0_0_8px_rgba(251,191,36,0.6)]"
+                      style={{
+                        left: `${(selectedPatchToken.col / (imageResult?.cols || 8)) * 100}%`,
+                        top: `${(selectedPatchToken.row / (imageResult?.rows || 8)) * 100}%`,
+                        width: `${100 / (imageResult?.cols || 8)}%`,
+                        height: `${100 / (imageResult?.rows || 8)}%`,
+                      }}
+                    />
                   )}
                 </div>
 

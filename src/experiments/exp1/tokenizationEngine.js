@@ -339,6 +339,14 @@ export function extractImagePatches(sourceCanvas, patchSize = 16) {
     }
   }
 
+  // Generate a data URL representing the exact partitioned image canvas
+  const croppedCanvas = document.createElement('canvas');
+  croppedCanvas.width = width;
+  croppedCanvas.height = height;
+  const cropCtx = croppedCanvas.getContext('2d');
+  cropCtx.drawImage(sourceCanvas, 0, 0, width, height, 0, 0, width, height);
+  const imageDataUrl = croppedCanvas.toDataURL('image/png');
+
   return {
     originalWidth,
     originalHeight,
@@ -349,6 +357,7 @@ export function extractImagePatches(sourceCanvas, patchSize = 16) {
     patchSize,
     totalPatches,
     patches,
+    imageDataUrl,
   };
 }
 

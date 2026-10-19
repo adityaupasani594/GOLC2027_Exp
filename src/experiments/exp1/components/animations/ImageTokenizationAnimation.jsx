@@ -110,16 +110,31 @@ export default function ImageTokenizationAnimation({ imageResult, patchSize }) {
           </div>
 
           <div className="relative w-36 h-36 mx-auto rounded-lg overflow-hidden border border-purple-500/40 bg-slate-900">
-            {/* Background synthetic preview */}
+            {/* Real Image or Synthetic Fallback */}
+            {imageResult?.imageDataUrl ? (
+              <img
+                src={imageResult.imageDataUrl}
+                alt="Raw Image"
+                className="absolute inset-0 w-full h-full object-fill"
+              />
+            ) : (
+              <div
+                className="absolute inset-0 w-full h-full"
+                style={{
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #059669 60%, #0f172a 100%)',
+                }}
+              />
+            )}
+
+            {/* Grid overlay and scanner */}
             <div
-              className="w-full h-full relative"
+              className="absolute inset-0 w-full h-full pointer-events-none"
               style={{
                 backgroundImage: `
-                  linear-gradient(to right, rgba(168, 85, 247, 0.4) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgba(168, 85, 247, 0.4) 1px, transparent 1px),
-                  linear-gradient(135deg, #1e3a8a 0%, #059669 60%, #0f172a 100%)
+                  linear-gradient(to right, rgba(168, 85, 247, 0.45) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(168, 85, 247, 0.45) 1px, transparent 1px)
                 `,
-                backgroundSize: `${100 / cols}% ${100 / rows}%, ${100 / cols}% ${100 / rows}%, 100% 100%`,
+                backgroundSize: `${100 / cols}% ${100 / rows}%`,
               }}
             >
               {/* Active Scanner Box */}

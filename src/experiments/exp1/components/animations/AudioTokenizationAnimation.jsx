@@ -109,35 +109,34 @@ export default function AudioTokenizationAnimation({ audioResult, frameDurationM
           </div>
 
           <div className="w-full h-32 relative bg-slate-950 rounded-lg p-2 overflow-hidden border border-slate-800">
-            <svg viewBox="0 0 400 80" className="w-full h-full" preserveAspectRatio="none">
-              <line x1="0" y1="40" x2="400" y2="40" stroke="#1e293b" strokeWidth="1" />
-              {/* Waveform curve */}
-              <path
-                d={`M 0 40 ` + Array.from({ length: 80 }).map((_, i) => {
-                  const x = (i / 80) * 400;
-                  const t = i / 80;
-                  const y = 40 - 32 * Math.sin(2 * Math.PI * 6 * t) * Math.exp(-1.4 * t);
-                  return `L ${x.toFixed(1)} ${y.toFixed(1)}`;
-                }).join(' ')}
-                fill="none"
-                stroke="#64748b"
-                strokeWidth="1.5"
-              />
+            <div className="relative w-full h-full overflow-hidden">
+              <svg viewBox="0 0 400 80" className="w-full h-full" preserveAspectRatio="none">
+                <line x1="0" y1="40" x2="400" y2="40" stroke="#1e293b" strokeWidth="1" />
+                {/* Waveform curve */}
+                <path
+                  d={`M 0 40 ` + Array.from({ length: 80 }).map((_, i) => {
+                    const x = (i / 80) * 400;
+                    const t = i / 80;
+                    const y = 40 - 32 * Math.sin(2 * Math.PI * 6 * t) * Math.exp(-1.4 * t);
+                    return `L ${x.toFixed(1)} ${y.toFixed(1)}`;
+                  }).join(' ')}
+                  fill="none"
+                  stroke="#64748b"
+                  strokeWidth="1.5"
+                />
+              </svg>
 
               {/* Sliding window slice highlight */}
-              <motion.rect
-                y="0"
-                height="80"
-                fill="rgba(45, 212, 191, 0.35)"
-                stroke="#2dd4bf"
-                strokeWidth="2"
+              <motion.div
+                className="absolute top-0 bottom-0 border-2 border-teal-400 bg-teal-400/30 rounded shadow-[0_0_12px_rgba(45,212,191,0.6)] pointer-events-none"
+                style={{ minWidth: '6px' }}
                 animate={{
-                  x: `${progressPercent}%`,
-                  width: `${Math.max(4, 100 / totalTokens)}%`,
+                  left: `${(currentStep / Math.max(1, totalTokens)) * 100}%`,
+                  width: `${100 / Math.max(1, totalTokens)}%`,
                 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 28 }}
               />
-            </svg>
+            </div>
           </div>
 
           <div className="flex justify-between text-[10px] text-slate-400 font-mono">
