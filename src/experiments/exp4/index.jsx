@@ -114,7 +114,7 @@ export default function Experiment4({ onBack, onOpenProfile }) {
         onTabChange={goTo}
         onBack={onBack}
         quizScore={quizScore}
-        totalQuestions={10}
+        totalQuestions={15}
         tabActiveStyles={TAB_ACTIVE}
         onOpenProfile={onOpenProfile}
       />
@@ -174,7 +174,7 @@ export default function Experiment4({ onBack, onOpenProfile }) {
             >
               <CertificateSection
                 quizScore={quizScore}
-                totalQuestions={10}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 onInfoChange={handleInfoChange}
                 onNext={() => goTo('report')}
@@ -196,7 +196,7 @@ export default function Experiment4({ onBack, onOpenProfile }) {
                 onInfoChange={handleInfoChange}
                 trials={trials}
                 quizScore={quizScore}
-                totalQuestions={10}
+                totalQuestions={15}
                 onReportGenerated={handleReportGenerated}
               />
             </motion.div>

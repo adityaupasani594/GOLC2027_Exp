@@ -72,7 +72,7 @@ export default function Experiment12({ onBack, onOpenProfile }) {
         onTabChange={goTo}
         onBack={onBack}
         quizScore={quizScore}
-        totalQuestions={QUIZ_QUESTIONS.length}
+        totalQuestions={15}
         tabActiveStyles={TAB_ACTIVE}
       />
 
@@ -101,7 +101,7 @@ export default function Experiment12({ onBack, onOpenProfile }) {
             <motion.div key="certificate" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
               <CertificateSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS.length}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 onInfoChange={handleInfoChange}
                 onNext={() => goTo('report')}
@@ -112,7 +112,7 @@ export default function Experiment12({ onBack, onOpenProfile }) {
             <motion.div key="report" initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration: 0.22 }}>
               <ReportSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS.length}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 trials={trials}
               />

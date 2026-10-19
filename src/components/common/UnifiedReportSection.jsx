@@ -365,7 +365,7 @@ export default function UnifiedReportSection({
   renderTrials = null,
   children = null,
   quizScore = 0,
-  totalQuestions = 10,
+  totalQuestions = 15,
   studentInfo = {},
   onInfoChange = null,
   initialObservations = '',

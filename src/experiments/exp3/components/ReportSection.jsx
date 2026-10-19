@@ -34,7 +34,7 @@ const DEFAULT_OBSERVATIONS =
 
 export default function ReportSection({
   quizScore = 0,
-  totalQuestions = 10,
+  totalQuestions = 15,
   studentInfo = {},
   trials = [],
   onInfoChange,

@@ -109,18 +109,6 @@ export const QUIZ_QUESTIONS = [
     ],
     answer: 0,
     explanation: "RRF relies purely on ordinal rank positions rather than arbitrary raw scores, making it immune to heterogeneous score calibrations."
-  },
-  {
-    id: 10,
-    question: "What is Mean Reciprocal Rank (MRR@K)?",
-    options: [
-      "The reciprocal rank of the first relevant document retrieved: 1 / rank_first_relevant",
-      "The mean character count across all returned titles",
-      "The total number of unranked documents in the corpus",
-      "The ratio of Precision to Recall"
-    ],
-    answer: 0,
-    explanation: "MRR measures how quickly a user finds their first relevant result: 1 / rank of the first relevant document."
   }
 ];
 

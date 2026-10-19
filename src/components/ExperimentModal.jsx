@@ -5,13 +5,8 @@ import {
   Layers, 
   FolderKanban, 
   CheckCircle2, 
-  Cpu, 
-  BookOpen, 
-  Target,
-  Sparkles,
   ArrowRight,
   GitFork,
-  ArrowLeftRight,
   Users
 } from 'lucide-react';
 import { EXPERIMENTS_LIST } from '../data/experimentsData';
@@ -139,10 +134,7 @@ export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchE
 
             {/* Brief Explanation */}
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="w-4 h-4 text-indigo-600" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Brief Explanation</h4>
-              </div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Brief Explanation</h4>
               <p className="text-sm text-slate-600 leading-relaxed bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/60">
                 {experiment.explanation}
               </p>
@@ -150,10 +142,7 @@ export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchE
 
             {/* Expected Outcome */}
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4 text-emerald-600" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Expected Learning Outcome</h4>
-              </div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Expected Learning Outcome</h4>
               <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200/80 text-emerald-950">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                 <p className="text-sm font-medium leading-relaxed">
@@ -165,10 +154,7 @@ export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchE
             {/* Detailed Objectives */}
             {experiment.detailedObjectives && (
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Core Objectives</h4>
-                </div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Core Objectives</h4>
                 <ul className="space-y-2">
                   {experiment.detailedObjectives.map((obj, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-600">
@@ -181,24 +167,6 @@ export default function ExperimentModal({ experiment, isOpen, onClose, onLaunchE
                 </ul>
               </div>
             )}
-
-            {/* Recommended Tech Stack */}
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Cpu className="w-4 h-4 text-slate-600" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Tools & Technologies</h4>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {experiment.techStack.map((tech, i) => (
-                  <span
-                    key={i}
-                    className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200"
-                  >
-                    {tech}
-                  </span>
-                ))}
-              </div>
-            </div>
 
             {/* Experiment Contributors */}
             {experiment.contributors && experiment.contributors.length > 0 && (

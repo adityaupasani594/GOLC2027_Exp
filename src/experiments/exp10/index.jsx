@@ -54,7 +54,7 @@ export default function Experiment10({ onBack, onOpenProfile }) {
 
   const handleScoreUpdate = (score, total) => {
     setQuizScore(score);
-    const totalQ = total || QUIZ_QUESTIONS?.length || 12;
+    const totalQ = total || 15;
 
     // Persist score & completion status to Cloud Firestore
     if (user) {
@@ -86,7 +86,7 @@ export default function Experiment10({ onBack, onOpenProfile }) {
         onTabChange={goTo}
         onBack={onBack}
         quizScore={quizScore}
-        totalQuestions={QUIZ_QUESTIONS?.length || 12}
+        totalQuestions={15}
         tabActiveStyles={TAB_ACTIVE}
       />
 
@@ -148,7 +148,7 @@ export default function Experiment10({ onBack, onOpenProfile }) {
             >
               <CertificateSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS?.length || 12}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 onInfoChange={handleInfoChange}
                 onNext={() => goTo('report')}
@@ -166,7 +166,7 @@ export default function Experiment10({ onBack, onOpenProfile }) {
             >
               <ReportSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS?.length || 12}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 recordedTrials={trials}
               />

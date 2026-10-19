@@ -45,7 +45,7 @@ export default function Experiment3({ onBack, onOpenProfile }) {
   }, [user]);
 
   const persistCertAndReport = useCallback((currentScore, currentInfo, currentTrials) => {
-    const totalQ = QUIZ_QUESTIONS?.length || 10;
+    const totalQ = 15;
     const scoreVal = (currentScore !== null && currentScore !== undefined) ? currentScore : null;
     const safeScore = scoreVal !== null ? scoreVal : 0;
     const pct = Math.round((safeScore / totalQ) * 100);
@@ -151,7 +151,7 @@ export default function Experiment3({ onBack, onOpenProfile }) {
         onTabChange={goTo}
         onBack={onBack}
         quizScore={quizScore}
-        totalQuestions={QUIZ_QUESTIONS.length}
+        totalQuestions={15}
         tabActiveStyles={TAB_ACTIVE}
         onOpenProfile={onOpenProfile}
       />
@@ -214,7 +214,7 @@ export default function Experiment3({ onBack, onOpenProfile }) {
             >
               <CertificateSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS.length}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 onInfoChange={handleInfoChange}
                 onNext={() => goTo('report')}
@@ -233,7 +233,7 @@ export default function Experiment3({ onBack, onOpenProfile }) {
             >
               <ReportSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS.length}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 trials={trials}
                 onReportGenerated={() => persistCertAndReport(quizScore, studentInfo, trials)}

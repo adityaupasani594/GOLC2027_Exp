@@ -119,19 +119,6 @@ export const QUIZ_QUESTIONS = [
     explanation:
       'Stop-word removal removes low-information tokens, shrinking the token count. Stemming transforms the remaining words into stems without deleting occurrences, which merges variants (e.g. "runs", "running" → "run") and shrinks the unique vocabulary size.',
   },
-  {
-    id: 10,
-    question: 'Why is lowercasing (case normalization) applied before inverted indexing?',
-    options: [
-      'To compress ASCII text into binary unicode',
-      'To ensure terms like "Information", "information", and "INFORMATION" all map to the identical token entry',
-      'To comply with HTML5 specifications',
-      'To convert uppercase characters into image pixels',
-    ],
-    answer: 1,
-    explanation:
-      'Case normalization ensures that queries and documents match reliably regardless of capitalization in headings, beginning of sentences, or titles.',
-  },
 ];
 
 export default function QuizSection(props) {

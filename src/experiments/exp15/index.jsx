@@ -60,7 +60,7 @@ export default function Experiment15({ onBack, onOpenProfile }) {
 
   const handleScoreUpdate = (score, total) => {
     setQuizScore(score);
-    const totalQ = total || QUIZ_QUESTIONS?.length || 10;
+    const totalQ = total || 15;
 
     // Persist Quiz Score & Experiment Completion to Cloud Firestore
     if (user) {
@@ -93,7 +93,7 @@ export default function Experiment15({ onBack, onOpenProfile }) {
         onTabChange={goTo}
         onBack={onBack}
         quizScore={quizScore}
-        totalQuestions={QUIZ_QUESTIONS?.length || 10}
+        totalQuestions={15}
         tabActiveStyles={TAB_ACTIVE}
         onOpenProfile={onOpenProfile}
       />
@@ -127,7 +127,7 @@ export default function Experiment15({ onBack, onOpenProfile }) {
             <motion.div key="certificate" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
               <CertificateSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS?.length || 10}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 onInfoChange={handleInfoChange}
                 onNext={() => goTo('report')}
@@ -138,7 +138,7 @@ export default function Experiment15({ onBack, onOpenProfile }) {
             <motion.div key="report" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.22 }}>
               <ReportSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS?.length || 10}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 onInfoChange={handleInfoChange}
               />

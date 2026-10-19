@@ -192,19 +192,6 @@ export const QUIZ_QUESTIONS = [
     answer_index: 0,
     explanation:
       "The Matrix and John Wick are 1-hop direct neighbors. Warner Bros distributed The Matrix, placing it exactly 2 hops away. London is not reachable within 2 hops."
-  },
-  {
-    id: 10,
-    question: "What does MATCH (n)-[r]->() RETURN n.name, count(r) AS rels ORDER BY rels DESC LIMIT 3 return?",
-    options: [
-      "A) The three relationship types that occur most frequently in the graph",
-      "B) Every node alphabetically sorted with its total property count",
-      "C) The top three nodes with the highest outgoing relationship counts, ordered descending",
-      "D) Three randomly sampled nodes from the graph"
-    ],
-    answer_index: 2,
-    explanation:
-      "count(r) groups rows by n.name and tallies outgoing edges. ORDER BY rels DESC orders the counts from highest to lowest, and LIMIT 3 truncates the result to the top 3 nodes."
   }
 ];
 

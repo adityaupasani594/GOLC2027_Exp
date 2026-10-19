@@ -105,18 +105,6 @@ export const QUIZ_QUESTIONS = [
     answer: 1,
     explanation: 'Phrase queries require adjacency: within the same document d, the token position of the second term must be exactly one greater than the first term (pos₂ = pos₁ + 1).',
   },
-  {
-    id: 10,
-    question: 'What is the primary advantage of Single-Pass In-Memory Indexing (SPIMI) over Block Sort-Based Indexing (BSBI)?',
-    options: [
-      'SPIMI eliminates the need for sorting postings lists.',
-      'SPIMI builds dynamic postings lists directly in memory without sorting intermediate (term, docID) pairs on disk.',
-      'SPIMI does not require any RAM memory.',
-      'SPIMI is only applicable to binary data, not text.',
-    ],
-    answer: 1,
-    explanation: 'BSBI writes unsorted (termID, docID) pairs to disk causing I/O bottlenecks. SPIMI allocates dynamic postings arrays in memory as documents are parsed, writing pre-sorted block indexes.',
-  },
 ];
 
 export default function QuizSection(props) {

@@ -51,7 +51,7 @@ export default function Experiment13({ onBack, onOpenProfile }) {
         onTabChange={goTo}
         onBack={onBack}
         quizScore={quizScore}
-        totalQuestions={QUIZ_QUESTIONS?.length || 10}
+        totalQuestions={15}
         tabActiveStyles={TAB_ACTIVE}
       />
 
@@ -113,7 +113,7 @@ export default function Experiment13({ onBack, onOpenProfile }) {
             >
               <CertificateSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS?.length || 10}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 onInfoChange={handleInfoChange}
                 onNext={() => goTo('report')}
@@ -131,7 +131,7 @@ export default function Experiment13({ onBack, onOpenProfile }) {
             >
               <ReportSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS?.length || 10}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 recordedTrials={trials}
               />

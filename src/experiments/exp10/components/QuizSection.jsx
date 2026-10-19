@@ -109,42 +109,6 @@ export const QUIZ_QUESTIONS = [
     ],
     answer_index: 2,
     explanation: "Relational databases and columnar engines excel at bulk, linear scans and aggregations across flat tables with minimal inter-record joins, whereas graph databases excel at complex, multi-hop relationship traversals."
-  },
-  {
-    id: 10,
-    question: "Why is the query 'MATCH (s:Student), (c:Course) RETURN s, c' generally discouraged unless explicitly intended?",
-    options: [
-      "A) Because it causes a syntax error in Cypher",
-      "B) Because it produces an unconstrained Cartesian product matching every student with every course",
-      "C) Because it automatically deletes all students and courses",
-      "D) Because it forces the database to convert into an RDBMS table"
-    ],
-    answer_index: 1,
-    explanation: "Matching disconnected entities without relationship patterns calculates a full Cartesian product (O(|V1| * |V2|)), which can consume massive memory on large graphs."
-  },
-  {
-    id: 11,
-    question: "Which of the following describes the default network port used for Bolt binary protocol driver communication in standard graph DBMS servers?",
-    options: [
-      "A) Port 7474 (HTTP Browser interface)",
-      "B) Port 7687 (Bolt binary protocol)",
-      "C) Port 3306 (MySQL default port)",
-      "D) Port 5432 (PostgreSQL default port)"
-    ],
-    answer_index: 1,
-    explanation: "Graph DBMS servers typically use port 7474 for HTTP web console access, and port 7687 for high-performance Bolt binary protocol connections utilized by official drivers."
-  },
-  {
-    id: 12,
-    question: "According to Cypher naming conventions and syntax standards, how should relationship types and node labels be cased?",
-    options: [
-      "A) Labels in UPPER_CASE and Relationships in lower_case",
-      "B) Labels in UpperCamelCase (e.g., :Student) and Relationships in UPPER_SNAKE_CASE (e.g., [:ENROLLED_IN])",
-      "C) Both labels and relationships must always be lowercase",
-      "D) Cypher forbids the use of underscores in relationship types"
-    ],
-    answer_index: 1,
-    explanation: "Cypher naming conventions dictate UpperCamelCase for Node Labels (e.g. :Student, :Course) and UPPER_SNAKE_CASE for Relationship Types (e.g. [:ENROLLED_IN], [:TEACHES])."
   }
 ];
 

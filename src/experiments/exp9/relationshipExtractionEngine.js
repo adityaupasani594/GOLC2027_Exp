@@ -203,19 +203,6 @@ export const QUIZ_QUESTIONS = [
     answer_index: 1,
     explanation:
       "Negation detection checks syntactic negation dependencies and negative quantifiers to prevent false assertions from being populated into the graph."
-  },
-  {
-    id: 10,
-    question: "What role does coreference resolution play in advanced Relationship Extraction pipelines?",
-    options: [
-      "A) It resolves pronouns and aliases (e.g., 'he', 'she', 'it') back to their antecedent entity mentions across sentences",
-      "B) It translates text into foreign languages",
-      "C) It formats graphs into PDF files",
-      "D) It counts the number of punctuation marks in a document"
-    ],
-    answer_index: 0,
-    explanation:
-      "Coreference resolution links pronouns and aliases back to their canonical entity mentions (e.g., linking 'He founded SpaceX' back to 'Elon Musk'), enabling accurate cross-sentence relationship extraction."
   }
 ];
 

@@ -80,7 +80,7 @@ export default function Experiment11({ onBack, onOpenProfile }) {
         studentName: studentInfo.name,
         studentId: studentInfo.studentId,
         score: quizScore ?? 0,
-        total: QUIZ_QUESTIONS.length,
+        total: 15,
         issuedAt: new Date().toISOString()
       });
     }
@@ -110,7 +110,7 @@ export default function Experiment11({ onBack, onOpenProfile }) {
         onTabChange={goTo}
         onBack={onBack}
         quizScore={quizScore}
-        totalQuestions={QUIZ_QUESTIONS?.length || 15}
+        totalQuestions={15}
         tabActiveStyles={TAB_ACTIVE}
         onOpenProfile={onOpenProfile}
       />
@@ -171,7 +171,7 @@ export default function Experiment11({ onBack, onOpenProfile }) {
             >
               <CertificateSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS.length}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 onInfoChange={handleInfoChange}
                 onCertificateObtained={handleCertificateObtained}
@@ -193,7 +193,7 @@ export default function Experiment11({ onBack, onOpenProfile }) {
                 onInfoChange={handleInfoChange}
                 trials={trials}
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS.length}
+                totalQuestions={15}
                 onReportGenerated={handleReportGenerated}
               />
             </motion.div>

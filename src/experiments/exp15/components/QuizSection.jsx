@@ -64,14 +64,7 @@ export const QUIZ_QUESTIONS = [
     options: ['1.0', 'undefined (∞)', '0.0', '0.5'],
     answer: 2,
     explanation: 'If no relevant document is found, the reciprocal rank = 1/∞ → 0. So MRR = 0.0 for that query.',
-  },
-  {
-    id: 10,
-    question: 'Dense retrieval uses bi-encoders to compute similarity. Which measure is typically used?',
-    options: ['Euclidean Distance', 'Cosine Similarity', 'Jaccard Coefficient', 'BM25 Score'],
-    answer: 1,
-    explanation: 'Cosine similarity measures angle between query and document embedding vectors in continuous vector space.',
-  },
+  }
 ];
 
 export default function QuizSection(props) {

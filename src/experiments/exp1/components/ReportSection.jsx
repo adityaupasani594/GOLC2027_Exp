@@ -58,7 +58,7 @@ export default function ReportSection({
   onInfoChange,
   trials = [],
   quizScore = 0,
-  totalQuestions = 10,
+  totalQuestions = 15,
   onReportGenerated,
 }) {
   return (

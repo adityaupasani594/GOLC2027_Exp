@@ -105,18 +105,6 @@ export const QUIZ_QUESTIONS = [
     answer: 0,
     explanation: 'Document embeddings are computed offline during the indexing phase so that at query time, only a single query embedding needs to be computed before fast dot-product matching.',
   },
-  {
-    id: 10,
-    question: 'Is the Top-K retrieval parameter (e.g. K=5) dependent on the 384 embedding dimensions?',
-    options: [
-      'No — Top-K is the count of retrieved search results; 384 is the vector size. They are independent.',
-      'Yes — Top-K must always equal 384',
-      'Yes — Top-K represents sub-dimensions of the 384-D vector',
-      'No — Top-K is the vocabulary size of the model',
-    ],
-    answer: 0,
-    explanation: 'Top-K determines how many search results are returned (e.g. K=5). This is completely independent of the 384 dimensions in the embedding vector.',
-  },
 ];
 
 export default function QuizSection(props) {

@@ -119,19 +119,6 @@ export const QUIZ_QUESTIONS = [
     explanation:
       'Under-stemming occurs when words from the same conceptual root family are not stemmed into the same base (e.g., "knavish" and "knave", or "adhesion" and "adhesive" failing to resolve to a unified root).',
   },
-  {
-    id: 10,
-    question: 'Which Regular Expression pattern matches and strips all non-alphabetic characters and digits from a string?',
-    options: [
-      '/[0-9]+/',
-      '/[^a-zA-Z\\s]/g',
-      '/\\b\\w+\\b/g',
-      '/[a-z]+/g',
-    ],
-    answer: 1,
-    explanation:
-      'The regex pattern [^a-zA-Z\\s] matches any character that is NOT an uppercase/lowercase Latin letter or whitespace, enabling noise and digit stripping.',
-  },
 ];
 
 export default function QuizSection(props) {

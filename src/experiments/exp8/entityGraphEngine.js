@@ -597,17 +597,5 @@ export const QUIZ_QUESTIONS = [
     ],
     answer_index: 0,
     explanation: "DCG divides relevance scores by log2(rank + 1), heavily rewarding highly relevant documents returned in top positions over lower ranks."
-  },
-  {
-    id: 10,
-    question: "Why does pure keyword matching struggle with queries like 'Satya Nadella Microsoft Cloud' compared to entity-aware ranking?",
-    options: [
-      "Keywords ignore the relational semantic bindings connecting the person, organization, and domain",
-      "Keywords can only process uppercase characters",
-      "Probabilistic search engines do not support spaces",
-      "Knowledge graphs cannot store proper nouns"
-    ],
-    answer_index: 0,
-    explanation: "Pure keyword search treats terms independently, while entity-aware models exploit relational Knowledge Graph triples and structured entity constraints."
   }
 ];

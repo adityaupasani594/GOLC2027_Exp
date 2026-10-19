@@ -60,7 +60,7 @@ export default function Experiment8({ onBack, onOpenProfile }) {
 
   const handleScoreUpdate = (score, total) => {
     setQuizScore(score);
-    const totalQ = total || QUIZ_QUESTIONS?.length || 10;
+    const totalQ = total || 15;
 
     // Persist Quiz Score & Experiment Completion to Cloud Firestore
     if (recordQuizScore) {
@@ -164,7 +164,7 @@ export default function Experiment8({ onBack, onOpenProfile }) {
             >
               <CertificateSection
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS.length}
+                totalQuestions={15}
                 studentInfo={studentInfo}
                 onInfoChange={handleInfoChange}
                 onNext={() => setActiveTab('report')}
@@ -186,7 +186,7 @@ export default function Experiment8({ onBack, onOpenProfile }) {
                 onInfoChange={handleInfoChange}
                 trials={trials}
                 quizScore={quizScore}
-                totalQuestions={QUIZ_QUESTIONS.length}
+                totalQuestions={15}
                 onReportGenerated={handleReportGenerated}
               />
             </motion.div>

@@ -44,8 +44,6 @@ export const CONTRIBUTORS_MAP = {
     'Bhavishya Shadani'
   ],
   6: [
-    'Ushma Sukhwani',
-    'Kunal Teli',
     'Priya Tolani',
     'Yash Sharma',
     'Ayush Shelar',

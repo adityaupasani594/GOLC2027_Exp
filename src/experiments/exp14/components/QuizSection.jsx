@@ -10,8 +10,7 @@ const ALL_QUESTIONS = [
   { id:6, q:'What is graph traversal?', opts:['Following relationships from a node to connected nodes','Sorting quiz questions','Removing stopwords','Converting Python to HTML'], ans:0, exp:'Traversal explores connected nodes through graph relationships.' },
   { id:7, q:'What is the role of the retrieved document in the graph?', opts:['It acts as an entry point to related entities','It must always be deleted','It is never connected to any entity','It is only for report formatting'], ans:0, exp:'Retrieved documents provide starting points for contextual graph exploration.' },
   { id:8, q:'Which statement best describes a Knowledge Graph?', opts:['A collection of unrelated text files','A graph of entities connected by typed relationships','A spreadsheet of scores','A programming language'], ans:1, exp:'Knowledge graphs explicitly represent entities and their relationships.' },
-  { id:9, q:'What is entity extraction?', opts:['Finding meaningful entities in text','Sorting PDF pages','Selecting quiz options','Changing chart height'], ans:0, exp:'Entity extraction identifies concepts that can become graph nodes.' },
-  { id:10, q:'What is hybrid retrieval?', opts:['A combination of lexical and semantic retrieval','A graph with no nodes','A quiz with no answers','A PDF with no text'], ans:0, exp:'Hybrid systems combine complementary retrieval methods.' },
+  { id:9, q:'What is entity extraction?', opts:['Finding meaningful entities in text','Sorting PDF pages','Selecting quiz options','Changing chart height'], ans:0, exp:'Entity extraction identifies concepts that can become graph nodes.' }
 ];
 
 export const QUIZ_QUESTIONS = ALL_QUESTIONS;

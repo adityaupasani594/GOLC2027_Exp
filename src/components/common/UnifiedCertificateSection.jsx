@@ -253,7 +253,7 @@ export default function UnifiedCertificateSection({
   expSubtitle = 'Knowledge Graph & Information Retrieval Analytics Laboratory',
   expCode = null,
   quizScore = null,
-  totalQuestions = 10,
+  totalQuestions = 15,
   studentInfo = {},
   onInfoChange = null,
   onNext = null,

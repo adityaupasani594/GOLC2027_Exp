@@ -109,18 +109,6 @@ export const QUIZ_QUESTIONS = [
     ],
     answer: 0,
     explanation: "The fixed-length path expression `[:REPORTS_TO*2]` specifically matches exactly 2 sequential hops of REPORTS_TO edges."
-  },
-  {
-    id: 10,
-    question: "What operator in a Cypher EXPLAIN execution plan represents scanning an index to find the starting node of a traversal?",
-    options: [
-      "ProduceResults",
-      "NodeIndexSeek or NodeByLabelScan",
-      "VarLengthExpand(All)",
-      "EagerAggregation"
-    ],
-    answer: 1,
-    explanation: "`NodeIndexSeek` uses a schema index to pinpoint starting nodes by property, whereas `NodeByLabelScan` scans all nodes having a specific label."
   }
 ];
 
